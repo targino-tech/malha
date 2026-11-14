@@ -1,0 +1,25 @@
+[Unit]
+Description=Malha inventory collector
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=malha-collector
+Group=malha-collector
+EnvironmentFile=/etc/malha/collector.env
+Environment=MALHA_DATA_DIR=/var/lib/malha-collector
+StateDirectory=malha-collector
+StateDirectoryMode=0700
+UMask=0077
+ExecStart=/usr/local/bin/malha-collector run
+Restart=on-failure
+RestartSec=15s
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:17.12
+    environment:
+      POSTGRES_DB: malha
+      POSTGRES_USER: malha_admin
+      POSTGRES_PASSWORD: ${MALHA_LOCAL_DB_PASSWORD:?Defina uma senha só para o laboratório}
+    ports:
+      - '127.0.0.1:5432:5432'
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U malha_admin -d malha']
+      interval: 3s
+      timeout: 3s
+      retries: 15
+    volumes:
+      - malha-pg:/var/lib/postgresql/data
+
+volumes:
+  malha-pg:

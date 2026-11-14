@@ -1,0 +1,3 @@
+etiqueta,nome,categoria,criticidade,mac,ip
+CAMPO-001,Coletor de cabine,Tablet,padrao,,
+CAMPO-002,Balança de entradas,Balança,critico,,192.0.2.20
