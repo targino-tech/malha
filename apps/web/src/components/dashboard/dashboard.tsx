@@ -1,10 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Activity, BellRing, Box, ChartColumn, ChartPie, ChevronDown, GitMerge, Plug, ScrollText, Settings, CloudUpload, FlaskConical, LayoutDashboard, LogOut, MapPin, RefreshCw, WifiOff } from 'lucide-react';
+import { Activity, BellDot, BellRing, Box, ChartColumn, ChartPie, ChevronDown, GitMerge, Plug, ScrollText, Settings, CloudUpload, FlaskConical, LayoutDashboard, LogOut, MapPin, RefreshCw, WifiOff } from 'lucide-react';
 import { MotionConfig, motion, useReducedMotion } from 'motion/react';
 import type { DashboardData } from '../../server/dashboard';
 import { Administration } from './administration';
+import { Alerts } from './alerts';
 import { Audit } from './audit';
 import { ChartsView } from './charts';
 import { Indicators } from './indicators';
@@ -28,6 +29,7 @@ const views = {
   imports: { label: 'Importações', title: 'Importações de inventário', description: 'Inclua ativos de campo a partir da planilha da fazenda.', icon: CloudUpload },
   integrations: { label: 'Integrações', title: 'Integrações', description: 'Ative o coletor de cada fazenda e confirme a primeira coleta UniFi.', icon: Plug },
   monitoring: { label: 'Monitoramento', title: 'Monitoramento externo', description: 'Monte o Zabbix e os painéis do Grafana a partir do inventário, por família de ativos.', icon: Activity },
+  alerts: { label: 'Alertas', title: 'Alertas por Telegram e e-mail', description: 'Canais do grupo, mensagem de teste e histórico de entregas.', icon: BellDot },
   admin: { label: 'Administração', title: 'Administração do grupo', description: 'Cadastre fazendas e defina quem acessa o Malha e com qual papel.', icon: Settings },
   audit: { label: 'Auditoria', title: 'Auditoria', description: 'Quem fez o quê, quando e em qual escopo.', icon: ScrollText },
 };
@@ -102,6 +104,7 @@ export function Dashboard({ initialData }: { initialData: DashboardData }) {
     if (id === 'integrations') return data.can['integrations.read'];
     if (id === 'admin') return data.can['members.manage'];
     if (id === 'monitoring') return data.can['monitoring.export'];
+    if (id === 'alerts') return data.can['alerts.manage'];
     return true;
   }
   const heading = views[view];
@@ -137,7 +140,7 @@ export function Dashboard({ initialData }: { initialData: DashboardData }) {
             <div className="page-heading">
               <div className="page-title"><h1>{heading.title}</h1><p>{heading.description}</p></div>
               <div className="page-actions">
-                {view !== 'imports' && view !== 'admin' && view !== 'audit' && (
+                {view !== 'imports' && view !== 'admin' && view !== 'audit' && view !== 'alerts' && (
                   <label className="farm-select">
                     <MapPin size={17} aria-hidden="true" />
                     <select value={currentFarm} onChange={(event) => setFarmId(event.target.value)} aria-label="Filtrar por fazenda">
@@ -172,6 +175,9 @@ export function Dashboard({ initialData }: { initialData: DashboardData }) {
               {view === 'admin' && (data.can['members.manage']
                 ? <Administration farms={data.farms} actor={data.actor} online={online} onChanged={() => { void refresh(true); }} />
                 : <p className="message warning" role="status">A permissão de administração foi alterada.</p>)}
+              {view === 'alerts' && (data.can['alerts.manage']
+                ? <Alerts farms={data.farms} online={online} />
+                : <p className="message warning" role="status">A permissão para gerenciar alertas foi alterada.</p>)}
               {view === 'imports' && (data.can['inventory.write'] ? (
                 <ImportFlow farms={data.farms} selectedFarm={currentFarm} online={online} onImported={() => { void refresh(true); }} />
               ) : <p className="message warning" role="status">A permissão para importar ativos foi alterada.</p>)}

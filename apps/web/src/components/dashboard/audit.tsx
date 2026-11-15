@@ -14,6 +14,8 @@ const actionLabels: Record<string, string> = {
   'reconciliation.confirm': 'Ativo conferido', 'reconciliation.merge': 'Descoberta vinculada', 'reconciliation.unlink': 'Vínculo desfeito',
   'export.assets': 'Inventário exportado', 'export.occurrences': 'Evidências exportadas', 'export.audit': 'Auditoria exportada',
   'alerts.recipient.add': 'Destinatário de alerta adicionado', 'alerts.recipient.remove': 'Destinatário de alerta removido',
+  'alerts.channel.create': 'Canal de alerta cadastrado', 'alerts.channel.update': 'Canal de alerta alterado', 'alerts.channel.enable': 'Canal de alerta ativado',
+  'alerts.channel.disable': 'Canal de alerta desativado', 'alerts.channel.test': 'Teste de canal de alerta',
 };
 
 type Page = { items: AuditEntry[]; nextCursor: string | null };
