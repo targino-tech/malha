@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Activity, BellRing, Box, ChartColumn, ChartPie, ChevronDown, GitMerge, Plug, ScrollText, Settings, CloudUpload, FlaskConical, LayoutDashboard, LogOut, MapPin, RefreshCw, WifiOff } from 'lucide-react';
+import { Activity, BellRing, Box, ChartColumn, ChartPie, ChevronDown, GitMerge, Plug, ScrollText, Settings, CloudUpload, FlaskConical, LayoutDashboard, LogOut, MapPin, RefreshCw, Waypoints, WifiOff } from 'lucide-react';
 import { MotionConfig, motion, useReducedMotion } from 'motion/react';
 import type { DashboardData } from '../../server/dashboard';
 import { Administration } from './administration';
@@ -15,6 +15,7 @@ import { Monitoring } from './monitoring';
 import { Inventory } from './inventory';
 import { Occurrences } from './occurrences';
 import { Overview } from './overview';
+import { TopologyView } from './topology';
 import { formatDate } from './presentation';
 import { BrandMark } from '../../app/site/_components/brand';
 
@@ -23,6 +24,7 @@ const views = {
   charts: { label: 'Painéis', title: 'Painéis da operação', description: 'Estado dos ativos, ocorrências por dia, disponibilidade dos coletores e inventário por categoria.', icon: ChartPie },
   occurrences: { label: 'Ocorrências', title: 'Ocorrências', description: 'Investigue e reconheça os alertas de comunicação, coleta e ativos.', icon: BellRing },
   indicators: { label: 'Indicadores', title: 'Indicadores de valor', description: 'Cobertura, inventário conferido, tempos de resposta e economia medida no piloto.', icon: ChartColumn },
+  topology: { label: 'Topologia', title: 'Topologia da rede', description: 'Veja como gateway, switches e pontos de acesso de cada fazenda se ligam, com portas e VLANs.', icon: Waypoints },
   inventory: { label: 'Inventário', title: 'Inventário de ativos', description: 'Identifique equipamentos, origem do cadastro e estado da última observação.', icon: Box },
   reconciliation: { label: 'Conciliação', title: 'Conciliação do inventário', description: 'Confirme descobertas da coleta, vínculos automáticos e o cadastro de referência.', icon: GitMerge },
   imports: { label: 'Importações', title: 'Importações de inventário', description: 'Inclua ativos de campo a partir da planilha da fazenda.', icon: CloudUpload },
@@ -157,6 +159,7 @@ export function Dashboard({ initialData }: { initialData: DashboardData }) {
               {view === 'overview' && <Overview farms={farms} farmId={currentFarm} openOccurrences={data.occurrences.filter((item) => !item.resolvedAt && farms.some((farm) => farm.id === item.farmId))} generatedAt={data.generatedAt} onOpenFarm={(id) => { setFarmId(id); setView('inventory'); }} onOpenInventory={() => setView('inventory')} onOpenOccurrences={() => setView('occurrences')} />}
               {view === 'occurrences' && <Occurrences occurrences={data.occurrences} farms={farms} canAcknowledge={data.can['occurrences.acknowledge']} online={online} onChanged={() => { void refresh(true); }} />}
               {view === 'inventory' && <Inventory key={currentFarm} farms={data.farms} locations={data.locations} farmId={currentFarm} canEdit={data.can['inventory.write']} canExport={data.can['exports.run']} online={online} onChanged={() => { void refresh(true); }} />}
+              {view === 'topology' && <TopologyView farms={farms} farmId={currentFarm} online={online} demo={data.demo} />}
               {view === 'charts' && <ChartsView farms={farms} farmId={currentFarm} online={online} />}
               {view === 'monitoring' && data.can['monitoring.export'] && <Monitoring farmId={currentFarm} online={online} canApply={data.can['monitoring.apply']} />}
               {view === 'indicators' && <Indicators farms={farms} farmId={currentFarm} canExport={data.can['exports.run']} canBaseline={data.can['baseline.manage']} online={online} />}
