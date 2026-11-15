@@ -42,18 +42,19 @@ O Malha mostra à matriz de um grupo agrícola, em um só painel, **quais fazend
 <img src="docs/media/secao-arquitetura.svg" alt="02 · Arquitetura e topologia" width="100%">
 
 <p align="center">
-  <img src="docs/media/readme-topologia.svg" alt="Topologia: na fazenda, a controladora UniFi é lida pelo coletor Go, que guarda lotes em SQLite e envia por HTTPS 443 para a AWS em São Paulo. WAF e ALB separam ingestão e painel. O Next.js grava no PostgreSQL e o worker aplica capturas, avalia regras e envia e-mails pelo SES. A matriz acessa o painel com login Entra ID." width="100%">
+  <img src="docs/media/readme-topologia.svg" alt="Topologia: na fazenda, a controladora UniFi é lida pelo coletor Go, que guarda lotes em SQLite e envia por HTTPS 443 para o Malha, na AWS em São Paulo ou em um servidor próprio. A entrada HTTPS separa ingestão e painel. O Next.js grava no PostgreSQL com RLS e o worker aplica capturas, avalia regras e envia e-mails. O serviço web autentica pelo Entra ID, AD/LDAP ou OpenID Connect e publica hosts e painéis no Zabbix e no Grafana. A matriz acessa o painel no navegador." width="100%">
 </p>
 
 | Peça | Onde | Responsabilidade |
 | --- | --- | --- |
 | `collector/` | Linux na fazenda, Go 1.27, systemd | Lê a API local de Integrações do UniFi, assina com Ed25519, fila SQLite de 72 h |
-| `apps/web/` | ECS Fargate, Next.js 16 | Painel, BFF, ingestão `/v1/collectors`, site público e portal |
-| `apps/worker/` | ECS Fargate | Outbox de capturas, regras a cada minuto, e-mail, retenção e métricas |
-| `packages/db/` | RDS PostgreSQL 17 | Migrações SQL, RLS por organização, CLI de administração |
-| `infra/` | Terraform | VPC, RDS, ECS, ALB + WAF, SES, ECR, alarmes, orçamento e OIDC do GitHub |
+| `apps/web/` | ECS Fargate ou Docker, Next.js 16 | Painel, API, ingestão `/v1/collectors`, login (Entra, AD/LDAP, OIDC), Zabbix e Grafana, site e portal |
+| `apps/worker/` | ECS Fargate ou Docker | Outbox de capturas, regras a cada minuto, e-mail, retenção e métricas |
+| `packages/db/` | PostgreSQL 17 (RDS ou próprio) | Migrações SQL, RLS por organização, CLI de administração |
+| `infra/` | Terraform (opcional) | VPC, RDS, ECS, ALB + WAF, SES, ECR, alarmes, orçamento e OIDC do GitHub |
+| `video/` | Node.js + Chromium + ffmpeg | Vídeo de apresentação de 45 s com trilha sintetizada |
 
-**Garantias de segurança:** o escopo do coletor vem da chave cadastrada; cada requisição leva prova JWS com nonce de uso único e hash do corpo; lotes repetidos devolvem o recibo original e conteúdo divergente recebe 409; o runtime do banco opera sem `BYPASSRLS`; login por Entra ID com PKCE e sessão revalidada a cada requisição; fazendas fora do escopo respondem como inexistentes. Detalhes em [`docs/arquitetura.md`](docs/arquitetura.md) e [`infra/README.md`](infra/README.md).
+**Garantias de segurança:** o escopo do coletor vem da chave cadastrada; cada requisição leva prova JWS com nonce de uso único e hash do corpo; lotes repetidos devolvem o recibo original e conteúdo divergente recebe 409; o runtime do banco opera sem `BYPASSRLS`; login por Entra ID (PKCE), AD/LDAP (LDAPS ou StartTLS) ou OpenID Connect por convite, com sessão revalidada a cada requisição; tokens de Zabbix, Grafana e a senha da conta LDAP ficam cifrados (AES-256-GCM); fazendas fora do escopo respondem como inexistentes. Detalhes em [`docs/arquitetura.md`](docs/arquitetura.md) e [`infra/README.md`](infra/README.md).
 
 <img src="docs/media/secao-funcionalidades.svg" alt="03 · O que já funciona" width="100%">
 

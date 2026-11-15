@@ -24,7 +24,7 @@ O painel e a API executam no mesmo processo Next.js. O worker consome a outbox d
 - **Indicadores.** Cobertura UniFi, inventário conferido, mediana e P90 da detecção, mediana do reconhecimento e economia a partir de atendimentos reais e da linha de base aprovada pelo cliente. Amostras vazias mostram “Sem dados”.
 - **Operação.** `/api/health` verifica o banco para o ALB. Logs saem em JSON de uma linha, sem payloads ou dados pessoais. O worker publica a cada minuto métricas em Embedded Metric Format (fila de saída, coletores sem contato, idade da coleta, desvio de relógio e e-mails com falha), com alarmes definidos em `infra/`. O desvio de relógio do coletor vem do `iat` da prova assinada.
 - **Entrega.** Imagens `web` e `worker` saem do mesmo `Dockerfile`. O CI constrói e sobe a imagem web em modo demo e valida o Terraform. O workflow **Deploy** publica com SBOM e proveniência, migra em tarefa dedicada, atualiza o ECS e faz smoke test. Releases do coletor (`collector-vX.Y.Z`) saem assinadas pelo Sigstore e `collector/deploy/update.sh` instala com verificação e retorno automático.
-- **Isolamento.** O escopo de ingestão vem da chave cadastrada. O acesso humano do piloto é vinculado a um diretório Entra e a uma associação local. Use credenciais distintas e de menor privilégio para runtime, worker e migração antes de expor um piloto.
+- **Isolamento.** O escopo de ingestão vem da chave cadastrada. O acesso humano é vinculado a uma associação local do grupo, por Entra ID, AD/LDAP ou OpenID Connect (convite por e-mail). Use credenciais distintas e de menor privilégio para runtime, worker e migração antes de expor um piloto.
 
 ## Antes de um piloto em campo
 

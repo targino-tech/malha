@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" width="1200" height="600" role="img" aria-labelledby="title desc">
   <title id="title">Topologia do Malha</title>
-  <desc id="desc">Na fazenda, o coletor lê a controladora UniFi e envia lotes assinados por HTTPS para a AWS em São Paulo. Lá, WAF e ALB separam ingestão e painel, o serviço web grava no PostgreSQL e o worker aplica capturas, avalia regras e envia e-mails. A matriz acessa o painel com login Entra ID.</desc>
+  <desc id="desc">Na fazenda, o coletor lê a controladora UniFi e envia lotes assinados por HTTPS para o Malha, na AWS em São Paulo ou em um servidor próprio. A entrada HTTPS separa ingestão e painel, o serviço web grava no PostgreSQL com RLS e o worker aplica capturas, avalia regras e envia e-mails. O serviço web autentica no Entra ID, no AD/LDAP ou em um provedor OpenID Connect e publica hosts e painéis no Zabbix e no Grafana. A matriz acessa o painel no navegador.</desc>
   <style>
     .zone-label { font: 700 13px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: 2px; }
     .box-title { font: 600 16px Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; fill: #ecf4e8; }
@@ -28,9 +28,9 @@
   <rect x="24" y="24" width="300" height="552" rx="18" fill="#120f09" stroke="#4a3a22"/>
   <text class="zone-label" x="48" y="60" fill="#d9b866">FAZENDA</text>
   <rect x="348" y="24" width="540" height="552" rx="18" fill="#0a110c" stroke="#24402b"/>
-  <text class="zone-label" x="372" y="60" fill="#b6f37a">AWS SÃO PAULO · SA-EAST-1</text>
+  <text class="zone-label" x="372" y="60" fill="#b6f37a">AWS SÃO PAULO OU SERVIDOR PRÓPRIO</text>
   <rect x="912" y="24" width="264" height="552" rx="18" fill="#0b1410" stroke="#1e3a2a"/>
-  <text class="zone-label" x="936" y="60" fill="#d8ff9e">MATRIZ E FAZENDAS</text>
+  <text class="zone-label" x="936" y="60" fill="#d8ff9e">MATRIZ E TI</text>
 
   <!-- Fazenda -->
   <rect x="48" y="88" width="252" height="92" rx="12" fill="#1b160d" stroke="#4a3a22"/>
@@ -54,15 +54,16 @@
   <text class="tag" x="186" y="214" fill="#ecd9a4">GET</text>
   <path class="flow slow" d="M174 360 V416" stroke="#d9b866" marker-end="url(#arrow-wheat)"/>
 
-  <!-- AWS -->
+  <!-- Nuvem ou servidor próprio -->
   <rect x="372" y="88" width="492" height="80" rx="12" fill="#0f1c13" stroke="#2f6b3a"/>
-  <text class="box-title" x="392" y="120">AWS WAF + ALB · TLS 1.3</text>
-  <text class="box-text" x="392" y="146">ingest.* só aceita /v1/collectors · app.* não expõe /v1</text>
+  <text class="box-title" x="392" y="116">Entrada HTTPS · TLS</text>
+  <text class="box-text" x="392" y="138">AWS WAF + ALB, ou proxy reverso no servidor próprio</text>
+  <text class="tag" x="392" y="158">ingest.* só aceita /v1/collectors · app.* não expõe /v1</text>
 
   <rect x="372" y="214" width="232" height="132" rx="12" fill="#0f1c13" stroke="#b6f37a"/>
   <text class="box-title" x="392" y="246">Next.js web</text>
-  <text class="box-text" x="392" y="270">ECS Fargate · 2 zonas</text>
-  <text class="box-text" x="392" y="290">Painel, BFF e ingestão</text>
+  <text class="box-text" x="392" y="270">ECS Fargate ou Docker</text>
+  <text class="box-text" x="392" y="290">Painel, API e ingestão</text>
   <text class="tag" x="392" y="322">202 após gravar lote + outbox</text>
 
   <rect x="632" y="214" width="232" height="132" rx="12" fill="#0f1c13" stroke="#2f6b3a"/>
@@ -72,14 +73,15 @@
   <text class="tag" x="652" y="322">e-mail · retenção · métricas</text>
 
   <rect x="372" y="400" width="492" height="96" rx="12" fill="#0f1c13" stroke="#2f6b3a"/>
-  <text class="box-title" x="392" y="432">RDS PostgreSQL 17</text>
-  <text class="box-text" x="392" y="456">RLS por organização · runtime sem BYPASSRLS · PITR 14 dias</text>
-  <text class="tag" x="392" y="480">ocorrências · histórico · auditoria · indicadores</text>
+  <text class="box-title" x="392" y="428">PostgreSQL 17</text>
+  <text class="box-text" x="392" y="450">RLS por organização · runtime sem BYPASSRLS</text>
+  <text class="box-text" x="392" y="470">RDS com PITR de 14 dias, ou banco próprio</text>
+  <text class="tag" x="392" y="488">ocorrências · histórico · auditoria · indicadores</text>
 
   <rect x="632" y="516" width="232" height="44" rx="10" fill="#0f1c13" stroke="#24402b"/>
-  <text class="box-text" x="652" y="543">SES · DKIM · alertas críticos</text>
+  <text class="box-text" x="652" y="543">SMTP ou SES · alertas críticos</text>
   <rect x="372" y="516" width="232" height="44" rx="10" fill="#0f1c13" stroke="#24402b"/>
-  <text class="box-text" x="392" y="543">CloudWatch · alarmes · Budgets</text>
+  <text class="box-text" x="392" y="543">Logs estruturados · alarmes</text>
 
   <path class="flow" d="M300 296 C336 296 336 128 368 128" stroke="#b6f37a" marker-end="url(#arrow)"/>
   <text class="tag" x="186" y="384">HTTPS 443 iniciado</text>
@@ -89,23 +91,34 @@
   <path class="flow slow" d="M748 396 V350" stroke="#b6f37a" marker-end="url(#arrow)"/>
   <path class="flow slow" d="M748 346 C780 380 780 500 752 512" stroke="#d8ff9e" marker-end="url(#arrow)"/>
 
-  <!-- Matriz -->
-  <rect x="936" y="88" width="216" height="104" rx="12" fill="#0f1c13" stroke="#b6f37a"/>
-  <text class="box-title" x="956" y="120">Painel no navegador</text>
-  <text class="box-text" x="956" y="144">TI, técnicos e diretoria</text>
-  <text class="box-text" x="956" y="164">escopo por fazenda</text>
+  <!-- Saídas do serviço web: login corporativo e monitoramento -->
+  <path class="flow slow" d="M560 214 V198 Q560 190 568 190 H896 Q904 190 904 198 V250 Q904 258 912 258 H928" stroke="#d8ff9e" marker-end="url(#arrow)"/>
+  <path class="flow slow" d="M904 252 V386 Q904 394 912 394 H928" stroke="#d8ff9e" marker-end="url(#arrow)"/>
+  <text class="tag" x="612" y="184">OIDC · LDAPS · API com token cifrado</text>
 
-  <rect x="936" y="240" width="216" height="104" rx="12" fill="#0f1c13" stroke="#2f6b3a"/>
-  <text class="box-title" x="956" y="272">Microsoft Entra ID</text>
-  <text class="box-text" x="956" y="296">OIDC + PKCE · MFA</text>
-  <text class="box-text" x="956" y="316">sessão de 8 h</text>
+  <!-- Matriz e TI -->
+  <rect x="936" y="88" width="216" height="88" rx="12" fill="#0f1c13" stroke="#b6f37a"/>
+  <text class="box-title" x="956" y="118">Painel no navegador</text>
+  <text class="box-text" x="956" y="142">TI, técnicos e diretoria</text>
+  <text class="box-text" x="956" y="162">escopo por fazenda</text>
 
-  <rect x="936" y="420" width="216" height="92" rx="12" fill="#0f1c13" stroke="#2f6b3a"/>
-  <text class="box-title" x="956" y="452">E-mail operacional</text>
-  <text class="box-text" x="956" y="476">agrupado por fazenda</text>
-  <text class="box-text" x="956" y="496">sem duplicatas</text>
+  <rect x="936" y="200" width="216" height="116" rx="12" fill="#0f1c13" stroke="#2f6b3a"/>
+  <text class="box-title" x="956" y="230">Login corporativo</text>
+  <text class="box-text" x="956" y="254">Entra ID · MFA e PKCE</text>
+  <text class="box-text" x="956" y="274">Active Directory / LDAP</text>
+  <text class="box-text" x="956" y="294">Google · Okta · Keycloak</text>
+
+  <rect x="936" y="340" width="216" height="108" rx="12" fill="#0f1c13" stroke="#2f6b3a"/>
+  <text class="box-title" x="956" y="370">Zabbix 7.0 + Grafana</text>
+  <text class="box-text" x="956" y="394">hosts por fazenda e família</text>
+  <text class="box-text" x="956" y="414">um painel por família</text>
+  <text class="tag" x="956" y="436">API ou arquivo</text>
+
+  <rect x="936" y="472" width="216" height="88" rx="12" fill="#0f1c13" stroke="#2f6b3a"/>
+  <text class="box-title" x="956" y="502">E-mail operacional</text>
+  <text class="box-text" x="956" y="526">agrupado por fazenda</text>
+  <text class="box-text" x="956" y="546">sem duplicatas</text>
 
   <path class="flow" d="M932 128 H868" stroke="#b6f37a" marker-end="url(#arrow)"/>
-  <path class="flow slow" d="M1044 236 V196" stroke="#d8ff9e" marker-end="url(#arrow)"/>
-  <path class="flow slow" d="M868 538 C900 538 900 466 932 466" stroke="#d8ff9e" marker-end="url(#arrow)"/>
+  <path class="flow slow" d="M868 538 C900 538 900 516 932 516" stroke="#d8ff9e" marker-end="url(#arrow)"/>
 </svg>
