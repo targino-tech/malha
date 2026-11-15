@@ -18,6 +18,8 @@ cpSync(join(root, 'apps/web'), target, {
 
 // Só o site: painel, API, portal e ingestão dependem de servidor.
 for (const path of ['api', 'v1', 'entrar', 'page.tsx', 'error.tsx', 'loading.tsx']) rmSync(join(app, path), { recursive: true, force: true });
+// O proxy (CSP com nonce do painel) não existe em exportação estática.
+rmSync(join(target, 'src/proxy.ts'), { force: true });
 const refresh = (to) => `export default function Redirect() {
   return (
     <main style={{ minHeight: '100dvh', display: 'grid', placeItems: 'center', background: '#040705', color: '#ecf4e8', fontFamily: 'system-ui, sans-serif' }}>

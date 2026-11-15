@@ -1,8 +1,10 @@
 import type { NextConfig } from 'next';
 import { resolve } from 'node:path';
 
-// Política de conteúdo: só o próprio site carrega scripts, estilos, fontes e conexões; nada pode embutir o Malha.
-// Os scripts inline do Next exigem 'unsafe-inline' até a migração para nonce (ver ROADMAP); em dev, o HMR exige 'unsafe-eval'.
+// Política de conteúdo das páginas pré-renderizadas (site público, erros): só o próprio site carrega scripts,
+// estilos, fontes e conexões, e nada pode embutir o Malha. Página estática não recebe nonce, então os scripts
+// inline do Next precisam de 'unsafe-inline' aqui. O painel (/) e o portal (/entrar) recebem a política com
+// nonce por requisição em src/proxy.ts. Em dev, o HMR exige 'unsafe-eval'.
 const contentSecurityPolicy = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === 'production' ? '' : " 'unsafe-eval'"}`,
@@ -36,11 +38,15 @@ const nextConfig: NextConfig = {
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'Referrer-Policy', value: 'same-origin' },
           { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
-          { key: 'Content-Security-Policy', value: contentSecurityPolicy },
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=()' },
           { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
           { key: 'Cross-Origin-Resource-Policy', value: 'same-origin' },
         ],
+      },
+      {
+        // Tudo menos / e /entrar, que recebem a política com nonce no proxy.
+        source: '/:path((?!entrar$).+)',
+        headers: [{ key: 'Content-Security-Policy', value: contentSecurityPolicy }],
       },
       {
         source: '/:path((?!site(?:/|$)).*)',
