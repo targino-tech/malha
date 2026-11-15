@@ -8,6 +8,7 @@ import { Administration } from './administration';
 import { Alerts } from './alerts';
 import { Audit } from './audit';
 import { ChartsView } from './charts';
+import { NetworkPanel } from './network-panel';
 import { Indicators } from './indicators';
 import { MapView } from './geo/map-view';
 import { Reconciliation } from './reconciliation';
@@ -23,7 +24,7 @@ import { BrandMark } from '../../app/site/_components/brand';
 
 const views = {
   overview: { label: 'Visão geral', title: 'Visão geral das fazendas', description: 'Acompanhe a comunicação com as unidades e a saúde dos ativos de rede.', icon: LayoutDashboard },
-  charts: { label: 'Painéis', title: 'Painéis da operação', description: 'Estado dos ativos, ocorrências por dia, disponibilidade dos coletores e inventário por categoria.', icon: ChartPie },
+  charts: { label: 'Painéis', title: 'Painéis da operação', description: 'Estado dos ativos, ocorrências por dia, disponibilidade dos coletores, inventário por categoria e tráfego da rede.', icon: ChartPie },
   map: { label: 'Mapa', title: 'Mapa das fazendas', description: 'Saúde, tráfego, ocorrências e dados enviados por fazenda, estado e região.', icon: MapIcon },
   occurrences: { label: 'Ocorrências', title: 'Ocorrências', description: 'Investigue e reconheça os alertas de comunicação, coleta e ativos.', icon: BellRing },
   indicators: { label: 'Indicadores', title: 'Indicadores de valor', description: 'Cobertura, inventário conferido, tempos de resposta e economia medida no piloto.', icon: ChartColumn },
@@ -165,7 +166,7 @@ export function Dashboard({ initialData }: { initialData: DashboardData }) {
               {view === 'occurrences' && <Occurrences occurrences={data.occurrences} farms={farms} canAcknowledge={data.can['occurrences.acknowledge']} online={online} onChanged={() => { void refresh(true); }} />}
               {view === 'inventory' && <Inventory key={currentFarm} farms={data.farms} locations={data.locations} farmId={currentFarm} canEdit={data.can['inventory.write']} canExport={data.can['exports.run']} online={online} onChanged={() => { void refresh(true); }} />}
               {view === 'topology' && <TopologyView farms={farms} farmId={currentFarm} online={online} demo={data.demo} />}
-              {view === 'charts' && <ChartsView farms={farms} farmId={currentFarm} online={online} />}
+              {view === 'charts' && <ChartsView farms={farms} farmId={currentFarm} online={online} network={<NetworkPanel farmId={currentFarm} online={online} />} />}
               {view === 'map' && <MapView farms={data.farms} farmId={currentFarm} online={online} />}
               {view === 'monitoring' && data.can['monitoring.export'] && <Monitoring farmId={currentFarm} online={online} canApply={data.can['monitoring.apply']} />}
               {view === 'indicators' && <Indicators farms={farms} farmId={currentFarm} canExport={data.can['exports.run']} canBaseline={data.can['baseline.manage']} online={online} />}
