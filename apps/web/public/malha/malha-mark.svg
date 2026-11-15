@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Símbolo do Malha">
+  <rect width="64" height="64" rx="14" fill="#d3ec94"/>
+  <path d="M12 45 24 19h4l5 13 9-13h5l5 26h-6l-4-17-8 13h-4l-5-13-7 17z" fill="#15251b"/>
+  <path d="M12 51h40M17 55h30" fill="none" stroke="#527044" stroke-linecap="round" stroke-width="1.4"/>
+  <circle cx="46" cy="19" r="3" fill="#15251b"/>
+</svg>
