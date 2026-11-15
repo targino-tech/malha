@@ -59,7 +59,7 @@ export default function SitePage() {
       </section>
 
       <section id="painel" className={`${styles.frame} ${styles.section}`} aria-labelledby="panel-title">
-        <SectionHeading id="panel-title" title="Da matriz à fazenda." text="Acompanhe o contato dos coletores, a última coleta por fazenda e quais ativos críticos foram observados offline." />
+        <SectionHeading id="panel-title" title="Da matriz à fazenda." text="Contato dos coletores, topologia da rede, fazendas no mapa, tráfego por porta e VLAN e alertas no Telegram e no e-mail. Explore as abas do painel." />
         <TiltIn>
           <DashboardPreview />
         </TiltIn>

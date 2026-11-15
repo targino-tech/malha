@@ -739,6 +739,8 @@
   .panelImage { position: absolute; top: 50%; left: 50%; width: auto; max-width: none; height: 100%; transform-origin: 0 0; transform: scale(1.55) translate(-40.7%, -48%); transition: transform 450ms var(--ease); }
   .previewImageWrap:has([data-topic='units']) .panelImage { transform: scale(2.9) translate(-87.3%, -20%); }
   .previewImageWrap:has([data-topic='collectors']) .panelImage { transform: scale(2) translate(-71%, -40%); }
+  /* Abas novas: corta a barra lateral e mostra o conteúdo da aba. */
+  .previewImageWrap .panelImage[data-shot='tab'] { transform: scale(1.25) translate(-58%, -50%); }
   .previewHighlight { display: none; }
   .heroActions > * { flex: 1 1 100%; }
   .tickerTrack { grid-template-columns: 1fr; }
