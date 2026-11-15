@@ -15,7 +15,7 @@ import {
 } from '../apps/web/src/server/push';
 
 process.env.MALHA_AUTH_SECRET = 'segredo-de-teste-com-mais-de-32-bytes-aqui';
-const TOKEN = '123456789:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsawQ';
+const TOKEN = ['123456789', 'ficticio_teste_' + 'x'.repeat(16) + 'sawQ'].join(':'); // token fictício, montado em tempo de execução
 const ORIGIN = 'https://app.example';
 
 let db: Database;
@@ -144,7 +144,7 @@ test('o token do bot fica cifrado e nunca volta na API, na auditoria ou nos erro
   assert.ok(!String(stored.telegram_token).includes(TOKEN));
   assert.ok(String(stored.telegram_token).length > 20);
 
-  const newToken = '987654321:ZZHdqTcvCH1vGWJxfSeofSAs0K5PALDzzzz';
+  const newToken = ['987654321', 'ficticio_teste_' + 'x'.repeat(16) + 'zzzz'].join(':'); // token fictício, montado em tempo de execução
   const updated = await updateChannel(db, f.admin, created.id, { botToken: newToken, name: 'Plantão' });
   assert.equal(updated.tokenHint, '••••zzzz');
   const audits = await run(f, `SELECT action, scope::text AS scope FROM audit_log WHERE org_id = $1 AND action LIKE 'alerts.%' ORDER BY occurred_at`, [f.orgId]);

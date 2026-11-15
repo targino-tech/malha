@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 test('admin cadastra canais de alerta sem ver o token do bot de novo', async ({ page }) => {
-  const token = '123456789:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsawQ';
+  const token = ['123456789', 'ficticio_teste_' + 'x'.repeat(16) + 'sawQ'].join(':'); // token fictício, montado em tempo de execução
   await page.goto('/');
   await page.getByRole('button', { name: 'Alertas', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Alertas por Telegram e e-mail' })).toBeVisible();
