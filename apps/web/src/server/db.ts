@@ -134,6 +134,7 @@ async function seedDemo(db: Database) {
     if (!created.rows.length) return;
     await setOrg(tx, DEMO_ORG);
     await tx.exec(readFileSync(/* turbopackIgnore: true */ resolve('packages/db/demo.sql'), 'utf8'));
+    await tx.exec(readFileSync(/* turbopackIgnore: true */ resolve('packages/db/demo-network.sql'), 'utf8'));
     await tx.query('INSERT INTO enrollment_codes (code_hash, org_id, farm_id, expires_at) VALUES ($1, $2, $3, now() + interval \'365 days\')', [hash(DEMO_ENROLLMENT), DEMO_ORG, DEMO_FARM]);
   });
 }
