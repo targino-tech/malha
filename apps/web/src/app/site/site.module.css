@@ -735,9 +735,10 @@
   .frame, .headerInner { width: min(100% - 2rem, 78rem); }
   .planTeaser, .planGrid, .includedList, .stepsList, .formRow, .planPicker > div { grid-template-columns: 1fr; }
   .previewImageWrap { aspect-ratio: 4 / 3; overflow: hidden; }
-  .panelImage { height: 100%; object-fit: cover; transform: scale(2.1); transition: transform-origin 450ms var(--ease); transform-origin: 8% 45%; }
-  .previewImageWrap:has([data-topic='units']) .panelImage { transform-origin: 100% 12%; object-position: 100% 0; }
-  .previewImageWrap:has([data-topic='collectors']) .panelImage { transform-origin: 72% 40%; }
+  /* No celular a captura vira um recorte 4:3 centrado no destaque: o ponto (x%, y%) da imagem vai ao centro e recebe o zoom. */
+  .panelImage { position: absolute; top: 50%; left: 50%; width: auto; max-width: none; height: 100%; transform-origin: 0 0; transform: scale(1.55) translate(-40.7%, -48%); transition: transform 450ms var(--ease); }
+  .previewImageWrap:has([data-topic='units']) .panelImage { transform: scale(2.9) translate(-87.3%, -20%); }
+  .previewImageWrap:has([data-topic='collectors']) .panelImage { transform: scale(2) translate(-71%, -40%); }
   .previewHighlight { display: none; }
   .heroActions > * { flex: 1 1 100%; }
   .tickerTrack { grid-template-columns: 1fr; }
