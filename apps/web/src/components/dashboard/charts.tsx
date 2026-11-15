@@ -30,16 +30,16 @@ function minutesLabel(value: number) {
   return rest ? `${hours} h ${rest} min` : `${hours} h`;
 }
 
-function niceMax(value: number) {
+export function niceMax(value: number) {
   if (value <= 4) return 4;
   const step = 10 ** Math.floor(Math.log10(value));
   for (const factor of [1, 2, 2.5, 5, 10]) if (value <= factor * step) return factor * step;
   return 10 * step;
 }
 
-type Tip = { x: number; y: number; title: string; rows: Array<{ label: string; value: string; swatch?: string }> } | null;
+export type Tip = { x: number; y: number; title: string; rows: Array<{ label: string; value: string; swatch?: string }> } | null;
 
-function Tooltip({ tip }: { tip: Tip }) {
+export function Tooltip({ tip }: { tip: Tip }) {
   if (!tip) return null;
   return (
     <div className="viz-tooltip" style={{ left: tip.x, top: tip.y }} role="presentation">
@@ -54,7 +54,7 @@ function Tooltip({ tip }: { tip: Tip }) {
   );
 }
 
-function ChartCard({ id, title, description, legend, table, children }: {
+export function ChartCard({ id, title, description, legend, table, children }: {
   id: string; title: string; description: string; legend?: ReactNode; table: ReactNode; children: ReactNode;
 }) {
   const [showTable, setShowTable] = useState(false);
@@ -74,7 +74,7 @@ function ChartCard({ id, title, description, legend, table, children }: {
   );
 }
 
-function LegendItem({ swatch, label, icon: Icon }: { swatch: string; label: string; icon?: typeof CircleCheck }) {
+export function LegendItem({ swatch, label, icon: Icon }: { swatch: string; label: string; icon?: typeof CircleCheck }) {
   return (
     <span className="viz-legend-item">
       <i className={`viz-swatch ${swatch}`} aria-hidden="true" />
@@ -84,7 +84,7 @@ function LegendItem({ swatch, label, icon: Icon }: { swatch: string; label: stri
   );
 }
 
-function useTip() {
+export function useTip() {
   const [tip, setTip] = useState<Tip>(null);
   const ref = useRef<HTMLDivElement>(null);
   function place(target: HTMLElement, content: Omit<NonNullable<Tip>, 'x' | 'y'>) {
@@ -188,7 +188,7 @@ function DailyColumns({ data, labelId }: { data: Charts['occurrencesByDay']; lab
   );
 }
 
-function SingleBars({ rows, empty, axis, unit = 1 }: {
+export function SingleBars({ rows, empty, axis, unit = 1 }: {
   rows: Array<{ key: string; label: string; value: number; display: string; detail: string }>; empty: ReactNode; axis: (value: number) => string;
   /** Escala arredondada nesta unidade (60 = horas inteiras para valores em minutos). */
   unit?: number;
@@ -223,7 +223,21 @@ function SingleBars({ rows, empty, axis, unit = 1 }: {
   );
 }
 
-export function ChartsView({ farms, farmId, online }: { farms: DashboardFarm[]; farmId: string; online: boolean }) {
+const SETS = [{ key: 'operation', label: 'Operação' }, { key: 'network', label: 'Rede' }] as const;
+
+/** Alterna entre os painéis da operação e o painel de rede, quando ele é fornecido. */
+function SetSwitch({ value, onChange }: { value: (typeof SETS)[number]['key']; onChange: (value: (typeof SETS)[number]['key']) => void }) {
+  return (
+    <div className="viz-sets" role="group" aria-label="Conjunto de painéis">
+      {SETS.map((item) => (
+        <button key={item.key} type="button" className="viz-set" aria-pressed={value === item.key} onClick={() => onChange(item.key)}>{item.label}</button>
+      ))}
+    </div>
+  );
+}
+
+export function ChartsView({ farms, farmId, online, network }: { farms: DashboardFarm[]; farmId: string; online: boolean; network?: ReactNode }) {
+  const [set, setSet] = useState<(typeof SETS)[number]['key']>('operation');
   const [days, setDays] = useState(30);
   const [data, setData] = useState<Charts | null>(null);
   const [error, setError] = useState('');
@@ -231,7 +245,7 @@ export function ChartsView({ farms, farmId, online }: { farms: DashboardFarm[]; 
   const dailyId = useId();
 
   useEffect(() => {
-    if (!online) return;
+    if (!online || set !== 'operation') return;
     const controller = new AbortController();
     const params = new URLSearchParams({ days: String(days) });
     if (farmId !== 'all') params.set('farmId', farmId);
@@ -242,11 +256,13 @@ export function ChartsView({ farms, farmId, online }: { farms: DashboardFarm[]; 
       .catch((reason: unknown) => { if (!controller.signal.aborted) setError(reason instanceof Error ? reason.message : 'Não foi possível carregar os gráficos.'); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [days, farmId, online]);
+  }, [days, farmId, online, set]);
 
   const farmCount = farms.length;
+  if (network && set === 'network') return <div className="content-stack"><SetSwitch value={set} onChange={setSet} />{network}</div>;
   return (
     <div className="content-stack">
+      {network && <SetSwitch value={set} onChange={setSet} />}
       <div className="indicator-toolbar">
         <label className="filter-field">Período
           <select value={days} onChange={(event) => setDays(Number(event.target.value))}>

@@ -62,6 +62,16 @@ export function segments<T extends { t: string }>(points: T[], maxGapMs: number)
   return result;
 }
 
+/**
+ * Distância a partir da qual dois pontos são lacuna: 2,5 × o maior entre o intervalo de agrupamento e o espaçamento
+ * típico (mediana) da série. Coletas a cada 15 min agrupadas em 5 min não viram lacunas.
+ */
+export function gapThreshold(points: Array<{ t: string }>, bucketSeconds: number) {
+  const diffs = points.slice(1).map((point, index) => Date.parse(point.t) - Date.parse(points[index].t)).sort((a, b) => a - b);
+  const median = diffs.length ? diffs[Math.floor(diffs.length / 2)] : 0;
+  return Math.max(bucketSeconds * 1000, median) * 2.5;
+}
+
 const round = (value: number) => Math.round(value * 100) / 100;
 
 /** Linha SVG ("M x y L …") de um trecho já em coordenadas de tela. */
