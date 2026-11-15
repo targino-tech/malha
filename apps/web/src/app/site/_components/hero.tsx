@@ -22,21 +22,23 @@ export function CinematicHero({ facts }: { facts: ReadonlyArray<readonly [string
   const globeOpacity = useTransform(progress, [0, 0.85], [1, 0.1]);
   const textY = useTransform(progress, [0, 1], [0, -140]);
   const textOpacity = useTransform(progress, [0, 0.6], [1, 0]);
-  const stripOpacity = useTransform(progress, [0, 0.4], [1, 0]);
+  const stripOpacity = useTransform(progress, [0.25, 0.7], [1, 0]);
+  const captionOpacity = useTransform(progress, [0, 0.25], [1, 0]);
 
   return (
     <section ref={ref} className={styles.hero} aria-labelledby="site-title">
       <div className={styles.heroGrid} aria-hidden="true" />
       <div className={styles.heroVignette} aria-hidden="true" />
       <div className={`${styles.frame} ${styles.heroInner}`}>
-        <motion.div className={styles.heroContent} style={reduced ? undefined : { y: textY, opacity: textOpacity }}>
+        <motion.div className={styles.heroContent} data-malha-reveal style={reduced ? undefined : { y: textY, opacity: textOpacity }}>
           <h1 id="site-title">
-            <RevealWords text="A rede do campo," accent="à vista da matriz." delay={0.55} />
+            <RevealWords text="A rede do campo," accent="à vista da matriz." delay={0.4} />
           </h1>
           <motion.div
-            initial={reduced ? false : { opacity: 0, y: 24, filter: 'blur(8px)' }}
+            data-malha-reveal
+            initial={reduced ? false : { opacity: 0, y: 16, filter: 'blur(6px)' }}
             animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-            transition={{ duration: 1, ease, delay: 1.15 }}
+            transition={{ duration: 0.7, ease, delay: 0.8 }}
           >
             <p className={styles.heroDescription}>
               Coletores, switches e antenas de todas as fazendas do grupo em um só painel. Se uma unidade perde contato, a matriz sabe em 3 minutos.
@@ -47,33 +49,39 @@ export function CinematicHero({ facts }: { facts: ReadonlyArray<readonly [string
             </div>
           </motion.div>
         </motion.div>
-        <motion.div className={styles.globeWrap} style={reduced ? undefined : { scale: globeScale, y: globeY, opacity: globeOpacity }}>
+        <div className={styles.globeStage}>
+        <motion.div className={styles.globeWrap} data-malha-reveal style={reduced ? undefined : { scale: globeScale, y: globeY, opacity: globeOpacity }}>
           <motion.div
             className={styles.globeIntro}
+            data-malha-reveal
             initial={reduced ? false : { opacity: 0, scale: 0.62, filter: 'blur(18px)' }}
             animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-            transition={{ duration: 2.2, ease, delay: 0.25 }}
+            transition={{ duration: 1.8, ease, delay: 0.2 }}
           >
             <AsciiGlobe className={styles.globe} />
           </motion.div>
+        </motion.div>
           <motion.p
             className={styles.globeCaption}
+            data-malha-reveal
             initial={reduced ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 1.8 }}
+            transition={{ duration: 0.6, delay: 1.2 }}
+            style={reduced ? undefined : { opacity: captionOpacity }}
           >
             <span>Ilustração</span> Rotas e fazendas de exemplo
           </motion.p>
-        </motion.div>
+        </div>
       </div>
       <motion.div className={styles.ticker} style={reduced ? undefined : { opacity: stripOpacity }}>
         <ul className={`${styles.frame} ${styles.tickerTrack}`} aria-label="Dados técnicos do Malha">
           {facts.map(([label, value], index) => (
             <motion.li
               key={label}
+              data-malha-reveal
               initial={reduced ? false : { opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, ease, delay: 1.4 + index * 0.07 }}
+              transition={{ duration: 0.5, ease, delay: 1 + index * 0.05 }}
             >
               <span>{label}</span> <strong>{value}</strong>
             </motion.li>

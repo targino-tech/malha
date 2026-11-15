@@ -171,7 +171,7 @@
 }
 .hero { overflow: clip; }
 /* Abertura em letterbox: as faixas recuam sozinhas, com ou sem JavaScript. */
-.letterbox { position: fixed; inset-inline: 0; z-index: 45; height: 14vh; background: #000; pointer-events: none; animation: letterbox-open 1.6s var(--ease) .15s both; }
+.letterbox { position: fixed; inset-inline: 0; z-index: 60; height: 14vh; background: #000; pointer-events: none; animation: letterbox-open 1.6s var(--ease) .15s both; }
 .letterboxTop { top: 0; transform-origin: top; }
 .letterboxBottom { bottom: 0; transform-origin: bottom; }
 @keyframes letterbox-open { from { transform: scaleY(1); } to { transform: scaleY(0); } }
@@ -216,7 +216,8 @@
 .heroDescription { max-width: 33rem; color: var(--muted); font-size: clamp(1.02rem, 1.4vw, 1.18rem); line-height: 1.6; }
 .heroActions { display: flex; flex-wrap: wrap; gap: .8rem; margin-top: 1.8rem; }
 
-.globeWrap { position: relative; aspect-ratio: 1; width: 100%; max-width: 44rem; justify-self: end; }
+.globeStage { position: relative; justify-self: end; width: 100%; max-width: 44rem; }
+.globeWrap { position: relative; aspect-ratio: 1; width: 100%; }
 .globe { display: block; width: 100%; height: 100%; cursor: grab; touch-action: pan-y; }
 .globe:active { cursor: grabbing; }
 .globeCaption {
@@ -650,7 +651,7 @@
 /* Responsivo */
 @media (max-width: 64rem) {
   .heroInner { grid-template-columns: 1fr; padding-top: 2rem; }
-  .globeWrap { justify-self: center; max-width: 34rem; order: -1; margin-block: -1rem -2rem; }
+  .globeStage { justify-self: center; max-width: 34rem; order: -1; margin-block: -1rem -2rem; }
   .planTeaser, .planGrid, .includedList { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .stepsList { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .split, .signup { grid-template-columns: 1fr; }
@@ -663,12 +664,12 @@
 @media (max-width: 52rem) {
   .nav {
     position: fixed;
-    inset: 4.5rem 0 auto;
+    inset: 4.5rem 0 0;
     display: none;
     flex-direction: column;
     gap: 0;
     padding: .5rem 1.5rem 1.5rem;
-    background: rgb(4 7 5 / .97);
+    background: var(--ink);
     border-bottom: 1px solid var(--line);
     backdrop-filter: blur(14px);
   }
@@ -717,7 +718,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .site [data-malha-reveal] { opacity: 1 !important; transform: none !important; filter: none !important; }
+  /* Estado final garantido antes da hidratação: nada pisca desfocado nem se move. */
+  .site [data-malha-reveal] { opacity: 1 !important; transform: none !important; filter: none !important; letter-spacing: normal !important; }
   .spin { animation: none; }
   .letterbox { display: none; }
   .grain { animation: none; }
