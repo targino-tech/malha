@@ -160,7 +160,7 @@ export async function exportAudit(database: Database, user: Principal, params: U
   });
 }
 
-/** Retenção do piloto: 30 dias para lotes brutos e observações individuais. A auditoria fica 365 dias. */
+/** Retenção do piloto: 30 dias para lotes brutos e observações individuais, 90 dias para o histórico de entregas de alertas. A auditoria fica 365 dias. */
 export async function applyRetention(database: Database) {
   const { rows: organizations } = await database.query<{ id: string }>('SELECT id FROM organizations ORDER BY id');
   for (const { id } of organizations) {
@@ -170,6 +170,8 @@ export async function applyRetention(database: Database) {
       await tx.query(`DELETE FROM capture_batches b WHERE b.org_id = $1 AND b.received_at < now() - interval '30 days'
         AND EXISTS (SELECT 1 FROM captures c WHERE c.org_id = b.org_id AND c.farm_id = b.farm_id AND c.collector_id = b.collector_id
           AND c.id = b.capture_id AND c.applied_at IS NOT NULL)`, [id]);
+      // Histórico de entregas de alertas: 90 dias. Pendências ficam até serem resolvidas pelo worker.
+      await tx.query(`DELETE FROM notification_deliveries WHERE org_id = $1 AND status <> 'pending' AND created_at < now() - interval '90 days'`, [id]);
     });
   }
 }

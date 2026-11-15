@@ -2,10 +2,11 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { after, before, test } from 'node:test';
 import { PGlite } from '@electric-sql/pglite';
-import { createChannel, listChannels, listDeliveries, sendTest, updateChannel } from '../apps/web/src/server/alert-channels';
+import { createChannel, listChannels, listDeliveries, MAX_CHANNELS, sendTest, updateChannel } from '../apps/web/src/server/alert-channels';
 import { evaluateAll } from '../apps/web/src/server/alerts';
 import { can } from '../apps/web/src/server/authz';
 import { migrate, pgliteDatabase, setOrg, type Database } from '../apps/web/src/server/db';
+import { applyRetention } from '../apps/web/src/server/exports';
 import { HttpError } from '../apps/web/src/server/http';
 import type { Principal } from '../apps/web/src/server/identity';
 import type { AlertEmail } from '../apps/web/src/server/notifications';
@@ -414,4 +415,48 @@ test('canal estreitado para outras fazendas não entrega pendências nem encerra
   await evaluateAll(db);
   await dispatchChannelNotifications(db, { transport: mailbox().transport, fetcher });
   assert.equal(calls.filter((call) => call.chatId === '@chat_do_ti').length, 0, 'nada da Boa Vista vai para o canal que não a cobre mais');
+});
+
+test('testes em paralelo não passam do limite e cada vaga fica registrada uma vez', async () => {
+  const f = await fixture();
+  const { calls, fetcher } = telegram();
+  const channel = await createChannel(db, f.admin, { kind: 'telegram', name: 'Paralelo', botToken: TOKEN, chatId: '@paralelo' });
+  const results = await Promise.allSettled(Array.from({ length: 8 }, () => sendTest(db, f.admin, channel.id, { fetcher })));
+  assert.equal(results.filter((r) => r.status === 'fulfilled').length, 5);
+  assert.ok(results.filter((r) => r.status === 'rejected').every((r) => status(429)((r as PromiseRejectedResult).reason)));
+  assert.equal(calls.length, 5);
+  const history = await listDeliveries(db, f.admin, new URLSearchParams({ channelId: channel.id }));
+  assert.equal(history.length, 5);
+  assert.ok(history.every((row) => row.status === 'sent' && row.attempts === 1));
+});
+
+test('o grupo tem limite de canais e o limite não vaza para outro grupo', async () => {
+  const f = await fixture();
+  const other = await fixture();
+  for (let index = 0; index < MAX_CHANNELS; index += 1) {
+    await createChannel(db, f.admin, { kind: 'email', name: `Canal ${index}`, recipients: ['ti@example.com'], enabled: index % 2 === 0 });
+  }
+  await assert.rejects(createChannel(db, f.admin, { kind: 'email', name: 'Excedente', recipients: ['ti@example.com'] }), status(409));
+  assert.equal((await listChannels(db, f.admin)).length, MAX_CHANNELS);
+  await createChannel(db, other.admin, { kind: 'email', name: 'Outro grupo', recipients: ['ti@example.com'] });
+});
+
+test('a retenção apaga entregas encerradas com mais de 90 dias e mantém pendências e o histórico recente', async () => {
+  const f = await fixture();
+  const { fetcher } = telegram();
+  const channel = await createChannel(db, f.admin, { kind: 'telegram', name: 'Retenção', botToken: TOKEN, chatId: '@retencao' });
+  for (let index = 0; index < 3; index += 1) await sendTest(db, f.admin, channel.id, { fetcher });
+  await db.transaction(async (tx) => {
+    await setOrg(tx, f.orgId);
+    const { rows } = await tx.query<{ id: string }>('SELECT id FROM notification_deliveries WHERE org_id = $1 AND channel_id = $2 ORDER BY id', [f.orgId, channel.id]);
+    await tx.query(`UPDATE notification_deliveries SET created_at = now() - interval '120 days' WHERE org_id = $1 AND id = ANY($2::uuid[])`, [f.orgId, [rows[0].id, rows[1].id]]);
+    await tx.query(`UPDATE notification_deliveries SET status = 'pending' WHERE org_id = $1 AND id = $2`, [f.orgId, rows[1].id]);
+  });
+  await applyRetention(db);
+  const left = await db.transaction(async (tx) => {
+    await setOrg(tx, f.orgId);
+    const { rows } = await tx.query<{ status: string }>('SELECT status FROM notification_deliveries WHERE org_id = $1 AND channel_id = $2 ORDER BY status', [f.orgId, channel.id]);
+    return rows.map((row) => row.status);
+  });
+  assert.deepEqual(left, ['pending', 'sent']);
 });

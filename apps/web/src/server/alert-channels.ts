@@ -33,6 +33,8 @@ export type Delivery = {
 const BOT_TOKEN = /^\d{5,15}:[A-Za-z0-9_-]{30,64}$/;
 const CHAT_ID = /^(-?\d{1,20}|@[A-Za-z][A-Za-z0-9_]{4,31})$/;
 const TEST_LIMIT = 5;
+/** Limite de canais por grupo (inclui os desativados, que continuam com histórico). */
+export const MAX_CHANNELS = 50;
 
 function email(value: string) {
   const normalized = value.trim().toLowerCase();
@@ -130,6 +132,10 @@ export async function createChannel(database: Database, user: Principal, body: u
   const input = parsed.data;
   return database.transaction(async (tx) => {
     await setOrg(tx, user.orgId);
+    // Trava por grupo para que criações paralelas não passem do limite de canais.
+    await tx.query('SELECT pg_advisory_xact_lock(hashtextextended($1, 0))', [`malha:notification_channels:${user.orgId}`]);
+    const { rows: [existing] } = await tx.query<{ count: number }>('SELECT count(*)::int AS count FROM notification_channels WHERE org_id = $1', [user.orgId]);
+    if (existing.count >= MAX_CHANNELS) throw new HttpError(409, `O grupo já tem ${MAX_CHANNELS} canais. Desative ou reaproveite um canal existente.`);
     const farmIds = await checkFarms(tx, user, input.farmIds ?? null);
     const id = randomUUID();
     const telegram = input.kind === 'telegram'
@@ -194,12 +200,17 @@ function emailTransport(deps: TestDeps) {
 /** Envia uma mensagem de teste na hora e registra o resultado no histórico de entregas. */
 export async function sendTest(database: Database, user: Principal, id: string, deps: TestDeps = {}) {
   requirePermission(user, 'alerts.manage');
+  // A vaga do teste é reservada (linha 'pending') na mesma transação que conta, com o canal travado:
+  // chamadas paralelas esperam a anterior e não passam do limite. O worker ignora entregas de teste.
+  const deliveryId = randomUUID();
   const channel = await database.transaction(async (tx) => {
     await setOrg(tx, user.orgId);
-    const row = await loadChannel(tx, user, id);
+    const row = await loadChannel(tx, user, id, true);
     const { rows: [recent] } = await tx.query<{ count: number }>(`SELECT count(*)::int AS count FROM notification_deliveries
       WHERE org_id = $1 AND channel_id = $2 AND event = 'test' AND created_at > now() - interval '10 minutes'`, [user.orgId, row.id]);
     if (recent.count >= TEST_LIMIT) throw new HttpError(429, 'Muitos testes seguidos neste canal. Aguarde alguns minutos.');
+    await tx.query(`INSERT INTO notification_deliveries (org_id, id, channel_id, event, idempotency_key, status, attempts, batch_id)
+      VALUES ($1, $2, $3, 'test', $4, 'pending', 0, $5)`, [user.orgId, deliveryId, row.id, `test:${row.id}:${deliveryId}`, randomUUID()]);
     return row;
   });
   const transport = channel.kind === 'email' ? emailTransport(deps) : { async send() { /* não usado no Telegram */ } };
@@ -211,12 +222,10 @@ export async function sendTest(database: Database, user: Principal, id: string, 
   } catch (error) {
     failure = scrubError(error instanceof DeliveryError ? error.message : 'Falha no envio.');
   }
-  const deliveryId = randomUUID();
   await database.transaction(async (tx) => {
     await setOrg(tx, user.orgId);
-    await tx.query(`INSERT INTO notification_deliveries (org_id, id, channel_id, event, idempotency_key, status, attempts, sent_at, batch_id, last_error)
-      VALUES ($1, $2, $3, 'test', $4, $5, 1, CASE WHEN $5 = 'sent' THEN now() END, $6, $7)`,
-    [user.orgId, deliveryId, channel.id, `test:${channel.id}:${deliveryId}`, failure ? 'failed' : 'sent', randomUUID(), failure]);
+    await tx.query(`UPDATE notification_deliveries SET status = $3, attempts = 1, sent_at = CASE WHEN $3 = 'sent' THEN now() END, last_error = $4
+      WHERE org_id = $1 AND id = $2`, [user.orgId, deliveryId, failure ? 'failed' : 'sent', failure]);
     await audit(tx, user, 'alerts.channel.test', { channelId: channel.id, kind: channel.kind, result: failure ? 'failed' : 'sent' });
   });
   if (failure) throw new HttpError(502, failure);

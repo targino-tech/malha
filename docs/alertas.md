@@ -57,4 +57,4 @@ O worker precisa de saída HTTPS para `api.telegram.org:443`. Se a VPC restringe
 
 ## Banco
 
-A migração `014_alertas_push.sql` cria `notification_channels` e `notification_deliveries`, as duas com RLS (`org_scope` sobre `malha.org_id`), e `runtime-grants.sql` concede `SELECT, INSERT, UPDATE` ao `malha_runtime`. Não há `DELETE`: canais são desativados e o histórico fica.
+A migração `014_alertas_push.sql` cria `notification_channels` e `notification_deliveries`, as duas com RLS (`org_scope` sobre `malha.org_id`), e `runtime-grants.sql` concede ao `malha_runtime` `SELECT, INSERT, UPDATE` em `notification_channels` e também `DELETE` em `notification_deliveries`. Canais não são apagados, só desativados; cada grupo tem no máximo 50 canais, contando os desativados. O histórico de entregas fica 90 dias: a retenção do worker apaga as entregas encerradas mais antigas e mantém as pendentes. O botão de teste aceita até 5 envios a cada 10 minutos por canal, também com chamadas em paralelo.
