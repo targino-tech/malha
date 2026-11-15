@@ -13,7 +13,7 @@ const steps = [
   {
     label: '02 · No caminho',
     title: 'Sem internet, nada se perde.',
-    text: 'Cada mensagem sai assinada com Ed25519. Se a WAN cair, os lotes ficam guardados no SQLite local e seguem na reconexão, sem duplicar capturas.',
+    text: 'Tudo sai assinado do coletor (Ed25519). Se a internet da fazenda cair, as capturas ficam guardadas no próprio coletor e seguem quando a conexão volta, sem duplicar nada.',
   },
   {
     label: '03 · No painel',
@@ -24,7 +24,7 @@ const steps = [
 
 const OUTAGE: [number, number] = [0.42, 0.58];
 const HARVEST = 0.7;
-const BALES: Array<[number, number]> = [[-0.42, 0.42], [0.32, 0.55], [0.9, 0.8], [-0.95, 0.9], [0.05, 0.3], [0.62, 0.36], [-0.12, 0.72], [0.4, 0.95]];
+const BALES: Array<[number, number]> = [[-0.78, 0.46], [0.32, 0.55], [0.9, 0.8], [-0.95, 0.9], [0.05, 0.3], [0.62, 0.36], [-0.12, 0.72], [0.4, 0.95]];
 const MONO = 'ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace';
 
 function clamp(value: number, min = 0, max = 1) { return Math.min(max, Math.max(min, value)); }
@@ -214,13 +214,37 @@ function FieldCanvas({ progress, reduced }: { progress: MotionValue<number> | nu
         put(x, y, '■', `rgb(216 255 158 / ${(0.5 + 0.5 * Math.sin(t * Math.PI)).toFixed(2)})`);
       }
       if (outage) {
-        const text = `sem WAN · fila local ${String(queued).padStart(2, '0')}`;
+        const text = `sem internet · fila local ${String(Math.floor(queued)).padStart(2, '0')}`;
         for (let i = 0; i < text.length; i += 1) put(tx + 3 + i, top + 2, text[i], '#f1b45b');
         for (let i = 0; i < Math.min(6, Math.ceil(queued / 4)); i += 1) put(tx + 3 + i, top + 3, '■', 'rgb(241 180 91 / 0.8)');
       }
 
-      const label = '[ malha ]';
-      for (let i = 0; i < label.length; i += 1) put(nodeX - label.length / 2 + i, nodeY, label[i], '#d8ff9e');
+      // Na etapa 3 o nó vira um painel de exemplo (dados fictícios, como indica o título).
+      const panel = clamp((p - 0.72) / 0.12);
+      if (panel <= 0) {
+        const label = '[ malha ]';
+        for (let i = 0; i < label.length; i += 1) put(nodeX - label.length / 2 + i, nodeY, label[i], '#d8ff9e');
+      } else {
+        const body = ['3 fazendas no painel', '■ 2 coletores em contato', '▲ 1 ocorrência crítica', '✉ e-mail enviado à TI'];
+        const inner = 26;
+        const title = '─ malha · exemplo ';
+        const lines = [
+          `┌${title}${'─'.repeat(inner - title.length)}┐`,
+          ...body.map((line) => `│ ${line.padEnd(inner - 1)}│`),
+          `└${'─'.repeat(inner)}┘`,
+        ];
+        const shown = Math.max(2, Math.round(panel * lines.length));
+        const left = Math.min(cols - lines[0].length - 1, Math.round(nodeX - lines[0].length / 2));
+        lines.slice(0, shown).forEach((line, row) => {
+          const isLast = row === shown - 1 && shown < lines.length;
+          const text = isLast ? lines[lines.length - 1] : line;
+          for (let i = 0; i < text.length; i += 1) {
+            const char = text[i];
+            const color = char === '▲' ? '#f1b45b' : char === '■' || char === '✉' ? '#b6f37a' : /[│┌┐└┘─]/.test(char) ? 'rgb(120 190 130 / 0.7)' : '#e6f2df';
+            put(left + i, nodeY + row, char, color);
+          }
+        });
+      }
 
       for (let row = 0; row < rows; row += 1) {
         for (let col = 0; col < cols; col += 1) {
@@ -288,6 +312,14 @@ export function FieldStory() {
   const [active, setActive] = useState(0);
   useMotionValueEvent(scrollYProgress, 'change', (value) => setActive(value < 0.36 ? 0 : value < 0.7 ? 1 : 2));
 
+  function goTo(index: number) {
+    const track = ref.current;
+    if (!track) return;
+    const top = track.getBoundingClientRect().top + window.scrollY;
+    const travel = track.offsetHeight - window.innerHeight;
+    window.scrollTo({ top: top + travel * [0.16, 0.5, 0.88][index], behavior: 'smooth' });
+  }
+
   if (reduced) {
     return (
       <div className={styles.storyStatic}>
@@ -313,11 +345,17 @@ export function FieldStory() {
         <div className={styles.storyCopy}>
           {steps.map((step, index) => <Step key={step.label} index={index} progress={scrollYProgress} step={step} />)}
         </div>
-        <div className={styles.storyProgress} aria-hidden="true">
-          <div className={styles.storyDots}>
-            {steps.map((step, index) => <span key={step.label} data-active={index === active}>{String(index + 1).padStart(2, '0')}</span>)}
+        <div className={styles.storyProgress}>
+          <div className={styles.storyDots} role="group" aria-label="Etapas da animação">
+            {steps.map((step, index) => (
+              <button key={step.label} type="button" data-active={index === active} aria-current={index === active ? 'step' : undefined}
+                aria-label={`Etapa ${index + 1}: ${step.title}`} onClick={() => goTo(index)}>
+                {String(index + 1).padStart(2, '0')}
+              </button>
+            ))}
           </div>
-          <div className={styles.storyBar}><motion.span style={{ width: bar }} /></div>
+          <div className={styles.storyBar} aria-hidden="true"><motion.span style={{ width: bar }} /></div>
+          <a className={styles.storySkip} href="#painel">Pular animação</a>
         </div>
       </div>
     </div>

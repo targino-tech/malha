@@ -36,7 +36,7 @@ test('a apresentação do Malha funciona em celular com movimento reduzido', asy
 
 test('o cadastro do site registra a solicitação uma única vez', async ({ page, request }) => {
   await page.goto('/site/planos');
-  await page.getByRole('link', { name: /Solicitar Piloto/ }).click();
+  await page.getByRole('link', { name: 'Solicitar acesso ao plano Piloto' }).click();
   await expect(page).toHaveURL(/plano=piloto/);
   await expect(page.getByRole('radio', { name: /Piloto/ })).toBeChecked();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(await page.evaluate(() => innerWidth));
@@ -45,11 +45,15 @@ test('o cadastro do site registra a solicitação uma única vez', async ({ page
   await page.getByLabel('E-mail corporativo').fill('maria.silva@example.com');
   await page.getByLabel('Empresa ou grupo').fill('Grupo Exemplo');
   await page.getByLabel('Número de fazendas').fill('4');
-  await page.getByRole('button', { name: 'Enviar cadastro' }).click();
-  await expect(page.getByRole('button', { name: 'Enviar cadastro' })).toBeVisible();
+  await expect(page.getByText('Para 4 fazendas, o plano indicado é o Grupo.')).toBeVisible();
+  await page.getByRole('button', { name: 'Trocar para Grupo' }).click();
+  await expect(page.getByRole('radio', { name: /Grupo/ })).toBeChecked();
+  await page.getByRole('button', { name: 'Enviar solicitação' }).click();
+  await expect(page.getByText('Marque a autorização para que possamos responder.')).toBeVisible();
   await page.getByLabel(/Autorizo o uso destes dados/).check();
-  await page.getByRole('button', { name: 'Enviar cadastro' }).click();
+  await page.getByRole('button', { name: 'Enviar solicitação' }).click();
   await expect(page.getByRole('heading', { name: 'Solicitação recebida' })).toBeVisible();
+  await expect(page.getByText('maria.silva@example.com')).toBeVisible();
 
   const id = crypto.randomUUID();
   const body = { id, plan: 'grupo', name: 'Ana', email: 'ana@example.com', company: 'Grupo B', farms: 2, consent: true };

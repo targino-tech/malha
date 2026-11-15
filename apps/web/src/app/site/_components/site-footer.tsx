@@ -21,6 +21,7 @@ export function SiteFooter() {
             <p>Contratar</p>
             <Link href="/site/planos">Planos</Link>
             <Link href="/site/cadastro">Cadastro</Link>
+            <Link href="/site/privacidade">Privacidade</Link>
           </div>
           <div>
             <p>Clientes</p>

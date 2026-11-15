@@ -17,7 +17,6 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
   return (
     <section className={`${styles.frame} ${styles.signup}`} aria-labelledby="signup-title">
       <Reveal priority className={styles.signupIntro}>
-        <p className={styles.eyebrow}><span className={styles.liveDot} /> Cadastro</p>
         <h1 id="signup-title">Vamos conectar<br /><span>as suas fazendas.</span></h1>
         <p className={styles.heroDescription}>Envie os dados abaixo. A equipe responde por e-mail para agendar a conversa técnica.</p>
         <ol className={styles.signupSteps}>
@@ -27,7 +26,7 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
         </ol>
       </Reveal>
       <Reveal priority delay={0.15}>
-        <SignupForm plans={plans.map(({ id, name, audience }) => ({ id, name, audience }))} initialPlan={initial} />
+        <SignupForm plans={plans.map(({ id, name, audience, min, max, items }) => ({ id, name, audience, min, max, highlight: items[items.length - 1] }))} initialPlan={initial} />
       </Reveal>
     </section>
   );

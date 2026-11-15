@@ -198,9 +198,9 @@ export function AsciiGlobe({ className }: { className?: string }) {
           const row = rowOf(cy - p.y * radius);
           const nearHead = (head - t) < 0.04 && head < 1;
           const key = `${col}:${row}`;
-          const char = nearHead ? '●' : '·';
-          const alpha = nearHead ? 1 : 0.35 + 0.55 * ((t - tail) / Math.max(0.001, head - tail));
-          routeCells.set(key, [col, row, char, nearHead ? '#e8ffd2' : `rgb(176 245 120 / ${alpha.toFixed(2)})`]);
+          const char = nearHead ? '●' : (t - tail) / Math.max(0.001, head - tail) > 0.55 ? '•' : '·';
+          const alpha = nearHead ? 1 : 0.6 + 0.4 * ((t - tail) / Math.max(0.001, head - tail));
+          routeCells.set(key, [col, row, char, nearHead ? '#f4ffe6' : `rgb(200 255 140 / ${alpha.toFixed(2)})`]);
         }
         if (head >= 1 && phase < 1.25) {
           const p = project(to.lat, to.lon, center);

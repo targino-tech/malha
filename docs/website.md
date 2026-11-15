@@ -16,6 +16,7 @@ Cliente ───► /entrar (portal) ──► Microsoft Entra ID ──► / (
 | `/site` | Apresentação: globo ASCII, história do campo guiada pelo scroll, prévia do painel, segurança, planos e dúvidas |
 | `/site/planos` | Planos, recursos incluídos e etapas de contratação |
 | `/site/cadastro` | Formulário de solicitação. O plano chega pré-selecionado por `?plano=` |
+| `/site/privacidade` | O que o formulário coleta e como os dados são usados (LGPD). Revise com o jurídico antes de divulgar |
 | `/entrar` | Portal do cliente. Inicia o login Entra ID (no demo, abre o painel direto) |
 | `/` | Painel web do grupo autenticado |
 

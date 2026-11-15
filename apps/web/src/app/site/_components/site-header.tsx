@@ -3,7 +3,7 @@
 import { ArrowUpRight, Menu, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import styles from '../site.module.css';
 import { Brand } from './brand';
 
@@ -18,6 +18,7 @@ export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
+  const navRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -28,6 +29,7 @@ export function SiteHeader() {
 
   useEffect(() => {
     if (!open) return;
+    navRef.current?.querySelector<HTMLAnchorElement>('a')?.focus();
     const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') setOpen(false); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -37,7 +39,7 @@ export function SiteHeader() {
     <header className={styles.header} data-scrolled={scrolled || open}>
       <div className={styles.headerInner}>
         <Brand />
-        <nav aria-label="Navegação do site" className={styles.nav} id="site-menu" data-open={open}>
+        <nav ref={navRef} aria-label="Navegação do site" className={styles.nav} id="site-menu" data-open={open}>
           {links.map((link) => (
             <Link key={link.href} href={link.href} aria-current={pathname === link.href ? 'page' : undefined} onClick={() => setOpen(false)}>
               {link.label}
@@ -47,9 +49,11 @@ export function SiteHeader() {
         </nav>
         <div className={styles.headerActions}>
           <Link className={styles.textLink} href="/entrar">Entrar</Link>
-          <Link className={styles.primaryButton} href="/site/cadastro">
-            Começar <ArrowUpRight size={17} aria-hidden="true" />
-          </Link>
+          {pathname !== '/site/cadastro' && (
+            <Link className={styles.primaryButton} href="/site/cadastro">
+              Solicitar acesso <ArrowUpRight size={17} aria-hidden="true" />
+            </Link>
+          )}
           <button
             type="button"
             className={styles.menuButton}
