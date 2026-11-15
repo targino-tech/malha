@@ -1,23 +1,27 @@
 import Link from 'next/link';
 import styles from '../site.module.css';
 
-// Símbolo do Malha: uma folha cuja nervura é uma rede. A nervura central leva os dados
-// da semente (o coletor, em trigo) até a ponta; os ramos terminam em nós, como os ativos de cada fazenda.
+// Símbolo do Malha: uma folha cuja nervura é uma rede. A nervura leva os dados do grão de trigo
+// (a fazenda) até a ponta; os ramos terminam em nós quadrados, a mesma linguagem do ■ usado no site.
+// Para fundo claro, use public/malha/malha-mark-light.svg.
 export function BrandMark({ size = 34, animated = false }: { size?: number; animated?: boolean }) {
   return (
     <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true" className={styles.brandMark} data-animated={animated || undefined}>
       <g className={styles.brandLeaf}>
-        <path d="M11 53C11 27.5 27.5 11 53 11c0 25.5-16.5 42-42 42Z" fill="#b6f37a" />
-        <path d="M11 53C11 27.5 27.5 11 53 11L11 53Z" fill="#9fdc63" />
+        <path d="M8 56C8 27 27 8 56 8c0 29-19 48-48 48Z" fill="#b6f37a" />
+        <path d="M8 56C8 27 27 8 56 8L8 56Z" fill="#9fdc63" />
       </g>
-      <g stroke="#060a07" strokeWidth="2.4" strokeLinecap="round" fill="none">
-        <path className={styles.brandVein} d="M17 47 45 19" pathLength={1} />
-        <path className={styles.brandBranch} d="M24.5 39.5 22 30M32 32l9.5 2.5M38.5 25.5 36 17" />
+      <g stroke="#060a07" strokeWidth="3.4" strokeLinecap="square" fill="none">
+        <path className={styles.brandVein} d="M15 49 45 19" pathLength={1} />
+        <path className={styles.brandBranch} d="M25 39V27M33 31h12" />
       </g>
       <g className={styles.brandNodes} fill="#060a07">
-        <circle cx="22" cy="30" r="2.9" /><circle cx="41.5" cy="34.5" r="2.9" /><circle cx="36" cy="17" r="2.4" />
+        <rect x="21.5" y="22" width="7" height="7" rx="1" /><rect x="42" y="27.5" width="7" height="7" rx="1" /><rect x="42.5" y="13.5" width="7" height="7" rx="1" />
       </g>
-      <circle cx="11" cy="53" r="4.6" fill="#d9b866" stroke="#060a07" strokeWidth="1.6" />
+      <g transform="rotate(-45 10 54)">
+        <ellipse cx="10" cy="54" rx="7.5" ry="3.9" fill="#d9b866" stroke="#060a07" strokeWidth="1.6" />
+        <path d="M4.5 54h11" stroke="#8a6f2c" strokeWidth="1.2" strokeLinecap="round" />
+      </g>
     </svg>
   );
 }

@@ -1,12 +1,14 @@
 'use client';
 
+import { Pause, Play } from 'lucide-react';
 import { useReducedMotion } from 'motion/react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import styles from '../site.module.css';
 import { isLand, landMask } from './land-mask';
 import { MT_OUTLINE, NEIGHBOR_OUTLINES } from './mt-outline';
 
 interface Place { code: string; lat: number; lon: number }
-interface Farm { label: string; lat: number; lon: number; silent?: boolean; side: 1 | -1 }
+interface Farm { label: string; short: string; lat: number; lon: number; status: 'online' | 'silent' | 'none'; side: 1 | -1; dy: number }
 
 // Ilustração: rotas de exemplo entre Mato Grosso e polos do agronegócio. Não representa dados do produto.
 const HUB: Place = { code: 'MT·BRA', lat: -12.55, lon: -55.71 };
@@ -34,13 +36,15 @@ const ROUTES: Array<[Place, Place]> = [
   [PLACES[9], PLACES[4]],
 ];
 
-// Fazendas de exemplo, as mesmas do demo do painel. Santa Luzia aparece sem contato, como no demo.
-const MATRIZ = { label: 'Matriz · Cuiabá', lat: -15.6, lon: -56.1 };
+// Fazendas de exemplo com o mesmo estado do demo do painel: Vale Verde em contato,
+// Santa Luzia com o coletor sem contato e Horizonte ainda sem coletor.
+const MATRIZ = { label: 'Matriz · Cuiabá', short: 'Matriz', lat: -15.6, lon: -56.1 };
 const FARMS: Farm[] = [
-  { label: 'Faz. Horizonte · Sorriso', lat: -12.55, lon: -55.71, side: 1 },
-  { label: 'Faz. Vale Verde · Sinop', lat: -11.86, lon: -55.5, side: 1 },
-  { label: 'Faz. Santa Luzia · sem contato', lat: -11.25, lon: -57.52, silent: true, side: -1 },
+  { label: 'Faz. Horizonte · sem coletor', short: 'Horizonte', lat: -12.55, lon: -55.71, status: 'none', side: 1, dy: 16 },
+  { label: 'Faz. Vale Verde · em contato', short: 'Vale Verde', lat: -11.86, lon: -55.5, status: 'online', side: 1, dy: -10 },
+  { label: 'Faz. Santa Luzia · sem contato', short: 'Santa Luzia', lat: -11.25, lon: -57.52, status: 'silent', side: -1, dy: -10 },
 ];
+const FARM_COLORS = { online: '200 255 170', silent: '241 180 91', none: '150 170 155' } as const;
 const STATES: Array<[string, number, number]> = [
   ['MATO GROSSO', -16.9, -54.3], ['RO', -10.9, -62.6], ['PA', -6.4, -53.5], ['TO', -10.4, -48.4],
   ['GO', -15.9, -50.2], ['MS', -19.6, -54.6], ['BOLÍVIA', -16.2, -62.2],
@@ -54,9 +58,9 @@ const ROUTE_CYCLE = 7.5;
 const GLOBAL_TILT = 14;
 const MT_VIEW = { lat: -12.9, lon: -55.9, zoom: 8 };
 // Linha do tempo do loop, em segundos: globo, aproximação, Mato Grosso, afastamento.
-const CYCLE = 27;
-const ZOOM_IN: [number, number] = [8, 12];
-const ZOOM_OUT: [number, number] = [21, 25];
+const CYCLE = 22;
+const ZOOM_IN: [number, number] = [2.5, 6];
+const ZOOM_OUT: [number, number] = [16, 19.5];
 const MONO = 'ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace';
 
 function normalize([x, y, z]: number[]) {
@@ -142,8 +146,12 @@ function rasterizeMt() {
   };
 }
 
-function viewAt(seconds: number, spin: number, reduced: boolean): View {
-  if (reduced) return { center: -50, tilt: 4, zoom: 1, local: 0 };
+type Scene = 'full' | 'world';
+
+function viewAt(seconds: number, spin: number, reduced: boolean, scene: Scene): View {
+  // Movimento reduzido: um quadro fixo. No site é Mato Grosso com as fazendas; no portal, o planeta.
+  if (reduced) return scene === 'world' ? { center: -50, tilt: 4, zoom: 1, local: 0 } : { center: MT_VIEW.lon, tilt: MT_VIEW.lat, zoom: MT_VIEW.zoom, local: 1 };
+  if (scene === 'world') return { center: spin, tilt: GLOBAL_TILT, zoom: 1, local: 0 };
   const t = seconds % CYCLE;
   const k = t < ZOOM_IN[0] ? 0
     : t < ZOOM_IN[1] ? (t - ZOOM_IN[0]) / (ZOOM_IN[1] - ZOOM_IN[0])
@@ -160,9 +168,13 @@ function viewAt(seconds: number, spin: number, reduced: boolean): View {
   };
 }
 
-export function AsciiGlobe({ className }: { className?: string }) {
+export function AsciiGlobe({ className, scene = 'full' }: { className?: string; scene?: Scene }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const reduced = useReducedMotion();
+  const [paused, setPaused] = useState(false);
+  const pausedRef = useRef(false);
+
+  useEffect(() => { pausedRef.current = paused; }, [paused]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -188,13 +200,12 @@ export function AsciiGlobe({ className }: { className?: string }) {
     let spin = -42;
     let velocity = 0;
     let dragging: { x: number; spin: number } | null = null;
-    const start = performance.now();
 
     function resize() {
-      const rect = canvas!.getBoundingClientRect();
+      // Tamanho de layout: ignora as escalas aplicadas pela animação de entrada e pela câmera.
       const ratio = Math.min(window.devicePixelRatio || 1, 2);
-      width = rect.width;
-      height = rect.height;
+      width = canvas!.clientWidth;
+      height = canvas!.clientHeight;
       canvas!.width = Math.round(width * ratio);
       canvas!.height = Math.round(height * ratio);
       context!.setTransform(ratio, 0, 0, ratio, 0, 0);
@@ -206,7 +217,8 @@ export function AsciiGlobe({ className }: { className?: string }) {
 
     function draw(seconds: number) {
       const ctx = context!;
-      const view = viewAt(seconds, spin, Boolean(reduced));
+      const view = viewAt(seconds, spin, Boolean(reduced), scene);
+      const narrow = width < 480;
       const local = view.local;
       const global = 1 - local;
       ctx.clearRect(0, 0, width, height);
@@ -345,14 +357,15 @@ export function AsciiGlobe({ className }: { className?: string }) {
             const p = screen(point.lat, point.lon, point.h);
             const col = colOf(p.sx);
             const row = rowOf(p.sy);
-            if (farm.silent) {
+            if (farm.status === 'none') continue;
+            if (farm.status === 'silent') {
               if (t > 0.42 && t < 0.58) { if (Math.abs(t - 0.5) < 0.02) mark(col, row, '×', `rgb(241 180 91 / ${alpha.toFixed(2)})`); continue; }
               if (step % 2 === 0) mark(col, row, '•', `rgb(241 180 91 / ${(alpha * 0.85).toFixed(2)})`);
               continue;
             }
             mark(col, row, '•', `rgb(200 255 150 / ${(alpha * 0.8).toFixed(2)})`);
           }
-          if (!farm.silent && !reduced) {
+          if (farm.status === 'online' && !reduced) {
             for (let packet = 0; packet < 2; packet += 1) {
               const t = (seconds * 0.35 + index * 0.3 + packet * 0.5) % 1;
               const point = arcPoint(source, target, t, 0.004);
@@ -414,9 +427,9 @@ export function AsciiGlobe({ className }: { className?: string }) {
         }
         ctx.font = labelFont;
         const pulse = reduced ? 0.5 : (Math.sin(seconds * 2.4) + 1) / 2;
-        const places: Array<{ label: string; lat: number; lon: number; side: number; color: string; hub?: boolean }> = [
-          { ...MATRIZ, side: 1, color: '232 255 210', hub: true },
-          ...FARMS.map((farm) => ({ ...farm, color: farm.silent ? '241 180 91' : '200 255 170' })),
+        const places: Array<{ label: string; short: string; lat: number; lon: number; side: number; dy: number; color: string; hub?: boolean }> = [
+          { ...MATRIZ, side: 1, dy: -10, color: '232 255 210', hub: true },
+          ...FARMS.map((farm) => ({ ...farm, color: FARM_COLORS[farm.status] })),
         ];
         for (const place of places) {
           const p = screen(place.lat, place.lon);
@@ -429,34 +442,41 @@ export function AsciiGlobe({ className }: { className?: string }) {
           ctx.arc(p.sx, p.sy, (place.hub ? 9 : 7) + pulse * 5, 0, Math.PI * 2);
           ctx.stroke();
           // Fundo escuro atrás do rótulo para separá-lo das lavouras.
-          const textWidth = ctx.measureText(place.label).width;
+          // Em telas estreitas os rótulos encurtam; o estado continua na cor do ponto.
+          const text = narrow ? place.short : place.label;
+          const textWidth = ctx.measureText(text).width;
           const labelX = clamp(place.side > 0 ? p.sx + 12 : p.sx - 12 - textWidth, 6, width - textWidth - 6);
+          const labelY = p.sy + place.dy;
           ctx.fillStyle = `rgb(4 7 5 / ${(0.82 * alpha).toFixed(2)})`;
-          ctx.fillRect(labelX - 5, p.sy - 10 - fontSize * 0.75, textWidth + 10, fontSize * 1.5);
+          ctx.fillRect(labelX - 5, labelY - fontSize * 0.75, textWidth + 10, fontSize * 1.5);
           ctx.textAlign = 'left';
           ctx.fillStyle = `rgb(${place.color} / ${(0.95 * alpha).toFixed(2)})`;
-          ctx.fillText(place.label, labelX, p.sy - 10);
+          ctx.fillText(text, labelX, labelY);
         }
       }
     }
 
+    // Relógio próprio: pausar congela a linha do tempo e a rotação.
+    let clock = 0;
     function tick(now: number) {
       frame = requestAnimationFrame(tick);
       if (!visible || now - last < 33) return;
       const dt = last ? Math.min(0.1, (now - last) / 1000) : 0;
       last = now;
+      if (pausedRef.current) return;
+      clock += dt;
       if (!dragging) {
         velocity *= 0.94;
         spin = wrap(spin + 5.5 * dt + velocity * dt);
       }
-      draw((now - start) / 1000);
+      draw(clock);
     }
 
     resize();
     if (reduced) draw(0);
     else frame = requestAnimationFrame(tick);
 
-    const resizeObserver = new ResizeObserver(() => { resize(); draw(reduced ? 0 : (performance.now() - start) / 1000); });
+    const resizeObserver = new ResizeObserver(() => { resize(); draw(reduced ? 0 : clock); });
     resizeObserver.observe(canvas);
     const intersection = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting && !document.hidden; });
     intersection.observe(canvas);
@@ -491,7 +511,17 @@ export function AsciiGlobe({ className }: { className?: string }) {
       canvas.removeEventListener('pointerup', onUp);
       canvas.removeEventListener('pointercancel', onUp);
     };
-  }, [reduced]);
+  }, [reduced, scene]);
 
-  return <canvas ref={canvasRef} className={className} aria-hidden="true" data-malha-globe />;
+  return (
+    <div className={styles.globeFrame}>
+      <canvas ref={canvasRef} className={className} aria-hidden="true" data-malha-globe />
+      {!reduced && (
+        <button type="button" className={styles.globePause} aria-pressed={paused} onClick={() => setPaused((value) => !value)}
+          aria-label={paused ? 'Retomar a animação do globo' : 'Pausar a animação do globo'}>
+          {paused ? <Play size={16} aria-hidden="true" /> : <Pause size={16} aria-hidden="true" />}
+        </button>
+      )}
+    </div>
+  );
 }

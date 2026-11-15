@@ -28,6 +28,10 @@ export const security = [
 
 export const questions = [
   {
+    title: 'O que é o coletor e quem instala?',
+    answer: 'É um programa leve que roda como serviço em um computador Linux da fazenda, na mesma rede da console UniFi. Ele só lê a console e inicia todas as conexões até o Malha; sem internet, guarda até 72 horas de capturas. A instalação é feita com a TI da fazenda durante a configuração, com um código de ativação de uso único.',
+  },
+  {
     title: 'O que o coletor consulta no UniFi?',
     answer: 'O coletor consulta sites e equipamentos adotados em modo de leitura. O painel reúne identificação, estado reportado e última observação. A compatibilidade da API local é verificada na configuração do piloto.',
   },

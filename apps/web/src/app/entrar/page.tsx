@@ -11,8 +11,9 @@ export default function LoginPage() {
   return (
     <div className={styles.site}>
       <main className={styles.portal}>
-        <div className={styles.portalArt} aria-hidden="true">
-          <AsciiGlobe className={styles.globe} />
+        <div className={styles.portalArt}>
+          <AsciiGlobe className={styles.globe} scene="world" />
+          <p className={styles.portalCaption}><span>Ilustração</span> Rotas de exemplo</p>
         </div>
         <div className={styles.portalPanel}>
           <Brand />

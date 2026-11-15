@@ -19,6 +19,7 @@ export function SiteHeader() {
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
   const navRef = useRef<HTMLElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -30,7 +31,11 @@ export function SiteHeader() {
   useEffect(() => {
     if (!open) return;
     navRef.current?.querySelector<HTMLAnchorElement>('a')?.focus();
-    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') setOpen(false); };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setOpen(false);
+      buttonRef.current?.focus();
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open]);
@@ -55,6 +60,7 @@ export function SiteHeader() {
             </Link>
           )}
           <button
+            ref={buttonRef}
             type="button"
             className={styles.menuButton}
             aria-expanded={open}

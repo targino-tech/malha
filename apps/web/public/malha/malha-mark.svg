@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Símbolo do Malha">
-  <path d="M11 53C11 27.5 27.5 11 53 11c0 25.5-16.5 42-42 42Z" fill="#b6f37a"/>
-  <path d="M11 53C11 27.5 27.5 11 53 11L11 53Z" fill="#9fdc63"/>
-  <g stroke="#060a07" stroke-width="2.4" stroke-linecap="round" fill="none">
-    <path d="M17 47 45 19"/>
-    <path d="M24.5 39.5 22 30M32 32l9.5 2.5M38.5 25.5 36 17"/>
+  <path d="M8 56C8 27 27 8 56 8c0 29-19 48-48 48Z" fill="#b6f37a"/>
+  <path d="M8 56C8 27 27 8 56 8L8 56Z" fill="#9fdc63"/>
+  <g stroke="#060a07" stroke-width="3.4" stroke-linecap="square" fill="none">
+    <path d="M15 49 45 19"/>
+    <path d="M25 39V27M33 31h12"/>
   </g>
-  <g fill="#060a07"><circle cx="22" cy="30" r="2.9"/><circle cx="41.5" cy="34.5" r="2.9"/><circle cx="36" cy="17" r="2.4"/></g>
-  <circle cx="11" cy="53" r="4.6" fill="#d9b866" stroke="#060a07" stroke-width="1.6"/>
+  <g fill="#060a07"><rect x="21.5" y="22" width="7" height="7" rx="1"/><rect x="42" y="27.5" width="7" height="7" rx="1"/><rect x="42.5" y="13.5" width="7" height="7" rx="1"/></g>
+  <g transform="rotate(-45 10 54)"><ellipse cx="10" cy="54" rx="7.5" ry="3.9" fill="#d9b866" stroke="#060a07" stroke-width="1.6"/><path d="M4.5 54h11" stroke="#8a6f2c" stroke-width="1.2" stroke-linecap="round"/></g>
 </svg>

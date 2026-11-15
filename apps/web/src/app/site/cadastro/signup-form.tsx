@@ -87,8 +87,9 @@ export function SignupForm({ plans, initialPlan }: { plans: PlanOption[]; initia
         }),
       });
       if (!response.ok) {
-        const body = await response.json().catch(() => null) as { error?: string } | null;
-        throw new Error(body?.error ?? 'O envio não foi concluído. Confira a conexão e tente de novo; seus dados continuam preenchidos.');
+        // Mensagens do servidor só aparecem para erros do pedido (4xx); falhas internas viram um texto neutro.
+        const body = response.status < 500 ? await response.json().catch(() => null) as { error?: string } | null : null;
+        throw new Error(body?.error ?? 'O envio não foi concluído por uma falha do nosso lado. Tente de novo em alguns minutos; seus dados continuam preenchidos.');
       }
       setState({ kind: 'sent', email });
       requestAnimationFrame(() => doneRef.current?.focus());

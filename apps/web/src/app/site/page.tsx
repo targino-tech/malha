@@ -51,7 +51,7 @@ export default function SitePage() {
 
       <section id="campo" className={styles.storySection} aria-labelledby="campo-title">
         <div className={styles.frame}>
-          <SectionHeading id="campo-title" title="Do talhão ao painel." text="Role a página para acompanhar uma captura saindo da fazenda, atravessando uma queda de internet e chegando à matriz." />
+          <SectionHeading id="campo-title" title="Do talhão ao painel." text="Acompanhe uma captura saindo da fazenda, atravessando uma queda de internet e chegando à matriz." />
         </div>
         <FieldStory />
       </section>
@@ -91,9 +91,10 @@ export default function SitePage() {
             <li key={plan.id}>
               <Reveal className={styles.planMini}>
                 <div data-recommended={plan.recommended || undefined}>
+                  {plan.recommended && <p className={styles.planTag}>Recomendado para grupos</p>}
                   <h3>{plan.name}</h3>
                   <p>{plan.audience}</p>
-                  <Link href={`/site/cadastro?plano=${plan.id}`} aria-label={`Solicitar acesso ao plano ${plan.name}`}>Solicitar acesso <ArrowRight size={16} aria-hidden="true" /></Link>
+                  <Link href={`/site/cadastro?plano=${plan.id}`} aria-label={`Solicitar acesso ao plano ${plan.name}`}>Solicitar acesso <ArrowUpRight size={16} aria-hidden="true" /></Link>
                 </div>
               </Reveal>
             </li>

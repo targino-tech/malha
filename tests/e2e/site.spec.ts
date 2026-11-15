@@ -34,6 +34,15 @@ test('a apresentação do Malha funciona em celular com movimento reduzido', asy
   await expect(page.getByRole('heading', { name: 'Visão geral das fazendas' })).toBeVisible();
 });
 
+test('o globo do site pode ser pausado e o portal marca a ilustração', async ({ page }) => {
+  await page.goto('/site');
+  const pause = page.getByRole('button', { name: 'Pausar a animação do globo' }).first();
+  await pause.click();
+  await expect(page.getByRole('button', { name: 'Retomar a animação do globo' }).first()).toHaveAttribute('aria-pressed', 'true');
+  await page.goto('/entrar');
+  await expect(page.getByText('Ilustração', { exact: true })).toBeVisible();
+});
+
 test('o cadastro do site registra a solicitação uma única vez', async ({ page, request }) => {
   await page.goto('/site/planos');
   await page.getByRole('link', { name: 'Solicitar acesso ao plano Piloto' }).click();

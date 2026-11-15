@@ -9,20 +9,23 @@ const steps = [
     label: '01 · Na fazenda',
     title: 'O coletor lê a rede local.',
     text: 'Instalado na fazenda, o coletor consulta a console UniFi pela API oficial, somente com leitura. Envia sinal a cada 60 s e o inventário a cada 5 min.',
+    status: { tone: 'ok', items: ['Coletor em contato', 'sinal a cada 60 s'] },
   },
   {
     label: '02 · No caminho',
     title: 'Sem internet, nada se perde.',
     text: 'Tudo sai assinado do coletor (Ed25519). Se a internet da fazenda cair, as capturas ficam guardadas no próprio coletor e seguem quando a conexão volta, sem duplicar nada.',
+    status: { tone: 'warn', items: ['Sem internet', 'capturas guardadas no coletor'] },
   },
   {
     label: '03 · No painel',
     title: 'A matriz vê o que importa.',
     text: 'Ocorrências por fazenda, alerta de coletor sem contato após 3 min e e-mail para ocorrências críticas. Cada grupo acessa somente as próprias fazendas.',
+    status: { tone: 'panel', items: ['Exemplo', '3 fazendas', '1 coletor em contato', '1 sem contato', 'e-mail enviado à TI'] },
   },
 ];
 
-const OUTAGE: [number, number] = [0.42, 0.58];
+const OUTAGE: [number, number] = [0.38, 0.66];
 const HARVEST = 0.7;
 const BALES: Array<[number, number]> = [[-0.78, 0.46], [0.32, 0.55], [0.9, 0.8], [-0.95, 0.9], [0.05, 0.3], [0.62, 0.36], [-0.12, 0.72], [0.4, 0.95]];
 const MONO = 'ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace';
@@ -53,10 +56,10 @@ function FieldCanvas({ progress, reduced }: { progress: MotionValue<number> | nu
     const start = performance.now();
 
     function resize() {
-      const rect = canvas!.getBoundingClientRect();
+      // Tamanho de layout: ignora as escalas aplicadas pela animação de entrada e pela câmera.
       const ratio = Math.min(window.devicePixelRatio || 1, 2);
-      width = rect.width;
-      height = rect.height;
+      width = canvas!.clientWidth;
+      height = canvas!.clientHeight;
       canvas!.width = Math.round(width * ratio);
       canvas!.height = Math.round(height * ratio);
       context!.setTransform(ratio, 0, 0, ratio, 0, 0);
@@ -225,7 +228,7 @@ function FieldCanvas({ progress, reduced }: { progress: MotionValue<number> | nu
         const label = '[ malha ]';
         for (let i = 0; i < label.length; i += 1) put(nodeX - label.length / 2 + i, nodeY, label[i], '#d8ff9e');
       } else {
-        const body = ['3 fazendas no painel', '■ 2 coletores em contato', '▲ 1 ocorrência crítica', '✉ e-mail enviado à TI'];
+        const body = ['3 fazendas no painel', '■ 1 coletor em contato', '▲ 1 coletor sem contato', '✉ e-mail enviado à TI'];
         const inner = 26;
         const title = '─ malha · exemplo ';
         const lines = [
@@ -287,6 +290,14 @@ function FieldCanvas({ progress, reduced }: { progress: MotionValue<number> | nu
   return <canvas ref={canvasRef} className={styles.fieldCanvas} aria-hidden="true" data-malha-field />;
 }
 
+function StepStatus({ status }: { status: (typeof steps)[number]['status'] }) {
+  return (
+    <ul className={styles.storyStatus} data-tone={status.tone}>
+      {status.items.map((item) => <li key={item}>{item}</li>)}
+    </ul>
+  );
+}
+
 function Step({ index, progress, step }: { index: number; progress: MotionValue<number>; step: (typeof steps)[number] }) {
   const [edges, fade, shift] = [
     [[0, 0.3, 0.36], [1, 1, 0], [0, 0, -28]],
@@ -301,6 +312,7 @@ function Step({ index, progress, step }: { index: number; progress: MotionValue<
       <p className={styles.storyLabel}>{step.label}</p>
       <h3>{step.title}</h3>
       <p>{step.text}</p>
+      <StepStatus status={step.status} />
     </motion.article>
   );
 }
@@ -338,6 +350,7 @@ export function FieldStory() {
               <p className={styles.storyLabel}>{step.label}</p>
               <h3>{step.title}</h3>
               <p>{step.text}</p>
+              <StepStatus status={step.status} />
             </li>
           ))}
         </ol>
