@@ -1,22 +1,22 @@
 # Rótulos do repositório, sincronizados pelo workflow labels.yml.
 # Para renomear, altere aqui e rode o workflow; rótulos fora desta lista não são apagados.
-- { name: erro, color: d03b3b, description: Algo não funciona como deveria }
-- { name: funcionalidade, color: b6f37a, description: Recurso novo ou melhoria }
-- { name: documentação, color: 0a6e9a, description: README, guias e comentários }
-- { name: segurança, color: 8a1c1c, description: Endurecimento e correções de segurança (vulnerabilidades vão pelo relato privado) }
-- { name: dependências, color: 4d5a50, description: Atualização de dependências }
-- { name: ci, color: 2f6b3a, description: Workflows e automação do GitHub }
-- { name: implantação, color: d9b866, description: Pedido de apoio para implantar nas fazendas }
-- { name: triagem, color: ededed, description: Ainda não avaliado pela manutenção }
-- { name: boa primeira issue, color: 7ee787, description: Bom ponto de entrada para quem está chegando }
-- { name: ajuda bem-vinda, color: 008672, description: A manutenção aceita contribuição aqui }
-- { name: duplicada, color: cfd3d7, description: Já existe uma issue ou PR igual }
-- { name: não planejado, color: ffffff, description: Fora do escopo do projeto por enquanto }
-- { name: 'área: web', color: 1d3a24, description: Painel e API (apps/web) }
-- { name: 'área: coletor', color: 1d3a24, description: Coletor Go nas fazendas (collector) }
-- { name: 'área: banco', color: 1d3a24, description: Migrações, RLS e CLI (packages/db) }
-- { name: 'área: infra', color: 1d3a24, description: Terraform, Docker e deploy }
-- { name: 'área: site', color: 1d3a24, description: Site público e GitHub Pages }
-- { name: 'área: monitoramento', color: 1d3a24, description: Zabbix, Grafana e catálogo de modelos }
-- { name: 'área: login', color: 1d3a24, description: Entra ID, AD/LDAP e OpenID Connect }
-- { name: 'área: worker', color: 1d3a24, description: Ocorrências, e-mail e retenção (apps/worker) }
+- { name: erro, color: 'd03b3b', description: Algo não funciona como deveria }
+- { name: funcionalidade, color: 'b6f37a', description: Recurso novo ou melhoria }
+- { name: documentação, color: '0a6e9a', description: README, guias e comentários }
+- { name: segurança, color: '8a1c1c', description: Endurecimento e correções de segurança (vulnerabilidades vão pelo relato privado) }
+- { name: dependências, color: '4d5a50', description: Atualização de dependências }
+- { name: ci, color: '2f6b3a', description: Workflows e automação do GitHub }
+- { name: implantação, color: 'd9b866', description: Pedido de apoio para implantar nas fazendas }
+- { name: triagem, color: 'ededed', description: Ainda não avaliado pela manutenção }
+- { name: boa primeira issue, color: '7ee787', description: Bom ponto de entrada para quem está chegando }
+- { name: ajuda bem-vinda, color: '008672', description: A manutenção aceita contribuição aqui }
+- { name: duplicada, color: 'cfd3d7', description: Já existe uma issue ou PR igual }
+- { name: não planejado, color: 'ffffff', description: Fora do escopo do projeto por enquanto }
+- { name: 'área: web', color: '1d3a24', description: Painel e API (apps/web) }
+- { name: 'área: coletor', color: '1d3a24', description: Coletor Go nas fazendas (collector) }
+- { name: 'área: banco', color: '1d3a24', description: Migrações, RLS e CLI (packages/db) }
+- { name: 'área: infra', color: '1d3a24', description: Terraform, Docker e deploy }
+- { name: 'área: site', color: '1d3a24', description: Site público e GitHub Pages }
+- { name: 'área: monitoramento', color: '1d3a24', description: Zabbix, Grafana e catálogo de modelos }
+- { name: 'área: login', color: '1d3a24', description: Entra ID, AD/LDAP e OpenID Connect }
+- { name: 'área: worker', color: '1d3a24', description: Ocorrências, e-mail e retenção (apps/worker) }
