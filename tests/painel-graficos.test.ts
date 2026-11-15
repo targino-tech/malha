@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { after, describe, test } from 'node:test';
 
 import {
-  areaPath, formatBits, formatBytes, formatPercent, formatPower, heatLevel, linePath, nearestIndex, niceCeiling, project, segments,
+  areaPath, formatBits, gapThreshold, formatBytes, formatPercent, formatPower, heatLevel, linePath, nearestIndex, niceCeiling, project, segments,
 } from '../apps/web/src/components/dashboard/network-format';
 import { database, DEMO_ORG } from '../apps/web/src/server/db';
 import { HttpError } from '../apps/web/src/server/http';
@@ -57,6 +57,10 @@ describe('formatação pt-BR do painel de rede', () => {
     assert.equal(areaPath([], 50), '');
     assert.equal(nearestIndex(points, 0.45, frame.from, frame.to), 2);
     assert.equal(nearestIndex([], 0.5, 0, 1), -1);
+    const every15 = [0, 15, 30, 45].map((m) => ({ t: new Date(Date.UTC(2026, 0, 1, 0, m)).toISOString() }));
+    assert.equal(gapThreshold(every15, 300), 15 * 60_000 * 2.5, 'coleta a cada 15 min agrupada em 5 min não vira lacuna');
+    assert.equal(segments(every15, gapThreshold(every15, 300)).length, 1);
+    assert.equal(gapThreshold([], 3600), 3_600_000 * 2.5);
   });
 
   test('faixas de utilização da tira de calor', () => {
