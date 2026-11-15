@@ -76,7 +76,7 @@ A manutenção pode pedir ajustes. Pull requests sem atividade por 30 dias depoi
 
 | Rótulo | Uso |
 | --- | --- |
-| `erro`, `funcionalidade`, `documentação`, `segurança`, `dependências` | Tipo de mudança, também usado nas notas de release |
+| `erro`, `funcionalidade`, `documentação`, `segurança`, `dependências`, `ci` | Tipo de mudança, também usado nas notas de release |
 | `boa primeira issue`, `ajuda bem-vinda` | Bons pontos de entrada para quem chega |
 | `área: web`, `área: coletor`, `área: banco`, `área: infra`, `área: site`, `área: monitoramento`, `área: login` | Onde a mudança acontece (aplicados automaticamente nos PRs) |
 | `triagem` | Ainda não avaliado pela manutenção |

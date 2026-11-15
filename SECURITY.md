@@ -51,7 +51,7 @@ Teste apenas em instalações suas, como o modo demo (`MALHA_MODE=demo`) ou um p
 ## Como o projeto se protege
 
 - Análise automática a cada mudança: CodeQL, Semgrep, Gitleaks no histórico Git, ClamAV, auditoria de dependências (pnpm e govulncheck) e revisão de dependências nos pull requests.
-- OpenSSF Scorecard semanal, Dependabot para npm, Go, Docker, Terraform e GitHub Actions, e Actions fixadas por SHA.
+- OpenSSF Scorecard semanal, alertas do Dependabot para npm, Go, Terraform e GitHub Actions (sem PRs automáticos) e Actions fixadas por SHA.
 - No produto: RLS por organização no PostgreSQL, sessão revalidada a cada requisição, checagem de origem nas rotas de escrita, mensagens do coletor assinadas com Ed25519 e nonce de uso único, segredos de integração cifrados com AES-256-GCM.
 
 Detalhes da arquitetura em [`docs/arquitetura.md`](docs/arquitetura.md).
