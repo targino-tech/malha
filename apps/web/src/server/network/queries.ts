@@ -19,21 +19,21 @@ const iso = (value: Date | string | null) => value ? new Date(value).toISOString
 const num = (value: string | number | null | undefined) => value === null || value === undefined ? null : Number(value);
 const notFound = () => new HttpError(404, 'Fazenda indisponível.');
 
-function parse<T extends z.ZodType>(schema: T, params: URLSearchParams): z.infer<T> {
+export function parse<T extends z.ZodType>(schema: T, params: URLSearchParams): z.infer<T> {
   const result = schema.safeParse(Object.fromEntries(params));
   if (!result.success) throw new HttpError(400, 'Parâmetros inválidos.');
   return result.data;
 }
 
 /** Fazenda informada precisa estar no escopo do usuário e existir no grupo; caso contrário responde 404. */
-async function scopedFarm(tx: Queryable, user: Principal, farmId: string) {
+export async function scopedFarm(tx: Queryable, user: Principal, farmId: string) {
   if (!uuidPattern.test(farmId)) throw notFound();
   requireFarm(user, farmId);
   const { rows } = await tx.query('SELECT 1 FROM farms WHERE org_id = $1 AND id = $2', [user.orgId, farmId]);
   if (!rows.length) throw notFound();
 }
 
-async function scoped<T>(database: Database, user: Principal, operation: (tx: Queryable) => Promise<T>) {
+export async function scoped<T>(database: Database, user: Principal, operation: (tx: Queryable) => Promise<T>) {
   return database.transaction(async (tx) => {
     await setOrg(tx, user.orgId);
     return operation(tx);
@@ -227,7 +227,7 @@ const trafficQuery = rangeQuery.extend({
 }).refine((query) => query.portIdx === undefined || query.assetId !== undefined);
 
 /** Raízes da fazenda: dispositivos sem ligação a montante. A soma dos seus uplinks é o tráfego da fazenda. */
-const ROOT_FILTER = `NOT EXISTS (SELECT 1 FROM network_links l WHERE l.org_id = s.org_id AND l.farm_id = s.farm_id AND l.from_asset_id = s.asset_id)`;
+export const ROOT_FILTER = `NOT EXISTS (SELECT 1 FROM network_links l WHERE l.org_id = s.org_id AND l.farm_id = s.farm_id AND l.from_asset_id = s.asset_id)`;
 
 export async function traffic(database: Database, user: Principal, params: URLSearchParams): Promise<TrafficSeries> {
   const query = parse(trafficQuery, params);
