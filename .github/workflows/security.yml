@@ -1,0 +1,220 @@
+name: Segurança
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    - cron: '23 11 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+jobs:
+  dependencies:
+    name: Vulnerabilidades de dependências
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: collector/go.mod
+          cache: false
+      - name: Auditar dependências JavaScript
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/security"
+          npm install --global pnpm@12.18.0 --registry=https://registry.npmjs.org/
+          report="$RUNNER_TEMP/security/pnpm.json"
+          status=0
+          pnpm audit --registry=https://registry.npmjs.org/ --audit-level=moderate --json > "$report" || status=$?
+          if [[ "$status" -gt 1 ]] || ! jq -e '(.advisories | type == "object") and (.metadata.vulnerabilities | type == "object")' "$report" >/dev/null; then
+            echo '::error title=Auditoria pnpm::A auditoria não gerou um relatório válido.'
+            exit 1
+          fi
+          jq -r '
+            .advisories[] | select(.severity == "moderate" or .severity == "high" or .severity == "critical") |
+            if .severity == "moderate" then "::warning" else "::error" end +
+            " title=Dependência JavaScript::" + .module_name + " (" + .severity + ") " + .url
+          ' "$report"
+          {
+            echo '### Dependências JavaScript'
+            jq -r '.metadata.vulnerabilities | "Moderadas: \(.moderate) · Altas: \(.high) · Críticas: \(.critical)"' "$report"
+          } >> "$GITHUB_STEP_SUMMARY"
+          jq -e '.metadata.vulnerabilities | .high == 0 and .critical == 0' "$report" >/dev/null
+      - name: Verificar dependências Go do coletor
+        if: ${{ !cancelled() }}
+        shell: bash
+        env:
+          GOTOOLCHAIN: local
+          GOFLAGS: -mod=readonly
+          GOTELEMETRY: off
+        run: |
+          mkdir -p "$RUNNER_TEMP/security" "$RUNNER_TEMP/go-bin"
+          GOBIN="$RUNNER_TEMP/go-bin" go install golang.org/x/vuln/cmd/govulncheck@v1.9.0
+          status=0
+          for arch in amd64 arm64; do
+            log="$RUNNER_TEMP/security/govulncheck-linux-$arch.txt"
+            if GOOS=linux GOARCH="$arch" CGO_ENABLED=0 "$RUNNER_TEMP/go-bin/govulncheck" -C collector -show=version,traces ./... > "$log" 2>&1; then
+              printf '\n- Go Linux %s: verificação concluída sem achados que invalidem a execução.\n' "$arch" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "::error title=Govulncheck (Linux $arch)::Consulte o relatório de vulnerabilidades ou erros de análise no artefato."
+              status=1
+            fi
+          done
+          exit "$status"
+      - name: Publicar relatórios de dependências
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: relatorios-dependencias
+          path: ${{ runner.temp }}/security/
+          retention-days: 14
+          if-no-files-found: warn
+
+  code:
+    name: Análise estática de código
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Analisar TypeScript, JavaScript, Go e workflows com Semgrep
+        shell: bash
+        env:
+          RULES_REVISION: a5ad1714f00c9f7fde980cab0ea1d6dc6d414fd2
+          SEMGREP_IMAGE: semgrep/semgrep:1.185.0@sha256:67518c174185a2043fdbed16c70631b79209499b3671178e7194379b48295a0d
+        run: |
+          rules="$RUNNER_TEMP/semgrep-rules"
+          mkdir -p "$rules"
+          curl --fail --silent --show-error --location --retry 3 --max-time 120 \
+            "https://codeload.github.com/semgrep/semgrep-rules/tar.gz/$RULES_REVISION" | tar -xz --strip-components=1 -C "$rules"
+          report="$RUNNER_TEMP/semgrep.sarif"
+          docker pull "$SEMGREP_IMAGE"
+          docker run --rm --network none --cap-drop ALL --security-opt no-new-privileges \
+            --user "$(id -u):$(id -g)" -e HOME=/tmp \
+            -v "$GITHUB_WORKSPACE:/src:ro" -v "$rules:/rules:ro" -w /src "$SEMGREP_IMAGE" \
+            semgrep scan --metrics=off --disable-version-check --sarif \
+            --config /rules/go/lang/security --config /rules/javascript/lang/security \
+            --config /rules/typescript/lang/security --config /rules/typescript/react/security \
+            --config /rules/yaml/github-actions/security --jobs 2 \
+            apps collector packages .github/workflows > "$report"
+          jq -e '.runs | type == "array" and length > 0' "$report" >/dev/null
+          jq -r '
+            def escape: gsub("%"; "%25") | gsub("\\r"; "%0D") | gsub("\\n"; "%0A");
+            def prop: escape | gsub(","; "%2C") | gsub(":"; "%3A");
+            [.runs[].results[]?][:30][] |
+            (.locations[0].physicalLocation // {}) as $loc |
+            (if .level == "error" then "::error" else "::warning" end) +
+            " file=" + ($loc.artifactLocation.uri // "" | prop) +
+            ",line=" + ($loc.region.startLine // 1 | tostring) +
+            ",title=Semgrep::" + (.ruleId | escape)
+          ' "$report"
+          count=$(jq '[.runs[].results[]?] | length' "$report")
+          printf '### Análise estática\n\nAchados do Semgrep: %s. O relatório SARIF inclui os detalhes.\n' "$count" >> "$GITHUB_STEP_SUMMARY"
+          jq -e '[.runs[].results[]? | select(.level == "error")] | length == 0' "$report" >/dev/null
+      - name: Publicar relatório de código
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: relatorio-semgrep
+          path: ${{ runner.temp }}/semgrep.sarif
+          retention-days: 14
+          if-no-files-found: warn
+
+  secrets:
+    name: Segredos no histórico Git
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verificar credenciais com Gitleaks
+        shell: bash
+        env:
+          GITLEAKS_IMAGE: ghcr.io/gitleaks/gitleaks:v8.30.1@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
+        run: |
+          scan_dir="$(mktemp -d)"
+          chmod 700 "$scan_dir"
+          docker pull "$GITLEAKS_IMAGE"
+          status=0
+          docker run --rm --network none --cap-drop ALL --security-opt no-new-privileges \
+            --user "$(id -u):$(id -g)" -e HOME=/tmp \
+            -v "$GITHUB_WORKSPACE:/src:ro" -v "$scan_dir:/scan" -w /src "$GITLEAKS_IMAGE" \
+            git --redact=100 --exit-code=10 --report-format=json --report-path=/scan/raw.json \
+            --timeout=240 /src > "$scan_dir/run.log" 2>&1 || status=$?
+          report="$RUNNER_TEMP/gitleaks.json"
+          if [[ -f "$scan_dir/raw.json" ]]; then
+            jq '[.[]? | {rule: .RuleID, arquivo: .File, linha: .StartLine, commit: .Commit}]' "$scan_dir/raw.json" > "$report"
+          fi
+          rm -f "$scan_dir/raw.json" "$scan_dir/run.log"
+          if [[ "$status" -eq 10 ]]; then
+            echo '::error title=Gitleaks::Possível segredo detectado. Consulte o relatório com os locais, revise o achado e rotacione credenciais válidas.'
+          elif [[ "$status" -ne 0 ]]; then
+            echo '::error title=Gitleaks::A análise do histórico Git não foi concluída.'
+          fi
+          exit "$status"
+      - name: Publicar localizações sem conteúdo confidencial
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: relatorio-gitleaks
+          path: ${{ runner.temp }}/gitleaks.json
+          retention-days: 14
+          if-no-files-found: warn
+
+  malware:
+    name: Malware em arquivos do repositório
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Examinar arquivos com ClamAV
+        shell: bash
+        env:
+          CLAMAV_IMAGE: clamav/clamav:1.5.4@sha256:45fe5149fbee5a46509c9848ef20d0c354b7b2323c9369f285939a37cf33422a
+        run: |
+          docker pull "$CLAMAV_IMAGE"
+          database=$(docker volume create)
+          trap 'docker volume rm "$database" >/dev/null' EXIT
+          if ! timeout 180 docker run --rm -v "$database:/var/lib/clamav" --entrypoint freshclam "$CLAMAV_IMAGE" --stdout; then
+            echo '::warning title=ClamAV::A atualização de assinaturas não concluiu. A análise exige uma base com até 14 dias.'
+          fi
+          status=0
+          docker run --rm --network none --cap-drop ALL --security-opt no-new-privileges \
+            --user "$(id -u):$(id -g)" \
+            -v "$database:/var/lib/clamav:ro" -v "$GITHUB_WORKSPACE:/src:ro" \
+            --entrypoint clamscan "$CLAMAV_IMAGE" --database=/var/lib/clamav \
+            --recursive --infected --stdout --exclude-dir='^/src/\.git(/|$)' \
+            --follow-dir-symlinks=0 --follow-file-symlinks=0 --alert-exceeds-max=yes \
+            --fail-if-cvd-older-than=14 /src > "$RUNNER_TEMP/clamav.txt" 2>&1 || status=$?
+          if [[ "$status" -ne 0 ]]; then
+            echo '::error title=ClamAV::Foi detectado malware, um limite de análise foi atingido ou a varredura não concluiu. Consulte o relatório.'
+          fi
+          exit "$status"
+      - name: Publicar relatório de malware
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: relatorio-clamav
+          path: ${{ runner.temp }}/clamav.txt
+          retention-days: 14
+          if-no-files-found: warn
