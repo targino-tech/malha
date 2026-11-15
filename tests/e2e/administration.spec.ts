@@ -50,7 +50,7 @@ test('admin cadastra fazenda, gera código do coletor e mantém um ativo manual'
   await expect(page.getByRole('dialog', { name: 'Antena do silo' }).getByText('Equipe de TI')).toBeVisible();
 
   await page.getByRole('dialog', { name: 'Antena do silo' }).getByRole('button', { name: 'Arquivar' }).click();
-  await expect(page.getByRole('dialog', { name: 'Antena do silo' }).getByText('Arquivado')).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Antena do silo' }).locator('.asset-badges').getByText('Arquivado')).toBeVisible();
   await page.keyboard.press('Escape');
   await page.getByRole('searchbox', { name: 'Buscar equipamento' }).fill('BE-ANT');
   await expect(page.getByText('Nenhum equipamento encontrado')).toBeVisible();
