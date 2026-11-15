@@ -46,3 +46,5 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON monitoring_connections TO malha_runtime;
 -- Provedores OIDC: convite por e-mail e identidades ligadas no primeiro login.
 GRANT UPDATE (invite_email) ON memberships TO malha_runtime;
 GRANT SELECT, INSERT ON oidc_identities TO malha_runtime;
+-- Canais de notificação (Telegram e e-mail) e a outbox de entregas, por grupo (RLS).
+GRANT SELECT, INSERT, UPDATE ON notification_channels, notification_deliveries TO malha_runtime;
