@@ -43,9 +43,9 @@ const rules: Array<{ rule: Rule; kind: 'collector' | 'asset'; candidates: string
     candidates: `SELECT a.farm_id, a.id AS resource_id, CASE WHEN a.critical THEN 'critical' ELSE 'warning' END AS severity,
         'Ativo offline: ' || a.name AS title, COALESCE(a.offline_since, a.last_observed_at) AS first_observed_at
       FROM ${assetWithActiveCollector}
-      WHERE a.org_id = $1 AND a.status = 'offline' AND ${assetFresh} AND ${heartbeatFresh}`,
+      WHERE a.org_id = $1 AND a.archived_at IS NULL AND a.status = 'offline' AND ${assetFresh} AND ${heartbeatFresh}`,
     cleared: `SELECT a.id FROM assets a
-      WHERE a.org_id = $1 AND ((a.status = 'online' AND ${assetFresh})
+      WHERE a.org_id = $1 AND (a.archived_at IS NOT NULL OR (a.status = 'online' AND ${assetFresh})
         OR NOT EXISTS (SELECT 1 FROM collector_keys k WHERE k.org_id = a.org_id AND k.farm_id = a.farm_id
           AND k.collector_id = a.last_collector_id AND k.revoked_at IS NULL))`,
   },
@@ -54,8 +54,8 @@ const rules: Array<{ rule: Rule; kind: 'collector' | 'asset'; candidates: string
     candidates: `SELECT a.farm_id, a.id AS resource_id, 'warning' AS severity,
         'Divergência: ativo ausente na coleta: ' || a.name AS title, a.last_observed_at AS first_observed_at
       FROM ${assetWithActiveCollector}
-      WHERE a.org_id = $1 AND a.missing_captures >= ${MISSING_CAPTURES_FOR_DIVERGENCE} AND ${heartbeatFresh}`,
-    cleared: `SELECT a.id FROM assets a WHERE a.org_id = $1 AND a.missing_captures = 0`,
+      WHERE a.org_id = $1 AND a.archived_at IS NULL AND a.missing_captures >= ${MISSING_CAPTURES_FOR_DIVERGENCE} AND ${heartbeatFresh}`,
+    cleared: `SELECT a.id FROM assets a WHERE a.org_id = $1 AND (a.missing_captures = 0 OR a.archived_at IS NOT NULL)`,
   },
 ];
 
@@ -89,7 +89,9 @@ export async function evaluateOrganization(tx: Queryable, orgId: string): Promis
     if (critical.length) {
       const { rows } = await tx.query(`INSERT INTO notifications (org_id, occurrence_id, recipient)
         SELECT $1, o.id, r.email FROM occurrences o JOIN alert_recipients r ON r.org_id = o.org_id AND r.active
-        WHERE o.org_id = $1 AND o.id = ANY($2::uuid[])
+        WHERE o.org_id = $1 AND o.id = ANY($2::uuid[]) AND NOT EXISTS (SELECT 1 FROM assets a
+          WHERE o.resource_kind = 'asset' AND a.org_id = o.org_id AND a.farm_id = o.farm_id AND a.id = o.resource_id
+            AND a.maintenance_until > now())
         ON CONFLICT DO NOTHING RETURNING recipient`, [orgId, critical]);
       result.notifications += rows.length;
     }

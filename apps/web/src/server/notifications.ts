@@ -44,11 +44,14 @@ export function composeEmail(recipient: string, items: Pending[], origin?: strin
 }
 
 async function sendForOrganization(tx: Queryable, orgId: string, transport: MailTransport, origin?: string) {
-  // Ocorrências de ativo ficam suspensas enquanto a fazenda tiver um coletor sem contato aberto.
+  // Ocorrências de ativo ficam suspensas enquanto a fazenda tiver um coletor sem contato aberto
+  // ou o ativo estiver em janela de manutenção.
   const { rows } = await tx.query<Pending>(`SELECT n.occurrence_id, n.recipient, o.farm_id, f.name AS farm_name, f.timezone,
       o.rule, o.resource_kind, o.title, o.opened_at, o.resolved_at,
       (o.resource_kind = 'asset' AND EXISTS (SELECT 1 FROM occurrences s WHERE s.org_id = o.org_id AND s.farm_id = o.farm_id
-        AND s.rule = 'collector_silent' AND s.resolved_at IS NULL)) AS suppressed
+        AND s.rule = 'collector_silent' AND s.resolved_at IS NULL)
+        OR EXISTS (SELECT 1 FROM assets a WHERE o.resource_kind = 'asset' AND a.org_id = o.org_id AND a.farm_id = o.farm_id
+          AND a.id = o.resource_id AND a.maintenance_until > now())) AS suppressed
     FROM notifications n
     JOIN occurrences o ON o.org_id = n.org_id AND o.id = n.occurrence_id
     JOIN farms f ON f.org_id = o.org_id AND f.id = o.farm_id

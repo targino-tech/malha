@@ -1,5 +1,6 @@
-import { randomBytes, randomUUID } from 'node:crypto';
-import { connectPostgres, hash, migrate, setOrg, type Database } from '../../apps/web/src/server/db';
+import { randomUUID } from 'node:crypto';
+import { issueEnrollmentCode, revokeCollectorKey } from '../../apps/web/src/server/admin';
+import { connectPostgres, migrate, setOrg, type Database } from '../../apps/web/src/server/db';
 import { uuidPattern } from '../../apps/web/src/server/http';
 
 function uuid(value: string | undefined, label: string) {
@@ -28,28 +29,16 @@ async function farm(db: Database, orgId: string, name: string, location: string)
 }
 
 async function enroll(db: Database, orgId: string, farmId: string) {
-  const code = randomBytes(32).toString('base64url');
-  await db.transaction(async (tx) => {
+  return db.transaction(async (tx) => {
     await setOrg(tx, orgId);
-    const { rows: farms } = await tx.query('SELECT 1 FROM farms WHERE org_id = $1 AND id = $2 FOR UPDATE', [orgId, farmId]);
-    if (!farms.length) throw new Error('Fazenda indisponível no grupo informado.');
-    const { rows: active } = await tx.query('SELECT 1 FROM collector_keys WHERE org_id = $1 AND farm_id = $2 AND revoked_at IS NULL', [orgId, farmId]);
-    if (active.length) throw new Error('Já existe um coletor ativo nesta fazenda. Revogue a chave para substituí-lo.');
-    await tx.query('DELETE FROM enrollment_codes WHERE org_id = $1 AND farm_id = $2', [orgId, farmId]);
-    await tx.query('INSERT INTO enrollment_codes (code_hash, org_id, farm_id, expires_at) VALUES ($1, $2, $3, now() + interval \'15 minutes\')',
-      [hash(code), orgId, farmId]);
+    return (await issueEnrollmentCode(tx, orgId, farmId, 'cli')).code;
   });
-  return code;
 }
 
 async function revoke(db: Database, orgId: string, farmId: string) {
   return db.transaction(async (tx) => {
     await setOrg(tx, orgId);
-    const { rows } = await tx.query<{ collector_id: string }>('UPDATE collector_keys SET revoked_at = now() WHERE org_id = $1 AND farm_id = $2 AND revoked_at IS NULL RETURNING collector_id', [orgId, farmId]);
-    if (!rows.length) throw new Error('Nenhum coletor ativo nesta fazenda.');
-    await tx.query('INSERT INTO audit_log (id, org_id, actor, action, scope) VALUES ($1, $2, $3, $4, $5::jsonb)',
-      [randomUUID(), orgId, 'cli', 'collector.revoke', JSON.stringify({ farmId, collectorId: rows[0].collector_id })]);
-    return rows[0].collector_id;
+    return (await revokeCollectorKey(tx, orgId, farmId, 'cli')).collectorId;
   });
 }
 

@@ -1,11 +1,10 @@
 import { ArrowRight, BellRing, Building2, CircleAlert, Database, MapPin, Radio } from 'lucide-react';
-import type { DashboardAsset, DashboardFarm } from '../../server/dashboard';
+import type { DashboardFarm } from '../../server/dashboard';
 import type { DashboardOccurrence } from '../../server/occurrences';
 import { collectorStatus, EmptyState, formatDate, hasFreshCapture, StatusBadge, wholeNumber } from './presentation';
 
 type OverviewProps = {
   farms: DashboardFarm[];
-  assets: DashboardAsset[];
   generatedAt: string;
   openOccurrences: DashboardOccurrence[];
   onOpenOccurrences: () => void;
@@ -13,13 +12,15 @@ type OverviewProps = {
   onOpenInventory: () => void;
 };
 
-export function Overview({ farms, assets, generatedAt, openOccurrences, onOpenOccurrences, onOpenFarm, onOpenInventory }: OverviewProps) {
+export function Overview({ farms, generatedAt, openOccurrences, onOpenOccurrences, onOpenFarm, onOpenInventory }: OverviewProps) {
   const unacknowledged = openOccurrences.filter((occurrence) => !occurrence.acknowledgedAt);
   const criticalOpen = unacknowledged.filter((occurrence) => occurrence.severity === 'critical').length;
   const recentFarms = farms.filter((farm) => farm.collectorStatus === 'online');
   const staleFarms = farms.filter((farm) => farm.collectorStatus === 'offline');
   const inventoryOnly = farms.filter((farm) => farm.collectorStatus === 'missing');
-  const offlineCritical = assets.filter((asset) => asset.critical && asset.status === 'offline');
+  const offlineCritical = farms.reduce((sum, farm) => sum + farm.offlineCriticalCount, 0);
+  const assetCount = farms.reduce((sum, farm) => sum + farm.assetCount, 0);
+  const unifiCount = farms.reduce((sum, farm) => sum + farm.unifiCount, 0);
   const orderedFarms = [...farms].sort((a, b) => {
     const priorities = { offline: 0, online: 1, missing: 2 };
     return priorities[a.collectorStatus] - priorities[b.collectorStatus] || a.name.localeCompare(b.name, 'pt-BR');
@@ -27,8 +28,8 @@ export function Overview({ farms, assets, generatedAt, openOccurrences, onOpenOc
   const cards = [
     { title: 'Fazendas no painel', value: farms.length, description: `${inventoryOnly.length} sem coletor`, icon: Building2, tone: 'normal' },
     { title: 'Coletores em contato', value: recentFarms.length, description: `${staleFarms.length} sem contato`, icon: Radio, tone: 'green' },
-    { title: 'Ativos inventariados', value: assets.length, description: `${assets.filter((asset) => asset.source === 'unifi').length} observados via UniFi`, icon: Database, tone: 'normal' },
-    { title: 'Críticos offline', value: offlineCritical.length, description: 'Com estado offline confirmado', icon: CircleAlert, tone: offlineCritical.length ? 'amber' : 'normal' },
+    { title: 'Ativos inventariados', value: assetCount, description: `${unifiCount} observados via UniFi`, icon: Database, tone: 'normal' },
+    { title: 'Críticos offline', value: offlineCritical, description: 'Com estado offline confirmado', icon: CircleAlert, tone: offlineCritical ? 'amber' : 'normal' },
   ];
 
   return (

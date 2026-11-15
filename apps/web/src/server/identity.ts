@@ -1,13 +1,16 @@
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { cookies } from 'next/headers';
 import * as oidc from 'openid-client';
+import { resolveFarmScope, type Role } from './authz';
 import { database, DEMO_ORG, hash, mode } from './db';
 import { HttpError, uuidPattern } from './http';
 
 export interface Principal {
   orgId: string;
   actor: string;
-  role: 'admin' | 'ti' | 'diretoria';
+  role: Role;
+  /** Fazendas acessíveis. Nulo significa todas as fazendas do grupo. */
+  farmIds: string[] | null;
   demo: boolean;
 }
 
@@ -16,17 +19,18 @@ const LOGIN_COOKIE = '__Host-malha_oidc';
 const baseCookie = { path: '/', secure: true, httpOnly: true, sameSite: 'lax' as const };
 
 export async function principal(): Promise<Principal> {
-  if (mode() === 'demo') return { orgId: DEMO_ORG, actor: 'demo', role: 'admin', demo: true };
+  if (mode() === 'demo') return { orgId: DEMO_ORG, actor: 'demo', role: 'admin', farmIds: null, demo: true };
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token || !/^[A-Za-z0-9_-]{43}$/.test(token)) throw new HttpError(401, 'Entre com sua conta corporativa.');
   const db = await database();
-  const { rows: [user] } = await db.query<{ org_id: string; entra_oid: string; role: Principal['role'] }>(`
+  const { rows: [user] } = await db.query<{ org_id: string; entra_oid: string; role: Role; farm_ids: string[] | null }>(`
     UPDATE sessions AS s SET last_seen_at = now() FROM memberships AS m
     WHERE s.token_hash = $1 AND s.org_id = m.org_id AND s.entra_oid = m.entra_oid AND m.active
       AND s.expires_at > now() AND s.last_seen_at > now() - interval '30 minutes'
-    RETURNING s.org_id, s.entra_oid, m.role`, [hash(token)]);
+    RETURNING s.org_id, s.entra_oid, m.role, (SELECT array_agg(mf.farm_id) FROM membership_farms mf
+      WHERE mf.org_id = m.org_id AND mf.entra_oid = m.entra_oid) AS farm_ids`, [hash(token)]);
   if (!user) throw new HttpError(401, 'Sessão expirada. Entre novamente.');
-  return { orgId: user.org_id, actor: user.entra_oid, role: user.role, demo: false };
+  return { orgId: user.org_id, actor: user.entra_oid, role: user.role, farmIds: resolveFarmScope(user.role, user.farm_ids), demo: false };
 }
 
 function settings() {

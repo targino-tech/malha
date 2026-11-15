@@ -1,10 +1,12 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BellRing, Box, ChevronDown, CloudUpload, FlaskConical, LayoutDashboard, LogOut, MapPin, Network, RefreshCw, WifiOff } from 'lucide-react';
+import { BellRing, Box, ChevronDown, Plug, Settings, CloudUpload, FlaskConical, LayoutDashboard, LogOut, MapPin, Network, RefreshCw, WifiOff } from 'lucide-react';
 import { MotionConfig, motion, useReducedMotion } from 'motion/react';
 import type { DashboardData } from '../../server/dashboard';
+import { Administration } from './administration';
 import { ImportFlow } from './import-flow';
+import { Integrations } from './integrations';
 import { Inventory } from './inventory';
 import { Occurrences } from './occurrences';
 import { Overview } from './overview';
@@ -15,6 +17,8 @@ const views = {
   occurrences: { label: 'Ocorrências', title: 'Ocorrências', description: 'Investigue e reconheça os alertas de comunicação, coleta e ativos.', icon: BellRing },
   inventory: { label: 'Inventário', title: 'Inventário de ativos', description: 'Identifique equipamentos, origem do cadastro e estado da última observação.', icon: Box },
   imports: { label: 'Importações', title: 'Importações de inventário', description: 'Inclua ativos de campo a partir da planilha da fazenda.', icon: CloudUpload },
+  integrations: { label: 'Integrações', title: 'Integrações', description: 'Ative o coletor de cada fazenda e confirme a primeira coleta UniFi.', icon: Plug },
+  admin: { label: 'Administração', title: 'Administração do grupo', description: 'Cadastre fazendas e defina quem acessa o Malha e com qual papel.', icon: Settings },
 };
 
 type View = keyof typeof views;
@@ -81,10 +85,15 @@ export function Dashboard({ initialData }: { initialData: DashboardData }) {
     };
   }, [refresh]);
 
+  function allowed(id: View) {
+    if (id === 'imports') return data.can['inventory.write'];
+    if (id === 'integrations') return data.can['integrations.read'];
+    if (id === 'admin') return data.can['members.manage'];
+    return true;
+  }
   const heading = views[view];
   const currentFarm = data.farms.some((farm) => farm.id === farmId) ? farmId : 'all';
   const farms = data.farms.filter((farm) => currentFarm === 'all' || farm.id === currentFarm);
-  const assets = data.assets.filter((asset) => currentFarm === 'all' || asset.farmId === currentFarm);
 
   return (
     <MotionConfig reducedMotion="user">
@@ -96,7 +105,7 @@ export function Dashboard({ initialData }: { initialData: DashboardData }) {
             <span><strong>malha<span className="brand-dot">.</span></strong><small>Operações de campo</small></span>
           </button>
           <nav className="navigation" aria-label="Navegação do painel">
-            {(Object.entries(views) as Array<[View, (typeof views)[View]]>).filter(([id]) => id !== 'imports' || data.canImport).map(([id, item]) => (
+            {(Object.entries(views) as Array<[View, (typeof views)[View]]>).filter(([id]) => allowed(id)).map(([id, item]) => (
               <button className="nav-link" type="button" key={id} aria-current={view === id ? 'page' : undefined} onClick={() => setView(id)}>
                 <item.icon size={19} aria-hidden="true" /><span>{item.label}</span>
                 {id === 'occurrences' && data.counts.openOccurrences > 0 && <span className="nav-count" aria-label={`${data.counts.openOccurrences} abertas`}>{data.counts.openOccurrences}</span>}
@@ -115,7 +124,7 @@ export function Dashboard({ initialData }: { initialData: DashboardData }) {
             <div className="page-heading">
               <div className="page-title"><h1>{heading.title}</h1><p>{heading.description}</p></div>
               <div className="page-actions">
-                {view !== 'imports' && (
+                {view !== 'imports' && view !== 'admin' && (
                   <label className="farm-select">
                     <MapPin size={17} aria-hidden="true" />
                     <select value={currentFarm} onChange={(event) => setFarmId(event.target.value)} aria-label="Filtrar por fazenda">
@@ -132,10 +141,16 @@ export function Dashboard({ initialData }: { initialData: DashboardData }) {
               <p className="message warning" role="status"><WifiOff size={18} aria-hidden="true" />{!online ? 'Seu navegador está sem conexão.' : 'Falha ao atualizar o painel.'} Exibindo a última consulta.</p>
             )}
             <ViewContent current={view}>
-              {view === 'overview' && <Overview farms={farms} assets={assets} openOccurrences={data.occurrences.filter((item) => !item.resolvedAt && farms.some((farm) => farm.id === item.farmId))} generatedAt={data.generatedAt} onOpenFarm={(id) => { setFarmId(id); setView('inventory'); }} onOpenInventory={() => setView('inventory')} onOpenOccurrences={() => setView('occurrences')} />}
-              {view === 'occurrences' && <Occurrences occurrences={data.occurrences} farms={farms} canAcknowledge={data.canAcknowledge} online={online} onChanged={() => { void refresh(true); }} />}
-              {view === 'inventory' && <Inventory key={currentFarm} farms={farms} assets={assets} />}
-              {view === 'imports' && (data.canImport ? (
+              {view === 'overview' && <Overview farms={farms} openOccurrences={data.occurrences.filter((item) => !item.resolvedAt && farms.some((farm) => farm.id === item.farmId))} generatedAt={data.generatedAt} onOpenFarm={(id) => { setFarmId(id); setView('inventory'); }} onOpenInventory={() => setView('inventory')} onOpenOccurrences={() => setView('occurrences')} />}
+              {view === 'occurrences' && <Occurrences occurrences={data.occurrences} farms={farms} canAcknowledge={data.can['occurrences.acknowledge']} online={online} onChanged={() => { void refresh(true); }} />}
+              {view === 'inventory' && <Inventory key={currentFarm} farms={data.farms} locations={data.locations} farmId={currentFarm} canEdit={data.can['inventory.write']} online={online} onChanged={() => { void refresh(true); }} />}
+              {view === 'integrations' && (data.can['integrations.read']
+                ? <Integrations farms={farms} canEnroll={data.can['collectors.enroll']} online={online} onChanged={() => { void refresh(true); }} />
+                : <p className="message warning" role="status">A permissão para ver integrações foi alterada.</p>)}
+              {view === 'admin' && (data.can['members.manage']
+                ? <Administration farms={data.farms} actor={data.actor} online={online} onChanged={() => { void refresh(true); }} />
+                : <p className="message warning" role="status">A permissão de administração foi alterada.</p>)}
+              {view === 'imports' && (data.can['inventory.write'] ? (
                 <ImportFlow farms={data.farms} selectedFarm={currentFarm} online={online} onImported={() => { void refresh(true); }} />
               ) : <p className="message warning" role="status">A permissão para importar ativos foi alterada.</p>)}
             </ViewContent>

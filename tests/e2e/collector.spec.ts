@@ -41,10 +41,10 @@ test('ingestão assinada exige prova nova e projeta uma captura completa sem dup
   const second = JSON.stringify({ ...shared, batchId: randomUUID(), part: 2, devices: [] });
 
   async function collected() {
-    const dashboard = await request.get('/api/dashboard');
-    expect(dashboard.ok()).toBe(true);
-    const { assets } = await dashboard.json() as { assets: Array<{ name: string; farmId: string; status: string }> };
-    return assets.filter(asset => asset.name === device.name);
+    const inventory = await request.get(`/api/assets?q=${encodeURIComponent(device.name)}`);
+    expect(inventory.ok()).toBe(true);
+    const { items } = await inventory.json() as { items: Array<{ name: string; farmId: string; status: string }> };
+    return items.filter(asset => asset.name === device.name);
   }
 
   const partial = await send(batchPath, first);

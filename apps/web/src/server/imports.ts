@@ -3,6 +3,7 @@ import { isIP } from 'node:net';
 import { parse } from 'csv-parse/sync';
 import { database, setOrg } from './db';
 import { HttpError, parseJson, requestBytes, uuidPattern } from './http';
+import { requireFarm, requirePermission } from './authz';
 import { principal, requireSameOrigin } from './identity';
 import { normalizedMac } from './network';
 
@@ -79,7 +80,7 @@ export function parseInventoryCsv(text: string) {
 async function importUser(request: Request) {
   requireSameOrigin(request);
   const user = await principal();
-  if (user.role === 'diretoria') throw new HttpError(403, 'O seu perfil não pode importar ativos.');
+  requirePermission(user, 'inventory.write');
   return user;
 }
 
@@ -97,6 +98,7 @@ export async function previewImport(request: Request) {
   const farmId = form.get('farmId');
   const file = form.get('file');
   if (typeof farmId !== 'string' || !uuidPattern.test(farmId)) throw new HttpError(400, 'Selecione uma fazenda.');
+  requireFarm(user, farmId);
   if (!file || typeof file === 'string' || !file.name.toLowerCase().endsWith('.csv')) throw new HttpError(400, 'Selecione um arquivo .csv.');
   if (file.size > CSV_BYTES) throw new HttpError(413, 'O arquivo excede 5 MiB.');
   let contents: string;
@@ -133,6 +135,7 @@ export async function commitImport(request: Request) {
       `SELECT farm_id, rows, imported_count, expires_at <= now() AS expired FROM imports
        WHERE org_id = $1 AND id = $2 AND actor = $3 FOR UPDATE`, [user.orgId, importId, user.actor]);
     if (!record) throw new HttpError(404, 'Importação indisponível.');
+    requireFarm(user, record.farm_id);
     if (record.imported_count !== null) return { imported: record.imported_count };
     if (record.expired) throw new HttpError(410, 'A prévia expirou. Importe o arquivo novamente.');
     await tx.query('SELECT 1 FROM farms WHERE org_id = $1 AND id = $2 FOR UPDATE', [user.orgId, record.farm_id]);

@@ -120,12 +120,12 @@ test('reconhecimento registra o operador, audita e respeita o escopo da organiza
   await evaluateAll(db);
   const [{ id }] = await run(f, 'SELECT id FROM occurrences WHERE org_id = $1', [f.orgId]) as Array<{ id: string }>;
 
-  const outsider = { orgId: other.orgId, actor: 'oid-externo', role: 'ti' as const, demo: false };
+  const outsider = { orgId: other.orgId, actor: 'oid-externo', role: 'ti' as const, farmIds: null, demo: false };
   await assert.rejects(acknowledgeOccurrence(db, outsider, id), (error: unknown) => error instanceof HttpError && error.status === 404);
-  const board = { orgId: f.orgId, actor: 'oid-diretoria', role: 'diretoria' as const, demo: false };
+  const board = { orgId: f.orgId, actor: 'oid-diretoria', role: 'diretoria' as const, farmIds: null, demo: false };
   await assert.rejects(acknowledgeOccurrence(db, board, id), (error: unknown) => error instanceof HttpError && error.status === 403);
 
-  const operator = { orgId: f.orgId, actor: 'oid-ti', role: 'ti' as const, demo: false };
+  const operator = { orgId: f.orgId, actor: 'oid-ti', role: 'ti' as const, farmIds: null, demo: false };
   const first = await acknowledgeOccurrence(db, operator, id);
   const second = await acknowledgeOccurrence(db, { ...operator, actor: 'oid-outro' }, id);
   assert.equal(first.acknowledgedAt, second.acknowledgedAt);
