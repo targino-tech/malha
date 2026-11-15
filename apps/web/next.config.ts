@@ -18,6 +18,37 @@ const contentSecurityPolicy = [
   "frame-ancestors 'none'",
 ].join('; ');
 
+// O worker do MapLibre segue a CSP da própria resposta: ele busca tiles, glifos e sprites, então recebe as
+// origens do mapa base em connect-src. Só esse arquivo; o restante do site mantém a política acima.
+// O carregador do next.config não resolve imports locais: esta é a mesma regra de
+// src/components/dashboard/geo/config.ts (mapCspOrigins), conferida em tests/mapa-geo.test.ts.
+function mapCspOrigins() {
+  const raw = (process.env.NEXT_PUBLIC_MAP_STYLE_URL ?? '').trim() || 'https://tiles.openfreemap.org/styles/dark';
+  if (raw.toLowerCase() === 'none' || raw.startsWith('/')) return [];
+  const origins = new Set<string>();
+  for (const value of (process.env.MALHA_MAP_EXTRA_ORIGINS ?? '').split(',').map((item) => item.trim())) {
+    if (!value || value.includes('*')) continue;
+    try {
+      const url = new URL(value);
+      if (url.protocol === 'https:' && !url.username && !url.password && value.replace(/\/$/, '') === url.origin) origins.add(url.origin);
+    } catch { /* inválida: fica fora */ }
+  }
+  try {
+    const url = new URL(raw);
+    if (url.protocol !== 'https:' || url.username || url.password) return [];
+    origins.add(url.origin);
+  } catch {
+    return [];
+  }
+  return [...origins];
+}
+const mapOrigins = mapCspOrigins();
+const mapWorkerPolicy = [
+  "default-src 'none'",
+  `connect-src 'self'${mapOrigins.length ? ` ${mapOrigins.join(' ')}` : ''}`,
+  "img-src 'self' data: blob:",
+].join('; ');
+
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   agentRules: false,
@@ -47,6 +78,10 @@ const nextConfig: NextConfig = {
         // Tudo menos / e /entrar, que recebem a política com nonce no proxy.
         source: '/:path((?!entrar$).+)',
         headers: [{ key: 'Content-Security-Policy', value: contentSecurityPolicy }],
+      },
+      {
+        source: '/_next/static/media/:file(maplibre-gl-worker\\.[0-9a-f]+\\.mjs)',
+        headers: [{ key: 'Content-Security-Policy', value: mapWorkerPolicy }],
       },
       {
         source: '/:path((?!site(?:/|$)).*)',
