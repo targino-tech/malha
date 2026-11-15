@@ -91,3 +91,7 @@ go test ./...
 ```
 
 Veja [a arquitetura do primeiro corte](docs/arquitetura.md) e as variáveis em [`.env.example`](.env.example). A homologação com console física e um diretório Entra do cliente é pré-requisito para o piloto. O pipeline do GitHub Actions verifica o código e os fluxos do demo. A implantação AWS faz parte da próxima etapa.
+
+## Segurança
+
+Os resultados das verificações de código, dependências, segredos e malware ficam no [workflow de segurança](https://github.com/targino-tech/malha/actions/workflows/security.yml). Consulte a [política de segurança](SECURITY.md) para relatar uma vulnerabilidade por um canal privado.
