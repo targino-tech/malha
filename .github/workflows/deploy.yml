@@ -1,8 +1,12 @@
 name: Deploy
 
-# Manual e por ambiente. Produção promove o mesmo digest já validado em homologação (input image_tag)
-# e exige aprovação no GitHub Environment "production".
+# Push em staging constrói e implanta em homologação. Push em production promove o digest já construído
+# para o mesmo commit em staging e exige aprovação no GitHub Environment "production".
+# Enquanto a AWS não estiver configurada (variável de repositório DEPLOY_ENABLED diferente de "true"),
+# o job é ignorado em vez de falhar.
 on:
+  push:
+    branches: [staging, production]
   workflow_dispatch:
     inputs:
       environment:
@@ -20,19 +24,20 @@ permissions:
   id-token: write
 
 concurrency:
-  group: deploy-${{ inputs.environment }}
+  group: deploy-${{ inputs.environment || github.ref_name }}
   cancel-in-progress: false
 
 jobs:
   deploy:
-    name: Implantar em ${{ inputs.environment }}
+    name: Implantar em ${{ inputs.environment || github.ref_name }}
+    if: ${{ vars.DEPLOY_ENABLED == 'true' }}
     runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
+    environment: ${{ inputs.environment || github.ref_name }}
     timeout-minutes: 45
     env:
       AWS_REGION: sa-east-1
-      ENVIRONMENT: ${{ inputs.environment }}
-      CLUSTER: malha-${{ inputs.environment }}
+      ENVIRONMENT: ${{ inputs.environment || github.ref_name }}
+      CLUSTER: malha-${{ inputs.environment || github.ref_name }}
       TAG: ${{ inputs.image_tag || github.sha }}
       REQUESTED_TAG: ${{ inputs.image_tag }}
       ECS_SUBNETS: ${{ vars.ECS_SUBNETS }}
@@ -46,7 +51,7 @@ jobs:
             echo '::error::Tag inválida.'
             exit 1
           fi
-          if [[ "$ENVIRONMENT" == production && -z "$REQUESTED_TAG" ]]; then
+          if [[ "$GITHUB_EVENT_NAME" == workflow_dispatch && "$ENVIRONMENT" == production && -z "$REQUESTED_TAG" ]]; then
             echo '::error::Produção só promove uma tag já validada em homologação.'
             exit 1
           fi
@@ -70,7 +75,7 @@ jobs:
           aws ecr get-login-password | docker login --username AWS --password-stdin "$account.dkr.ecr.$AWS_REGION.amazonaws.com"
 
       - name: Construir e publicar imagens com SBOM e proveniência
-        if: ${{ inputs.image_tag == '' }}
+        if: ${{ inputs.image_tag == '' && (inputs.environment || github.ref_name) == 'staging' }}
         run: |
           docker buildx create --use --name malha
           for target in web worker; do

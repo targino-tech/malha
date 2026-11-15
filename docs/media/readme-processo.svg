@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 330" width="1200" height="330" role="img" aria-labelledby="t d">
+  <title id="t">Linha do tempo do Malha</title>
+  <desc id="d">Base: MVP inicial; Fase 1: Ocorrências; Fase 2: Operação; Fase 3: Valor medido; Fase 4: Produção.</desc>
+  <style>
+    .pulse { stroke-dasharray: 60 820; animation: run 3.6s cubic-bezier(.45,0,.55,1) infinite; }
+    .halo { transform-box: fill-box; transform-origin: center; animation: halo 2.6s ease-out infinite; }
+    @keyframes run { from { stroke-dashoffset: 60 } to { stroke-dashoffset: -880 } }
+    @keyframes halo { 0% { opacity: .8; transform: scale(.8) } 100% { opacity: 0; transform: scale(2.4) } }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; } .sheen, .pulse { display: none; } }
+  </style>
+  <rect width="1200" height="330" rx="24" fill="#120f09"/>
+  <path d="M110 110 H990" stroke="#d9b866" stroke-width="6" stroke-linecap="round"/>
+  <path class="pulse" d="M110 110 H990" stroke="#f5fbe9" stroke-width="6" stroke-linecap="round"/>
+  <g>
+    
+    <circle cx="110" cy="110" r="14" fill="#d9b866" stroke="#120f09" stroke-width="4"/>
+    <text x="110" y="66" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" letter-spacing="2" fill="#bfa775">BASE</text>
+    <text x="110" y="164" text-anchor="middle" font-family="'Barlow Condensed', 'Arial Narrow', 'Roboto Condensed', Impact, sans-serif" font-weight="700" font-size="32" fill="#ecd9a4">MVP inicial</text>
+    <text x="110" y="196" text-anchor="middle" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="14" fill="#cdb98a">Inventário CSV</text><text x="110" y="220" text-anchor="middle" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="14" fill="#cdb98a">Coletor UniFi assinado</text><text x="110" y="244" text-anchor="middle" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="14" fill="#cdb98a">Painel + Entra ID</text>
+  </g>
+  <g>
+    
+    <circle cx="330" cy="110" r="14" fill="#d9b866" stroke="#120f09" stroke-width="4"/>
+    <text x="330" y="66" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" letter-spacing="2" fill="#bfa775">FASE 1</text>
+    <text x="330" y="164" text-anchor="middle" font-family="'Barlow Condensed', 'Arial Narrow', 'Roboto Condensed', Impact, sans-serif" font-weight="700" font-size="32" fill="#ecd9a4">Ocorrências</text>
+    <text x="330" y="196" text-anchor="middle" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="14" fill="#cdb98a">Regras a cada minuto</text><text x="330" y="220" text-anchor="middle" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="14" fill="#cdb98a">Reconhecimento</text><text x="330" y="244" text-anchor="middle" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="14" fill="#cdb98a">E-mail de críticos</text>
+  </g>
+  <g>
+    
+    <circle cx="550" cy="110" r="14" fill="#d9b866" stroke="#120f09" stroke-width="4"/>
+    <text x="550" y="66" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" letter-spacing="2" fill="#bfa775">FASE 2</text>
+    <text x="550" y="164" text-anchor="middle" font-family="'Barlow Condensed', 'Arial Narrow', 'Roboto Condensed', Impact, sans-serif" font-weight="700" font-size="32" fill="#ecd9a4">Operação</text>
+    <text x="550" y="196" text-anchor="middle" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="14" fill="#cdb98a">Admin e integrações</text><text x="550" y="220" text-anchor="middle" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="14" fill="#cdb98a">Papéis por fazenda</text><text x="550" y="244" text-anchor="middle" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="14" fill="#cdb98a">Inventário paginado</text>
+  </g>
+  <g>
+    
+    <circle cx="770" cy="110" r="14" fill="#d9b866" stroke="#120f09" stroke-width="4"/>
+    <text x="770" y="66" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" letter-spacing="2" fill="#bfa775">FASE 3</text>
+    <text x="770" y="164" text-anchor="middle" font-family="'Barlow Condensed', 'Arial Narrow', 'Roboto Condensed', Impact, sans-serif" font-weight="700" font-size="32" fill="#ecd9a4">Valor medido</text>
+    <text x="770" y="196" text-anchor="middle" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="14" fill="#cdb98a">Histórico e conciliação</text><text x="770" y="220" text-anchor="middle" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="14" fill="#cdb98a">Atendimentos</text><text x="770" y="244" text-anchor="middle" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="14" fill="#cdb98a">Indicadores e auditoria</text>
+  </g>
+  <g>
+    <circle class="halo" cx="990" cy="110" r="16" fill="none" stroke="#b6f37a" stroke-width="2"/>
+    <circle cx="990" cy="110" r="14" fill="#b6f37a" stroke="#120f09" stroke-width="4"/>
+    <text x="990" y="66" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" letter-spacing="2" fill="#bfa775">FASE 4</text>
+    <text x="990" y="164" text-anchor="middle" font-family="'Barlow Condensed', 'Arial Narrow', 'Roboto Condensed', Impact, sans-serif" font-weight="700" font-size="32" fill="#ecd9a4">Produção</text>
+    <text x="990" y="196" text-anchor="middle" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="14" fill="#cdb98a">Docker + Terraform</text><text x="990" y="220" text-anchor="middle" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="14" fill="#cdb98a">Deploy com OIDC</text><text x="990" y="244" text-anchor="middle" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="14" fill="#cdb98a">Site, planos e portal</text>
+  </g>
+  <text x="600" y="306" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" letter-spacing="1" fill="#8c7a52">CADA FASE: TESTES UNITÁRIOS + E2E + CI COM POSTGRESQL 17 REAL ANTES DO MERGE</text>
+</svg>

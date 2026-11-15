@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" width="1200" height="400" role="img" aria-labelledby="title desc">
+  <title id="title">Malha</title>
+  <desc id="desc">Logo do Malha sobre fundo escuro, com uma rede de fazendas enviando sinais para a matriz.</desc>
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#0f1c13" stroke-width="1"/>
+    </pattern>
+    <radialGradient id="glow" cx="78%" cy="50%" r="55%">
+      <stop offset="0" stop-color="#2f6b3a" stop-opacity=".55"/>
+      <stop offset="1" stop-color="#040705" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="fade" x1="0" x2="1">
+      <stop offset="0" stop-color="#040705"/>
+      <stop offset=".45" stop-color="#040705" stop-opacity=".2"/>
+      <stop offset="1" stop-color="#040705" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <style>
+    .node { transform-box: fill-box; transform-origin: center; animation: pulse 2.8s ease-in-out infinite; }
+    .n2 { animation-delay: .4s } .n3 { animation-delay: .8s } .n4 { animation-delay: 1.2s } .n5 { animation-delay: 1.6s }
+    .link { stroke-dasharray: 4 10; animation: flow 1.6s linear infinite; }
+    .farm { transform-box: fill-box; transform-origin: center; animation: blink 3.2s ease-in-out infinite; }
+    .f2 { animation-delay: .6s } .f3 { animation-delay: 1.3s } .f4 { animation-delay: 2s } .f5 { animation-delay: 2.5s }
+    .hub { transform-box: fill-box; transform-origin: center; animation: ring 2.4s ease-out infinite; }
+    @keyframes pulse { 0%, 100% { opacity: .55; transform: scale(.85) } 50% { opacity: 1; transform: scale(1.15) } }
+    @keyframes flow { to { stroke-dashoffset: -28 } }
+    @keyframes blink { 0%, 100% { opacity: .45 } 40% { opacity: 1 } }
+    @keyframes ring { 0% { opacity: .9; transform: scale(.6) } 100% { opacity: 0; transform: scale(2.6) } }
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; }
+    }
+  </style>
+
+  <rect width="1200" height="400" fill="#040705"/>
+  <rect width="1200" height="400" fill="url(#grid)"/>
+  <rect width="1200" height="400" fill="url(#glow)"/>
+
+  <!-- Rede de fazendas convergindo para a matriz -->
+  <g stroke="#3f6b47" stroke-width="1.6" fill="none">
+    <path class="link" d="M700 92 L930 200"/>
+    <path class="link" d="M760 318 L930 200"/>
+    <path class="link" d="M1110 84 L930 200"/>
+    <path class="link" d="M1120 300 L930 200"/>
+    <path class="link" d="M640 210 L930 200"/>
+    <path d="M700 92 L640 210 L760 318" stroke="#17271b"/>
+    <path d="M1110 84 L1120 300" stroke="#17271b"/>
+  </g>
+  <g fill="#b6f37a">
+    <circle class="farm" cx="700" cy="92" r="6"/>
+    <circle class="farm f2" cx="760" cy="318" r="6"/>
+    <circle class="farm f3" cx="1110" cy="84" r="6"/>
+    <circle class="farm f4" cx="1120" cy="300" r="6"/>
+    <circle class="farm f5" cx="640" cy="210" r="6"/>
+  </g>
+  <circle class="hub" cx="930" cy="200" r="18" fill="none" stroke="#b6f37a" stroke-width="2"/>
+  <circle cx="930" cy="200" r="11" fill="#e6ffd0"/>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#92a595" letter-spacing="1">
+    <text x="716" y="82">FAZENDA HORIZONTE · MT</text>
+    <text x="776" y="342">VALE VERDE · MT</text>
+    <text x="968" y="68">SANTA LUZIA · MT</text>
+    <text x="980" y="330">BOA ESPERANÇA · MT</text>
+    <text x="520" y="236">CSV · MANUAL</text>
+    <text x="952" y="230" fill="#d8ff9e">MATRIZ</text>
+  </g>
+
+  <rect width="760" height="400" fill="url(#fade)"/>
+
+  <!-- Símbolo -->
+  <g transform="translate(72 104)">
+    <rect x=".75" y=".75" width="126.5" height="126.5" rx="27" fill="#060a07" stroke="#24402b" stroke-width="1.5"/>
+    <g transform="scale(2)">
+      <path d="M15 46V18l17 17 17-17v28" fill="none" stroke="#b6f37a" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
+      <path d="M15 46h34M32 35v11" fill="none" stroke="#3f6b47" stroke-width="1.6" stroke-linecap="round"/>
+      <g fill="#e6ffd0">
+        <circle class="node" cx="15" cy="18" r="3.6"/><circle class="node n2" cx="49" cy="18" r="3.6"/>
+        <circle class="node n3" cx="32" cy="35" r="3.6"/><circle class="node n4" cx="15" cy="46" r="3.6"/>
+        <circle class="node n5" cx="49" cy="46" r="3.6"/>
+      </g>
+    </g>
+  </g>
+
+  <g font-family="'Barlow Condensed', 'Arial Narrow', 'Roboto Condensed', Impact, sans-serif" font-weight="700">
+    <text x="232" y="212" font-size="112" fill="#ecf4e8" letter-spacing="-2">malha<tspan fill="#b6f37a">.</tspan></text>
+  </g>
+  <g font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+    <text x="236" y="262" font-size="24" fill="#ecf4e8">Inventário vivo de rede e ativos para grupos agrícolas</text>
+    <text x="236" y="298" font-size="16" fill="#92a595">Coletor UniFi somente leitura · painel multi-fazenda · alertas em 3 minutos</text>
+  </g>
+</svg>

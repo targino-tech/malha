@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, useMotionValueEvent, useReducedMotion, useScroll, useTransform, type MotionValue } from 'motion/react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import styles from '../site.module.css';
 
 const steps = [
@@ -304,8 +304,12 @@ function Step({ index, progress, step }: { index: number; progress: MotionValue<
   );
 }
 
+const subscribeNever = () => () => {};
+
 export function FieldStory() {
-  const reduced = useReducedMotion() ?? false;
+  // O servidor não conhece a preferência do visitante: troca para a versão estática só depois da hidratação.
+  const hydrated = useSyncExternalStore(subscribeNever, () => true, () => false);
+  const reduced = (useReducedMotion() ?? false) && hydrated;
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end end'] });
   const bar = useTransform(scrollYProgress, [0, 1], ['0%', '100%']);
