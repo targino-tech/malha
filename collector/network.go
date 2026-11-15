@@ -191,6 +191,9 @@ func validRate(value *float64) *int64 {
 // enrich completa cada dispositivo com portas, uplink e taxas. Falhas por dispositivo não derrubam a
 // captura de inventário: o dispositivo segue sem os campos de rede, que o Malha trata como "não lidos".
 func (unifi unifiReader) enrich(ctx context.Context, site string, devices []device) error {
+	if !validID(site) {
+		return errors.New("UNIFI_SITE_ID inválido")
+	}
 	budget, cancel := context.WithTimeout(ctx, detailBudget)
 	defer cancel()
 	failures := 0
@@ -199,6 +202,12 @@ func (unifi unifiReader) enrich(ctx context.Context, site string, devices []devi
 			break
 		}
 		item := &devices[index]
+		// O ID entra no caminho do GET de detalhe: só UUID, para que um valor como "../" vindo
+		// do console nunca leve o coletor a ler outro caminho do host UniFi com a mesma chave.
+		if !validID(item.ID) {
+			failures++
+			continue
+		}
 		var detail remoteDeviceDetail
 		if err := unifi.getJSON(budget, "/sites/"+site+"/devices/"+item.ID, &detail); err != nil {
 			failures++

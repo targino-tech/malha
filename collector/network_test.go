@@ -72,6 +72,38 @@ func TestNetworkReadingOnlyUsesGetAndKeepsInventoryOnDetailFailure(t *testing.T)
 	}
 }
 
+func TestDetailNeverRequestsPathFromNonUUIDDeviceID(t *testing.T) {
+	requests := 0
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		t.Errorf("solicitação inesperada: %s %s", r.Method, r.URL.String())
+		http.NotFound(w, r)
+	}))
+	defer server.Close()
+	base, _ := url.Parse(server.URL + "/proxy/network/integration/v1")
+	unifi := unifiReader{server.Client(), base, "fixture"}
+	devices := []device{
+		{ID: "../../../../admin", State: "ONLINE"},
+		{ID: switchID + "/../../users", State: "ONLINE"},
+		{ID: switchID + "?x=1", State: "ONLINE"},
+		{ID: "", State: "ONLINE"},
+	}
+	if err := unifi.enrich(t.Context(), siteID, devices); err != nil {
+		t.Fatal(err)
+	}
+	for _, item := range devices {
+		if item.Ports != nil || item.UplinkDeviceID != "" || item.UplinkTxBps != nil {
+			t.Fatalf("dispositivo com ID inválido ganhou dados de rede: %+v", item)
+		}
+	}
+	if err := unifi.enrich(t.Context(), "../outro-site", []device{{ID: switchID, State: "ONLINE"}}); err == nil {
+		t.Fatal("site inválido deveria ser recusado")
+	}
+	if requests != 0 {
+		t.Fatalf("%d solicitações feitas com ID inválido", requests)
+	}
+}
+
 func TestNetworksMissingInOlderConsolesIsNotAnError(t *testing.T) {
 	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
