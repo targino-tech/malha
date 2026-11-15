@@ -122,6 +122,10 @@ describe('ingestão de rede e API', () => {
     await assert.rejects(send(JSON.stringify({ schemaVersion: 1, batchId: randomUUID(), captureId: randomUUID(), sequence: ++sequence,
       observedAt: minutesAgo(19), part: 1, parts: 1, devices: [{ id: gw, state: 'ONLINE', ports: [] }] })), status(400));
     await assert.rejects(send(batch([{ id: gw, state: 'ONLINE', ports: [{ idx: 1 }, { idx: 1 }] }])), status(400));
+    // Sub-rede impossível é recusada na ingestão, antes de chegar ao cast para inet da projeção.
+    for (const subnet of ['999.1.1.0/24', '10.0.0.0/40']) {
+      await assert.rejects(send(batch([{ id: gw, state: 'ONLINE' }], { networks: [{ id: 'net-x', name: 'X', subnet }] })), status(400));
+    }
     // A versão 1 não altera portas, VLANs nem ligações: ausência significa "não lido".
     assert.equal((await rows('SELECT 1 FROM device_ports WHERE org_id = $1 AND farm_id = $2', [DEMO_ORG, DEMO_FARM])).length, 0);
   });
