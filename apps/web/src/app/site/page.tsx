@@ -29,6 +29,8 @@ function Rows() {
 export default function SitePage() {
   return (
     <>
+      <div className={`${styles.letterbox} ${styles.letterboxTop}`} aria-hidden="true" />
+      <div className={`${styles.letterbox} ${styles.letterboxBottom}`} aria-hidden="true" />
       <CinematicHero facts={facts} />
 
       <section id="produto" className={`${styles.frame} ${styles.section}`} aria-labelledby="produto-title">

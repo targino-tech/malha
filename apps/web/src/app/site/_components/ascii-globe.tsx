@@ -168,10 +168,12 @@ function viewAt(seconds: number, spin: number, reduced: boolean, scene: Scene): 
   };
 }
 
-export function AsciiGlobe({ className, scene = 'full' }: { className?: string; scene?: Scene }) {
+// Com `paused` informado, quem renderiza controla a pausa e o botão; sem ele, o globo traz o próprio botão.
+export function AsciiGlobe({ className, scene = 'full', paused: controlled }: { className?: string; scene?: Scene; paused?: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const reduced = useReducedMotion();
-  const [paused, setPaused] = useState(false);
+  const [own, setPaused] = useState(false);
+  const paused = controlled ?? own;
   const pausedRef = useRef(false);
 
   useEffect(() => { pausedRef.current = paused; }, [paused]);
@@ -516,7 +518,7 @@ export function AsciiGlobe({ className, scene = 'full' }: { className?: string; 
   return (
     <div className={styles.globeFrame}>
       <canvas ref={canvasRef} className={className} aria-hidden="true" data-malha-globe />
-      {!reduced && (
+      {!reduced && controlled === undefined && (
         <button type="button" className={styles.globePause} aria-pressed={paused} onClick={() => setPaused((value) => !value)}
           aria-label={paused ? 'Retomar a animação do globo' : 'Pausar a animação do globo'}>
           {paused ? <Play size={16} aria-hidden="true" /> : <Pause size={16} aria-hidden="true" />}

@@ -41,7 +41,7 @@ export function SiteHeader() {
   }, [open]);
 
   return (
-    <header className={styles.header} data-scrolled={scrolled || open}>
+    <header className={styles.header} data-scrolled={scrolled || open} data-open={open}>
       <div className={styles.headerInner}>
         <Brand animated />
         <nav ref={navRef} aria-label="Navegação do site" className={styles.nav} id="site-menu" data-open={open}>

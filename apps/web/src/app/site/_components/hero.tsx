@@ -3,7 +3,8 @@
 import { ArrowDown, ArrowUpRight } from 'lucide-react';
 import { motion, useReducedMotion, useScroll, useSpring, useTransform } from 'motion/react';
 import Link from 'next/link';
-import { useRef } from 'react';
+import { Pause, Play } from 'lucide-react';
+import { useRef, useState } from 'react';
 import styles from '../site.module.css';
 import { AsciiGlobe } from './ascii-globe';
 import { RevealWords } from './reveal';
@@ -15,6 +16,7 @@ const ease = [0.16, 1, 0.3, 1] as const;
 export function CinematicHero({ facts }: { facts: ReadonlyArray<readonly [string, string]> }) {
   const reduced = useReducedMotion() ?? false;
   const ref = useRef<HTMLElement>(null);
+  const [paused, setPaused] = useState(false);
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] });
   const progress = useSpring(scrollYProgress, { stiffness: 140, damping: 30, mass: 0.4 });
   const globeScale = useTransform(progress, [0, 1], [1, 1.5]);
@@ -58,7 +60,7 @@ export function CinematicHero({ facts }: { facts: ReadonlyArray<readonly [string
             animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
             transition={{ duration: 1.8, ease, delay: 0.2 }}
           >
-            <AsciiGlobe className={styles.globe} />
+            <AsciiGlobe className={styles.globe} paused={paused} />
           </motion.div>
         </motion.div>
           <motion.p
@@ -71,6 +73,12 @@ export function CinematicHero({ facts }: { facts: ReadonlyArray<readonly [string
           >
             <span>Ilustração</span> Rotas e fazendas de exemplo
           </motion.p>
+          {!reduced && (
+            <button type="button" className={styles.globePause} aria-pressed={paused} onClick={() => setPaused((value) => !value)}
+              aria-label={paused ? 'Retomar a animação do globo' : 'Pausar a animação do globo'}>
+              {paused ? <Play size={16} aria-hidden="true" /> : <Pause size={16} aria-hidden="true" />}
+            </button>
+          )}
         </div>
       </div>
       <motion.div className={styles.ticker} style={reduced ? undefined : { opacity: stripOpacity }}>
@@ -88,8 +96,6 @@ export function CinematicHero({ facts }: { facts: ReadonlyArray<readonly [string
           ))}
         </ul>
       </motion.div>
-      <div className={`${styles.letterbox} ${styles.letterboxTop}`} aria-hidden="true" />
-      <div className={`${styles.letterbox} ${styles.letterboxBottom}`} aria-hidden="true" />
     </section>
   );
 }
