@@ -12,14 +12,25 @@ Vídeo de apresentação feito com o mesmo visual do site: globo ASCII, contorno
 | 36 – 41 s | Login com Entra ID, AD/LDAP ou OpenID Connect e as garantias de isolamento |
 | 41 – 45 s | Grátis e open source, com os endereços do site e do repositório |
 
-Sem trilha nem locução: adicione a sua no editor de preferência (com licença de uso para a música).
+## Som
+
+A trilha e os efeitos são sintetizados por código em [`sound.mjs`](sound.mjs), sem amostras de terceiros: música eletrônica a 120 BPM em lá menor (Lá m – Fá – Dó – Sol), com batida, baixo, acordes e arpejo, e efeitos presos à linha do tempo da imagem:
+
+- impacto e "plins" quando a folha e os nós da logo aparecem, e o drop da batida aos 4 s;
+- pings de dados nas rotas do globo, mergulho até Mato Grosso e "lock-on" nas fazendas;
+- bipes dos pacotes, glitch e queda de energia quando a internet cai (a música fica abafada), cliques da fila, alarme da ocorrência, religamento e rajada de bipes no reenvio;
+- cliques, pops e sinos nos destaques do painel, nas famílias do monitoramento, nos provedores de login e nas garantias;
+- riser e grande impacto no final.
+
+A mixagem sai normalizada a -14 LUFS com pico abaixo de -1 dBFS, o padrão de YouTube e redes sociais. O `.wav` separado fica em `video/out/malha-45s.wav` para quem quiser editar.
 
 ## Gerar
 
 Requer Node.js 24, as dependências do projeto (`pnpm install`) e `ffmpeg` no PATH.
 
 ```sh
-pnpm video                                  # video/out/malha-45s.mp4, 60 fps (~20 min)
+pnpm video                                  # video/out/malha-45s.mp4 com som, 60 fps (~20 min)
+pnpm video:som                              # só refaz a trilha e junta com a imagem já gerada (segundos)
 node video/render.mjs --fps 30              # mais rápido, para revisar
 node video/render.mjs --from 12 --to 20     # só um trecho
 node video/render.mjs --still 16.8          # um quadro em PNG

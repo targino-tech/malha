@@ -1,9 +1,10 @@
 // Gera o vídeo do Malha: empacota as cenas, abre no Chromium e grava cada quadro direto no ffmpeg.
 //
-//   node video/render.mjs                    → video/out/malha-45s.mp4 (1920 × 1080, 60 fps)
+//   node video/render.mjs                    → video/out/malha-45s.mp4 (1920 × 1080, 60 fps, com som)
 //   node video/render.mjs --fps 30           → mais rápido, para revisar
 //   node video/render.mjs --from 12 --to 20  → só um trecho
 //   node video/render.mjs --still 16.8       → um quadro em PNG (video/out/quadro-16.8.png)
+//   node video/render.mjs --sem-som          → só a imagem (video/out/malha-45s-imagem.mp4)
 //
 // Requer ffmpeg no PATH. Para usar um Chromium já instalado: MALHA_CHROMIUM=/caminho/do/chromium.
 import { spawn } from 'node:child_process';
@@ -20,7 +21,7 @@ const args = process.argv.slice(2);
 const option = (name, fallback) => { const index = args.indexOf(`--${name}`); return index >= 0 ? args[index + 1] : fallback; };
 const fps = Number(option('fps', '60'));
 const still = option('still');
-const out = resolve(option('out', join(here, 'out', 'malha-45s.mp4')));
+const out = resolve(option('out', join(here, 'out', 'malha-45s-imagem.mp4')));
 
 await build({ entryPoints: [join(here, 'src', 'main.ts')], bundle: true, format: 'iife', target: 'chrome120', outfile: join(here, 'dist', 'main.js'), logLevel: 'warning' });
 await mkdir(join(here, 'out'), { recursive: true });
@@ -65,6 +66,11 @@ try {
     ffmpeg.stdin.end();
     await finished;
     console.log(`\n${out}`);
+    // Vídeo inteiro: sintetiza a trilha e junta com a imagem (video/sound.mjs).
+    if (from === 0 && to === duration && !args.includes('--sem-som') && !args.includes('--out')) {
+      const sound = spawn(process.execPath, [join(here, 'sound.mjs')], { stdio: 'inherit' });
+      await new Promise((done, fail) => sound.on('close', (code) => (code === 0 ? done() : fail(new Error(`sound.mjs saiu com ${code}`)))));
+    }
   }
 } finally {
   await browser.close();
