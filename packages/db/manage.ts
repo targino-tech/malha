@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { issueEnrollmentCode, revokeCollectorKey } from '../../apps/web/src/server/admin';
 import { connectPostgres, migrate, setOrg, type Database } from '../../apps/web/src/server/db';
 import { uuidPattern } from '../../apps/web/src/server/http';
+import { email } from './email';
 
 function uuid(value: string | undefined, label: string) {
   if (!value || !uuidPattern.test(value)) throw new Error(`Forneça um UUID válido para ${label}.`);
@@ -40,12 +41,6 @@ async function revoke(db: Database, orgId: string, farmId: string) {
     await setOrg(tx, orgId);
     return (await revokeCollectorKey(tx, orgId, farmId, 'cli')).collectorId;
   });
-}
-
-function email(value: string | undefined) {
-  const normalized = value?.trim().toLowerCase();
-  if (!normalized || normalized.length > 254 || !/^[^s@]+@[^s@]+.[^s@]+$/.test(normalized)) throw new Error('Forneça um e-mail válido.');
-  return normalized;
 }
 
 async function recipient(db: Database, orgId: string, address: string, active: boolean) {
