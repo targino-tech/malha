@@ -102,6 +102,8 @@ export function Integrations({ farms, canEnroll, online, onChanged }: {
                     <div><dt>Fila local</dt><dd>{integration?.queueDepth == null ? '—' : wholeNumber.format(integration.queueDepth)}</dd></div>
                     <div><dt>Último sinal</dt><dd>{formatDate(integration?.lastHeartbeatAt ?? null)}</dd></div>
                     <div><dt>Última coleta</dt><dd>{formatDate(integration?.lastCaptureAt ?? null)}</dd></div>
+                    <div><dt>Relógio do coletor</dt><dd className={Math.abs(integration?.clockSkewSeconds ?? 0) > 30 ? 'skew-warning' : undefined}>{integration?.clockSkewSeconds == null ? '—'
+                      : integration.clockSkewSeconds === 0 ? 'Sincronizado' : `${integration.clockSkewSeconds > 0 ? '+' : ''}${integration.clockSkewSeconds} s`}</dd></div>
                   </dl>
                   {canEnroll && (
                     <div className="integration-actions">

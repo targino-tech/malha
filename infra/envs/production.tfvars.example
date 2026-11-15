@@ -1,0 +1,16 @@
+# Copie para envs/production.tfvars (fora do Git) e ajuste. Use uma conta AWS por ambiente.
+environment        = "production"
+region             = "sa-east-1"
+hosted_zone_id     = "Z0000000000000000000"
+app_domain         = "app.malha.example"
+ingest_domain      = "ingest.malha.example"
+mail_domain        = "malha.example"
+entra_tenant_id    = "00000000-0000-0000-0000-000000000000"
+entra_client_id    = "00000000-0000-0000-0000-000000000000"
+alert_email        = "plataforma@malha.example"
+monthly_budget_usd = 400
+db_multi_az        = true
+single_nat_gateway = false
+web_desired_count  = 2
+# Primeira aplicação: true. Depois do primeiro deploy pelo GitHub Actions: false.
+bootstrap = true

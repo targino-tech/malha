@@ -1,6 +1,6 @@
 import { mkdirSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import { PGlite } from '@electric-sql/pglite';
+import type { PGlite } from '@electric-sql/pglite';
 import pg from 'pg';
 import { createHash } from 'node:crypto';
 
@@ -71,7 +71,8 @@ export function pgliteDatabase(client: PGlite): Database {
 async function demoConnection(): Promise<Database> {
   const directory = process.env.MALHA_DEMO_DB ?? resolve(process.cwd(), '.malha/demo');
   if (directory !== 'memory://') mkdirSync(dirname(resolve(/* turbopackIgnore: true */ directory)), { recursive: true });
-  const db = pgliteDatabase(await PGlite.create(directory));
+  const { PGlite: Engine } = await import('@electric-sql/pglite');
+  const db = pgliteDatabase(await Engine.create(directory));
   await migrate(db);
   await seedDemo(db);
   return db;
@@ -105,6 +106,8 @@ export async function migrate(db: Database) {
     readFileSync(/* turbopackIgnore: true */ resolve('packages/db/003_occurrences.sql'), 'utf8'),
     readFileSync(/* turbopackIgnore: true */ resolve('packages/db/004_access_inventory.sql'), 'utf8'),
     readFileSync(/* turbopackIgnore: true */ resolve('packages/db/005_history_value.sql'), 'utf8'),
+    readFileSync(/* turbopackIgnore: true */ resolve('packages/db/006_clock_skew.sql'), 'utf8'),
+    readFileSync(/* turbopackIgnore: true */ resolve('packages/db/007_site_requests.sql'), 'utf8'),
   ];
   await db.transaction(async (tx) => {
     await tx.exec('SELECT pg_advisory_xact_lock(58147261)');

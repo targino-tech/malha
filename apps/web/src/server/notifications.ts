@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { setOrg, type Database, type Queryable } from './db';
+import { errorName, log } from './log';
 
 export type AlertEmail = { to: string; subject: string; text: string };
 export interface MailTransport { send(message: AlertEmail): Promise<void> }
@@ -14,7 +15,7 @@ export function transportFromEnv(): MailTransport {
   const url = process.env.MALHA_SMTP_URL;
   const from = process.env.MALHA_ALERT_FROM;
   if (!url || !from) {
-    return { async send() { console.info('E-mail de alerta não enviado: configure MALHA_SMTP_URL e MALHA_ALERT_FROM.'); } };
+    return { async send() { log.warn('E-mail de alerta não enviado: configure MALHA_SMTP_URL e MALHA_ALERT_FROM.'); } };
   }
   const smtp = nodemailer.createTransport(url);
   return { async send(message) { await smtp.sendMail({ from, ...message }); } };
@@ -88,7 +89,7 @@ async function sendForOrganization(tx: Queryable, orgId: string, transport: Mail
           status = CASE WHEN attempts + 1 >= $4 THEN 'failed' ELSE 'pending' END
         WHERE org_id = $1 AND (occurrence_id, recipient) IN (SELECT * FROM unnest($2::uuid[], $3::text[]))`,
       [orgId, items.map((item) => item.occurrence_id), items.map((item) => item.recipient), MAX_ATTEMPTS]);
-      console.error('Falha ao enviar e-mail de alerta', error instanceof Error ? error.name : 'indefinida');
+      log.error('Falha ao enviar e-mail de alerta', { error: errorName(error) });
     }
   }
   return sent;

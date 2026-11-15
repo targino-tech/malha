@@ -1,0 +1,135 @@
+name: Deploy
+
+# Push em staging constrói e implanta em homologação. Push em production promove o digest já construído
+# para o mesmo commit em staging e exige aprovação no GitHub Environment "production".
+# Enquanto a AWS não estiver configurada (variável de repositório DEPLOY_ENABLED diferente de "true"),
+# o job é ignorado em vez de falhar.
+on:
+  push:
+    branches: [staging, production]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Ambiente de destino
+        type: choice
+        options: [staging, production]
+        required: true
+      image_tag:
+        description: Tag já publicada para promover. Vazio constrói o commit atual (só em staging).
+        type: string
+        required: false
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: deploy-${{ inputs.environment || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Implantar em ${{ inputs.environment || github.ref_name }}
+    if: ${{ vars.DEPLOY_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || github.ref_name }}
+    timeout-minutes: 45
+    env:
+      AWS_REGION: sa-east-1
+      ENVIRONMENT: ${{ inputs.environment || github.ref_name }}
+      CLUSTER: malha-${{ inputs.environment || github.ref_name }}
+      TAG: ${{ inputs.image_tag || github.sha }}
+      REQUESTED_TAG: ${{ inputs.image_tag }}
+      ECS_SUBNETS: ${{ vars.ECS_SUBNETS }}
+      ECS_SECURITY_GROUP: ${{ vars.ECS_SECURITY_GROUP }}
+      APP_DOMAIN: ${{ vars.APP_DOMAIN }}
+      INGEST_DOMAIN: ${{ vars.INGEST_DOMAIN }}
+    steps:
+      - name: Conferir o pedido
+        run: |
+          if [[ -n "$REQUESTED_TAG" && ! "$REQUESTED_TAG" =~ ^[A-Za-z0-9._-]{1,128}$ ]]; then
+            echo '::error::Tag inválida.'
+            exit 1
+          fi
+          if [[ "$GITHUB_EVENT_NAME" == workflow_dispatch && "$ENVIRONMENT" == production && -z "$REQUESTED_TAG" ]]; then
+            echo '::error::Produção só promove uma tag já validada em homologação.'
+            exit 1
+          fi
+          for name in ECS_SUBNETS ECS_SECURITY_GROUP APP_DOMAIN INGEST_DOMAIN; do
+            if [[ -z "${!name}" ]]; then echo "::error::Configure a variável $name no GitHub Environment."; exit 1; fi
+          done
+
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: sa-east-1
+
+      - name: Entrar no ECR
+        run: |
+          account="$(aws sts get-caller-identity --query Account --output text)"
+          echo "REGISTRY=$account.dkr.ecr.$AWS_REGION.amazonaws.com" >> "$GITHUB_ENV"
+          aws ecr get-login-password | docker login --username AWS --password-stdin "$account.dkr.ecr.$AWS_REGION.amazonaws.com"
+
+      - name: Construir e publicar imagens com SBOM e proveniência
+        if: ${{ inputs.image_tag == '' && (inputs.environment || github.ref_name) == 'staging' }}
+        run: |
+          docker buildx create --use --name malha
+          for target in web worker; do
+            docker buildx build --target "$target" --provenance=mode=max --sbom=true \
+              --tag "$REGISTRY/malha/$target:$TAG" --push .
+          done
+
+      - name: Resolver digests imutáveis
+        run: |
+          for target in web worker; do
+            digest="$(aws ecr describe-images --repository-name "malha/$target" --image-ids imageTag="$TAG" \
+              --query 'imageDetails[0].imageDigest' --output text)"
+            [[ "$digest" == sha256:* ]] || { echo "::error::Imagem malha/$target:$TAG não encontrada."; exit 1; }
+            echo "${target^^}_IMAGE=$REGISTRY/malha/$target@$digest" >> "$GITHUB_ENV"
+          done
+
+      - name: Registrar revisões das tarefas
+        run: |
+          register() {
+            aws ecs describe-task-definition --task-definition "$1" --query taskDefinition --output json \
+              | jq --arg image "$2" 'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities,
+                  .registeredAt, .registeredBy, .deregisteredAt) | .containerDefinitions[0].image = $image' > "$RUNNER_TEMP/$1.json"
+            aws ecs register-task-definition --cli-input-json "file://$RUNNER_TEMP/$1.json" \
+              --query taskDefinition.taskDefinitionArn --output text
+          }
+          echo "WEB_TASK=$(register "$CLUSTER-web" "$WEB_IMAGE")" >> "$GITHUB_ENV"
+          echo "WORKER_TASK=$(register "$CLUSTER-worker" "$WORKER_IMAGE")" >> "$GITHUB_ENV"
+          echo "MIGRATE_TASK=$(register "$CLUSTER-migrate" "$WORKER_IMAGE")" >> "$GITHUB_ENV"
+
+      - name: Migrar o banco em tarefa dedicada
+        run: |
+          task="$(aws ecs run-task --cluster "$CLUSTER" --task-definition "$MIGRATE_TASK" --launch-type FARGATE \
+            --network-configuration "awsvpcConfiguration={subnets=[$ECS_SUBNETS],securityGroups=[$ECS_SECURITY_GROUP],assignPublicIp=DISABLED}" \
+            --query 'tasks[0].taskArn' --output text)"
+          aws ecs wait tasks-stopped --cluster "$CLUSTER" --tasks "$task"
+          code="$(aws ecs describe-tasks --cluster "$CLUSTER" --tasks "$task" --query 'tasks[0].containers[0].exitCode' --output text)"
+          if [[ "$code" != 0 ]]; then
+            echo "::error::A migração terminou com código $code. Consulte /malha/$ENVIRONMENT/migrate no CloudWatch."
+            exit 1
+          fi
+
+      - name: Atualizar serviços com rollout gradual
+        run: |
+          aws ecs update-service --cluster "$CLUSTER" --service web --task-definition "$WEB_TASK" --query service.serviceName --output text
+          aws ecs update-service --cluster "$CLUSTER" --service worker --task-definition "$WORKER_TASK" --query service.serviceName --output text
+          aws ecs wait services-stable --cluster "$CLUSTER" --services web worker
+
+      - name: Smoke test
+        run: |
+          curl -fsS "https://$APP_DOMAIN/api/health" | grep -q '"ok"'
+          # O host de ingestão exige assinatura e o host do painel não expõe as rotas do coletor.
+          status="$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d '{}' "https://$INGEST_DOMAIN/v1/collectors/heartbeat")"
+          [[ "$status" == 401 ]] || { echo "::error::Ingestão respondeu $status sem assinatura (esperado 401)."; exit 1; }
+          status="$(curl -s -o /dev/null -w '%{http_code}' -X POST "https://$APP_DOMAIN/v1/collectors/heartbeat")"
+          [[ "$status" == 404 ]] || { echo "::error::O host do painel respondeu $status para a rota do coletor (esperado 404)."; exit 1; }
+          echo "### Deploy $ENVIRONMENT" >> "$GITHUB_STEP_SUMMARY"
+          echo "Tag \`$TAG\` · web \`$WEB_IMAGE\` · worker \`$WORKER_IMAGE\`" >> "$GITHUB_STEP_SUMMARY"

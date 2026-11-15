@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { errorName, log } from './log';
 import { setOrg, type Database, type Queryable } from './db';
 import type { Device } from './collector';
 
@@ -113,7 +114,7 @@ export async function processInventoryJob(database: Database) {
       await tx.query(`UPDATE inventory_outbox SET attempts = $2,
         available_at = now() + make_interval(secs => $3),
         failed_at = CASE WHEN $2 >= 8 THEN now() ELSE NULL END WHERE id = $1`, [job.id, attempts, waitSeconds]);
-      console.error('Falha ao aplicar captura', job.id, error instanceof Error ? error.name : 'indefinida');
+      log.error('Falha ao aplicar captura', { job: job.id, attempts, error: errorName(error) });
     }
     await tx.exec('RELEASE SAVEPOINT inventory_projection');
     return true;

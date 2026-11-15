@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { issueEnrollmentCode, revokeCollectorKey } from '../../apps/web/src/server/admin';
 import { connectPostgres, migrate, setOrg, type Database } from '../../apps/web/src/server/db';
 import { uuidPattern } from '../../apps/web/src/server/http';
+import { email } from './email';
 
 function uuid(value: string | undefined, label: string) {
   if (!value || !uuidPattern.test(value)) throw new Error(`Forneça um UUID válido para ${label}.`);
@@ -42,12 +43,6 @@ async function revoke(db: Database, orgId: string, farmId: string) {
   });
 }
 
-function email(value: string | undefined) {
-  const normalized = value?.trim().toLowerCase();
-  if (!normalized || normalized.length > 254 || !/^[^s@]+@[^s@]+.[^s@]+$/.test(normalized)) throw new Error('Forneça um e-mail válido.');
-  return normalized;
-}
-
 async function recipient(db: Database, orgId: string, address: string, active: boolean) {
   await db.transaction(async (tx) => {
     await setOrg(tx, orgId);
@@ -56,6 +51,15 @@ async function recipient(db: Database, orgId: string, address: string, active: b
     await tx.query('INSERT INTO audit_log (id, org_id, actor, action, scope) VALUES ($1, $2, $3, $4, $5::jsonb)',
       [randomUUID(), orgId, 'cli', active ? 'alerts.recipient.add' : 'alerts.recipient.remove', '{}']);
   });
+}
+
+async function requests(db: Database) {
+  const { rows } = await db.query<{ created_at: Date; plan: string; company: string; name: string; email: string; farms: number; status: string }>(
+    'SELECT created_at, plan, company, name, email, farms, status FROM site_requests ORDER BY created_at DESC LIMIT 50');
+  for (const row of rows) {
+    console.log([row.created_at.toISOString(), row.status, row.plan, row.farms, row.company, row.name, row.email].join('\t'));
+  }
+  if (!rows.length) console.log('Nenhuma solicitação recebida pelo site.');
 }
 
 async function main() {
@@ -77,8 +81,10 @@ async function main() {
     } else if (command === 'recipient' || command === 'recipient-remove') {
       await recipient(db, uuid(one, 'o grupo'), email(two), command === 'recipient');
       console.log(command === 'recipient' ? 'Destinatário de alertas ativo.' : 'Destinatário de alertas desativado.');
+    } else if (command === 'requests') {
+      await requests(db);
     } else {
-      throw new Error('Use migrate, recipient <grupo> <email>, recipient-remove <grupo> <email>, configure <tenant> <oid> [nome], farm <grupo> <nome> <local>, enroll <grupo> <fazenda> ou revoke <grupo> <fazenda>.');
+      throw new Error('Use migrate, requests, recipient <grupo> <email>, recipient-remove <grupo> <email>, configure <tenant> <oid> [nome], farm <grupo> <nome> <local>, enroll <grupo> <fazenda> ou revoke <grupo> <fazenda>.');
     }
   } finally {
     await db.close();

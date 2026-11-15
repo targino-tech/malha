@@ -4,7 +4,7 @@ import { Boxes, MapPin, Radio } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';
 import dashboardPreview from './painel.webp';
-import styles from './site.module.css';
+import styles from '../site.module.css';
 
 const topics = {
   units: {

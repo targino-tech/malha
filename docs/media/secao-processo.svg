@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 124" width="1200" height="124" role="img" aria-label="Como foi construído">
+  <style>
+    .sheen { animation: sheen 6s ease-in-out infinite; }
+    @keyframes sheen { 0% { transform: translateX(-420px) } 60%, 100% { transform: translateX(1320px) } }
+    .dot { transform-box: fill-box; transform-origin: center; animation: dot 1.9s ease-in-out infinite; opacity: .6; }
+    .bar { animation: bar 3.2s ease-in-out infinite; }
+    @keyframes dot { 0%, 100% { opacity: .3; transform: scale(.75) } 45% { opacity: 1; transform: scale(1.15) } }
+    @keyframes bar { 0%, 100% { opacity: .35 } 50% { opacity: .85 } }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; } .sheen, .pulse { display: none; } }
+  </style>
+  <defs>
+    <linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".16"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+    <clipPath id="c"><rect width="1200" height="124" rx="20"/></clipPath>
+  </defs>
+  <g clip-path="url(#c)">
+    <rect width="1200" height="124" fill="#2a2114"/>
+    <rect class="sheen" x="0" y="0" width="360" height="124" fill="url(#g)"/>
+    <rect class="bar" x="0" y="118" width="1200" height="6" fill="#d9b866" opacity=".55"/>
+  </g>
+  <text x="40" y="74" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="22" font-weight="700" fill="#bfa775">06</text>
+  <text x="96" y="78" font-family="'Barlow Condensed', 'Arial Narrow', 'Roboto Condensed', Impact, sans-serif" font-weight="700" font-size="50" fill="#ecd9a4" letter-spacing="-.5">Como foi construído</text>
+  <text x="98" y="104" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#bfa775" letter-spacing="2">DO PLANO AO PILOTO EM QUATRO FASES</text>
+  <circle class="dot" style="animation-delay:0.00s" cx="900" cy="62" r="5" fill="#d9b866"/><circle class="dot" style="animation-delay:0.18s" cx="926" cy="62" r="5" fill="#d9b866"/><circle class="dot" style="animation-delay:0.36s" cx="952" cy="62" r="5" fill="#d9b866"/><circle class="dot" style="animation-delay:0.54s" cx="978" cy="62" r="5" fill="#d9b866"/><circle class="dot" style="animation-delay:0.72s" cx="1004" cy="62" r="5" fill="#d9b866"/><circle class="dot" style="animation-delay:0.90s" cx="1030" cy="62" r="5" fill="#d9b866"/><circle class="dot" style="animation-delay:1.08s" cx="1056" cy="62" r="5" fill="#d9b866"/><circle class="dot" style="animation-delay:1.26s" cx="1082" cy="62" r="5" fill="#d9b866"/><circle class="dot" style="animation-delay:1.44s" cx="1108" cy="62" r="5" fill="#d9b866"/>
+</svg>

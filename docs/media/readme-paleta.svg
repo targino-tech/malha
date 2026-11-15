@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 200" width="1200" height="200" role="img" aria-label="Paleta da marca Malha: Tinta #040705, Painel #0a110c, Verde-limão #b6f37a, Broto #d8ff9e, Mata #2f6b3a, Trigo #d9b866, Solo #2a2114, Alerta #f1b45b">
+  <style>
+    .sheen { animation: sheen 6s ease-in-out infinite; }
+    @keyframes sheen { 0% { transform: translateX(-420px) } 60%, 100% { transform: translateX(1320px) } }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; } .sheen, .pulse { display: none; } }
+  </style>
+  <defs>
+    <linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".16"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+    <clipPath id="c"><rect width="1200" height="200" rx="20"/></clipPath>
+  </defs>
+  <rect width="1200" height="200" rx="24" fill="#040705"/>
+  <rect x="24" y="24" width="133" height="152" rx="16" fill="#040705" stroke="#24402b"/>
+  <text x="40" y="136" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" font-weight="600" fill="#ecf4e8">Tinta</text>
+  <text x="40" y="158" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#ecf4e8" opacity=".75">#040705</text>
+  <rect x="169" y="24" width="133" height="152" rx="16" fill="#0a110c" stroke="#24402b"/>
+  <text x="185" y="136" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" font-weight="600" fill="#ecf4e8">Painel</text>
+  <text x="185" y="158" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#ecf4e8" opacity=".75">#0a110c</text>
+  <rect x="314" y="24" width="133" height="152" rx="16" fill="#b6f37a" stroke="#24402b"/>
+  <text x="330" y="136" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" font-weight="600" fill="#040705">Verde-limão</text>
+  <text x="330" y="158" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#040705" opacity=".75">#b6f37a</text>
+  <rect x="459" y="24" width="133" height="152" rx="16" fill="#d8ff9e" stroke="#24402b"/>
+  <text x="475" y="136" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" font-weight="600" fill="#040705">Broto</text>
+  <text x="475" y="158" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#040705" opacity=".75">#d8ff9e</text>
+  <rect x="604" y="24" width="133" height="152" rx="16" fill="#2f6b3a" stroke="#24402b"/>
+  <text x="620" y="136" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" font-weight="600" fill="#ecf4e8">Mata</text>
+  <text x="620" y="158" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#ecf4e8" opacity=".75">#2f6b3a</text>
+  <rect x="749" y="24" width="133" height="152" rx="16" fill="#d9b866" stroke="#24402b"/>
+  <text x="765" y="136" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" font-weight="600" fill="#1b160d">Trigo</text>
+  <text x="765" y="158" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#1b160d" opacity=".75">#d9b866</text>
+  <rect x="894" y="24" width="133" height="152" rx="16" fill="#2a2114" stroke="#24402b"/>
+  <text x="910" y="136" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" font-weight="600" fill="#ecd9a4">Solo</text>
+  <text x="910" y="158" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#ecd9a4" opacity=".75">#2a2114</text>
+  <rect x="1039" y="24" width="133" height="152" rx="16" fill="#f1b45b" stroke="#24402b"/>
+  <text x="1055" y="136" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" font-weight="600" fill="#1b160d">Alerta</text>
+  <text x="1055" y="158" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#1b160d" opacity=".75">#f1b45b</text>
+  <rect class="sheen" clip-path="url(#c)" x="0" y="0" width="240" height="200" fill="url(#g)"/>
+</svg>

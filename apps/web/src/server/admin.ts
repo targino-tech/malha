@@ -109,6 +109,7 @@ export type IntegrationFarm = {
   online: boolean;
   firstCaptureReceived: boolean;
   pendingCodeExpiresAt: string | null;
+  clockSkewSeconds: number | null;
 };
 
 const iso = (value: Date | null) => value ? new Date(value).toISOString() : null;
@@ -119,8 +120,8 @@ export async function listIntegrations(database: Database, user: Principal): Pro
     await setOrg(tx, user.orgId);
     const { rows } = await tx.query<{
       farm_id: string; collector_id: string | null; version: string | null; healthy: boolean | null; queue_depth: number | null;
-      last_heartbeat_at: Date | null; last_capture_at: Date | null; online: boolean | null; code_expires_at: Date | null;
-    }>(`SELECT f.id AS farm_id, k.collector_id, h.version, h.healthy, h.queue_depth, h.last_heartbeat_at, h.last_capture_at,
+      last_heartbeat_at: Date | null; last_capture_at: Date | null; online: boolean | null; code_expires_at: Date | null; clock_skew_seconds: number | null;
+    }>(`SELECT f.id AS farm_id, k.collector_id, h.version, h.healthy, h.queue_depth, h.last_heartbeat_at, h.last_capture_at, h.clock_skew_seconds,
         h.last_heartbeat_at >= now() - make_interval(secs => ${HEARTBEAT_TIMEOUT_SECONDS}) AS online,
         (SELECT max(c.expires_at) FROM enrollment_codes c WHERE c.org_id = f.org_id AND c.farm_id = f.id
           AND c.used_key_id IS NULL AND c.expires_at > now()) AS code_expires_at
@@ -131,6 +132,7 @@ export async function listIntegrations(database: Database, user: Principal): Pro
       farmId: row.farm_id, collectorId: row.collector_id, version: row.version, healthy: row.healthy, queueDepth: row.queue_depth,
       lastHeartbeatAt: iso(row.last_heartbeat_at), lastCaptureAt: iso(row.last_capture_at), online: Boolean(row.online),
       firstCaptureReceived: Boolean(row.last_capture_at), pendingCodeExpiresAt: user.role === 'admin' ? iso(row.code_expires_at) : null,
+      clockSkewSeconds: row.clock_skew_seconds,
     }));
   });
 }
