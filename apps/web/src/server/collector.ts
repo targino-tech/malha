@@ -27,7 +27,9 @@ const portSchema = z.object({
 const networkSchema = z.object({
   id: z.string().min(1).max(200), name: z.string().max(120).transform((value) => value.trim()),
   vlanId: vlan.nullish(), enabled: z.boolean().nullish(), management: text(40),
-  subnet: z.string().max(50).regex(/^\d{1,3}(?:\.\d{1,3}){3}\/\d{1,2}$/).nullish(),
+  // Octetos até 255 e prefixo até 32: um valor fora disso faria o cast para inet falhar na projeção e travar a captura.
+  subnet: z.string().max(50).regex(/^\d{1,3}(?:\.\d{1,3}){3}\/\d{1,2}$/)
+    .refine((value) => isIP(value.split('/')[0]) === 4 && Number(value.split('/')[1]) <= 32).nullish(),
 });
 const deviceSchema = z.object({
   id: z.string().min(1).max(200), name: text(200), mac: text(50), ip: text(80), model: text(150), state: text(80), firmware: text(120),

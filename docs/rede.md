@@ -81,7 +81,7 @@ A aplicação roda na mesma outbox (`inventory_outbox`) e na mesma transação d
 - leitura atrasada: as leituras brutas ficam em `port_counter_readings` e a série é recalculada numa janela de ±2 h,
   então a leitura do meio divide o intervalo entre as vizinhas.
 
-## Banco (migração `012_dados_rede.sql`)
+## Banco (migração `013_dados_rede.sql`)
 
 Todas com `org_id`, chave composta por fazenda, RLS habilitada e forçada (`org_scope`) e grants em
 `runtime-grants.sql`. **O integrador pode renumerar a migração** se outra frente usar o 012.

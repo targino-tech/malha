@@ -27,6 +27,18 @@ O serviço de exemplo em `deploy/malha-collector.service` usa a conta dedicada `
 
 Cada captura é gravada em uma transação antes de qualquer envio. A fila prioriza capturas recentes e libera lotes somente após receber o recibo correspondente. A configuração inicial retém até 72 horas e 256 MiB de payloads pendentes, com sobrecarga do banco à parte. Dimensione e acompanhe o disco em campo. Se uma captura expirar ou for descartada na ingestão, o coletor registra o evento e sinaliza degradação no próximo heartbeat aceito.
 
+## Dados de rede e limitação conhecida
+
+Desde o lote versão 2, o coletor também lê, só com `GET`, as portas de cada dispositivo (estado, conector, velocidade e estado PoE), o dispositivo a montante (`uplink.deviceId`), as taxas TX/RX do uplink (`statistics/latest`) e as redes/VLANs do site (`/networks`).
+
+**Limitação conhecida:** a API de Integrações do UniFi não expõe **contadores por porta** (bytes, pacotes, erros e descartes), **VLAN por porta** (nativa e marcadas), **potência PoE por porta** nem **vizinhos LLDP ou a porta do uplink**. Por isso, com o UniFi:
+
+- o tráfego medido em produção é a taxa de uplink de cada dispositivo, não o tráfego de cada porta;
+- toda ligação vinda do UniFi é de nível **dispositivo**; o Malha só desenha ligação porta a porta quando a evidência identifica as duas pontas, o que hoje só acontece nos dados fictícios do demo;
+- a ingestão já aceita esses campos como opcionais e reservados, para fontes que os tenham, mas este coletor não os envia.
+
+Essa leitura foi feita sem uma controladora real e sem documentação oficial completa desses endpoints. Confirme os campos no console do piloto antes de contar com eles. Detalhes em [`docs/rede.md`](../docs/rede.md).
+
 ## Verificação
 
 ```sh
