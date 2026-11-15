@@ -146,12 +146,16 @@ func (s *spool) bind(ctx context.Context, value enrollment) error {
 	return err
 }
 
-func (s *spool) store(ctx context.Context, when time.Time, devices []device) (int64, error) {
+func (s *spool) store(ctx context.Context, when time.Time, devices []device, networks *[]network) (int64, error) {
 	if len(devices) > maxInventory {
 		return 0, errors.New("inventário acima do limite")
 	}
 	if devices == nil {
 		devices = make([]device, 0)
+	}
+	chunks, err := partition(devices, networks)
+	if err != nil {
+		return 0, err
 	}
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -167,12 +171,14 @@ func (s *spool) store(ctx context.Context, when time.Time, devices []device) (in
 		return 0, err
 	}
 	captureID := newID()
-	parts := max(1, (len(devices)+devicesPerPart-1)/devicesPerPart)
+	parts := len(chunks)
 	totalBytes := 0
-	for part := range parts {
+	for part, chunk := range chunks {
 		id := newID()
-		start := part * devicesPerPart
-		value := batch{1, id, captureID, sequence, when.UTC(), part + 1, parts, devices[start:min(start+devicesPerPart, len(devices))]}
+		value := batch{batchSchemaVersion, id, captureID, sequence, when.UTC(), part + 1, parts, chunk, nil}
+		if part == 0 {
+			value.Networks = networks
+		}
 		body, err := json.Marshal(value)
 		if err != nil {
 			return 0, err
@@ -193,6 +199,39 @@ func (s *spool) store(ctx context.Context, when time.Time, devices []device) (in
 		return 0, err
 	}
 	return lost, tx.Commit()
+}
+
+// partition divide os dispositivos em partes de até devicesPerPart itens e partBudgetBytes de JSON.
+// A primeira parte também leva as redes do site. A ingestão aceita até 100 partes por captura.
+func partition(devices []device, networks *[]network) ([][]device, error) {
+	used := 0
+	if networks != nil {
+		encoded, err := json.Marshal(networks)
+		if err != nil {
+			return nil, err
+		}
+		used = len(encoded)
+	}
+	chunks := [][]device{make([]device, 0)}
+	for _, item := range devices {
+		encoded, err := json.Marshal(item)
+		if err != nil {
+			return nil, err
+		}
+		size := len(encoded) + 1
+		last := len(chunks) - 1
+		if len(chunks[last]) > 0 && (len(chunks[last]) == devicesPerPart || used+size > partBudgetBytes) {
+			chunks = append(chunks, make([]device, 0))
+			last++
+			used = 0
+		}
+		chunks[last] = append(chunks[last], item)
+		used += size
+	}
+	if len(chunks) > 100 {
+		return nil, errors.New("captura acima de 100 partes")
+	}
+	return chunks, nil
 }
 
 func (s *spool) prune(ctx context.Context, now time.Time) (int64, error) {

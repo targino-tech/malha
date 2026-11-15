@@ -24,6 +24,10 @@ const (
 	batchesPath    = "/v1/collectors/batches"
 	maxBatchBytes  = 1024 * 1024
 	devicesPerPart = 200
+	// Os lotes deixam folga sob o limite da ingestão para o envelope e os campos de rede.
+	partBudgetBytes = 900 * 1024
+	// Versão 2 acrescenta campos de rede opcionais. A ingestão continua aceitando a versão 1.
+	batchSchemaVersion = 2
 )
 
 var base64URL = base64.RawURLEncoding
@@ -36,17 +40,24 @@ type device struct {
 	Model    string `json:"model"`
 	State    string `json:"state"`
 	Firmware string `json:"firmware"`
+	// Campos de rede (schemaVersion 2). Ausentes significam "não lidos nesta captura".
+	Features       []string `json:"features,omitempty"`
+	UplinkDeviceID string   `json:"uplinkDeviceId,omitempty"`
+	UplinkTxBps    *int64   `json:"uplinkTxBps,omitempty"`
+	UplinkRxBps    *int64   `json:"uplinkRxBps,omitempty"`
+	Ports          *[]port  `json:"ports,omitempty"`
 }
 
 type batch struct {
-	SchemaVersion int       `json:"schemaVersion"`
-	ID            string    `json:"batchId"`
-	CaptureID     string    `json:"captureId"`
-	Sequence      int64     `json:"sequence"`
-	ObservedAt    time.Time `json:"observedAt"`
-	Part          int       `json:"part"`
-	Parts         int       `json:"parts"`
-	Devices       []device  `json:"devices"`
+	SchemaVersion int        `json:"schemaVersion"`
+	ID            string     `json:"batchId"`
+	CaptureID     string     `json:"captureId"`
+	Sequence      int64      `json:"sequence"`
+	ObservedAt    time.Time  `json:"observedAt"`
+	Part          int        `json:"part"`
+	Parts         int        `json:"parts"`
+	Devices       []device   `json:"devices"`
+	Networks      *[]network `json:"networks,omitempty"`
 }
 
 type heartbeat struct {

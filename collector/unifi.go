@@ -44,13 +44,14 @@ type remoteSite struct {
 }
 
 type remoteDevice struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	MAC      string `json:"macAddress"`
-	IP       string `json:"ipAddress"`
-	Model    string `json:"model"`
-	State    string `json:"state"`
-	Firmware string `json:"firmwareVersion"`
+	ID       string          `json:"id"`
+	Name     string          `json:"name"`
+	MAC      string          `json:"macAddress"`
+	IP       string          `json:"ipAddress"`
+	Model    string          `json:"model"`
+	State    string          `json:"state"`
+	Firmware string          `json:"firmwareVersion"`
+	Features json.RawMessage `json:"features"`
 }
 
 func readPages[T any](ctx context.Context, unifi unifiReader, endpoint string, getID func(T) string) ([]T, error) {
@@ -70,6 +71,10 @@ func readPages[T any](ctx context.Context, unifi unifiReader, endpoint string, g
 		response, err := unifi.client.Do(request)
 		if err != nil {
 			return nil, err
+		}
+		if response.StatusCode == http.StatusNotFound && offset == 0 {
+			response.Body.Close()
+			return nil, errNotFound
 		}
 		if response.StatusCode != http.StatusOK {
 			response.Body.Close()
@@ -131,6 +136,9 @@ func (unifi unifiReader) inventory(ctx context.Context, site string) ([]device, 
 		}
 		if result.State == "" {
 			result.State = "UNKNOWN"
+		}
+		if features := featureNames(item.Features); len(features) > 0 {
+			result.Features = features
 		}
 		devices = append(devices, result)
 	}

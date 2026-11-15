@@ -69,7 +69,7 @@ func TestSpoolPersistsPartsAndReplaysSameBytes(t *testing.T) {
 	for i := range fixture {
 		fixture[i] = device{ID: newID(), Name: "Dispositivo", State: "ONLINE"}
 	}
-	if _, err := queue.store(ctx, time.Now(), fixture); err != nil {
+	if _, err := queue.store(ctx, time.Now(), fixture, nil); err != nil {
 		t.Fatal(err)
 	}
 	original, err := queue.next(ctx)
@@ -129,7 +129,7 @@ func TestSpoolPreservesIdentityAndDropsExpiredCapture(t *testing.T) {
 	if _, _, err := queue.identity(ctx, "https://other.example.test", true); err == nil {
 		t.Fatal("mesma identidade aceita em outra origem")
 	}
-	if _, err := queue.store(ctx, time.Now().Add(-spoolRetention-time.Hour), nil); err != nil {
+	if _, err := queue.store(ctx, time.Now().Add(-spoolRetention-time.Hour), nil, nil); err != nil {
 		t.Fatal(err)
 	}
 	if lost, err := queue.prune(ctx, time.Now()); err != nil || lost != 1 {
