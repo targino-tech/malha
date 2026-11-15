@@ -12,6 +12,10 @@ import type { AssetStatus, DeviceRole, TrafficPeriod, TrafficPoint, TrafficSourc
 
 export const TOP_LIMIT = 8;
 export const MAX_SWITCHES = 40;
+/** Teto de ativos com portas lidos para achar os switches; acima disso a resposta marca corte. */
+export const SWITCH_CANDIDATE_LIMIT = 2000;
+/** Teto de portas por switch na tira de calor (acima do maior switch de 52 portas com uplinks). */
+export const MAX_PORTS_PER_SWITCH = 128;
 
 export type PanelKpis = {
   ports: { up: number; down: number; other: number; total: number; devices: number };
@@ -219,15 +223,28 @@ export async function networkPanel(database: Database, user: Principal, params: 
         (SELECT count(*) FROM device_ports p WHERE p.org_id = v.org_id AND p.farm_id = v.farm_id AND v.vlan_id = ANY(p.tagged_vlan_ids)) AS tagged_ports
       FROM network_vlans v WHERE ${inScope('v')}`, scope);
 
-    const { rows: switchRows } = await tx.query<{ id: string; farm_id: string; farm_name: string; name: string; category: string; model: string | null; network_features: string[] | null; status: AssetStatus; ports: HeatPortRow[] }>(`
-      SELECT a.id, a.farm_id, f.name AS farm_name, a.name, a.category, a.model, a.network_features, ${ASSET_STATUS} AS status,
-        (SELECT jsonb_agg(jsonb_build_object('idx', p.idx, 'name', p.name, 'state', p.state, 'speedMbps', p.speed_mbps, 'rxBps', p.rx_bps, 'txBps', p.tx_bps,
-            'poe', coalesce(p.poe_enabled AND p.poe_state = 'UP', false)) ORDER BY p.idx)
-          FROM device_ports p WHERE p.org_id = a.org_id AND p.farm_id = a.farm_id AND p.asset_id = a.id) AS ports
+    // Duas etapas com limite no SQL: primeiro uma lista leve de candidatos (sem as portas), classificada
+    // em JS pela mesma regra da topologia; depois as portas só dos switches que vão aparecer.
+    const { rows: candidateRows } = await tx.query<{ id: string; farm_id: string; farm_name: string; name: string; category: string; model: string | null; network_features: string[] | null; status: AssetStatus }>(`
+      SELECT a.id, a.farm_id, f.name AS farm_name, a.name, a.category, a.model, a.network_features, ${ASSET_STATUS} AS status
       FROM ${ASSET_FROM} JOIN farms f ON f.org_id = a.org_id AND f.id = a.farm_id
       WHERE ${inScope('a')} AND a.archived_at IS NULL
         AND EXISTS (SELECT 1 FROM device_ports p WHERE p.org_id = a.org_id AND p.farm_id = a.farm_id AND p.asset_id = a.id)
-      ORDER BY f.name, a.name, a.id`, scope);
+      ORDER BY f.name, a.name, a.id
+      LIMIT ${SWITCH_CANDIDATE_LIMIT}`, scope);
+    const switchCandidates = candidateRows.filter((row) => roleOf({ category: row.category, name: row.name, model: row.model, features: row.network_features }) === 'switch');
+    const shownSwitches = switchCandidates.slice(0, MAX_SWITCHES);
+    const { rows: switchPortRows } = shownSwitches.length ? await tx.query<HeatPortRow & { asset_id: string }>(`
+      SELECT p.asset_id, p.idx, p.name, p.state, p.speed_mbps AS "speedMbps", p.rx_bps AS "rxBps", p.tx_bps AS "txBps",
+        coalesce(p.poe_enabled AND p.poe_state = 'UP', false) AS poe
+      FROM unnest($3::uuid[]) AS s(asset_id)
+      CROSS JOIN LATERAL (
+        SELECT * FROM device_ports p WHERE ${inScope('p')} AND p.asset_id = s.asset_id ORDER BY p.idx LIMIT ${MAX_PORTS_PER_SWITCH}
+      ) p
+      ORDER BY p.asset_id, p.idx`, [...scope, shownSwitches.map((row) => row.id)]) : { rows: [] };
+    const portsBySwitch = new Map<string, HeatPortRow[]>();
+    for (const { asset_id: assetId, ...port } of switchPortRows) portsBySwitch.set(assetId, [...(portsBySwitch.get(assetId) ?? []), port]);
+    const switchesTruncated = switchCandidates.length > MAX_SWITCHES || candidateRows.length === SWITCH_CANDIDATE_LIMIT;
 
     const { total, byFarm } = mergeSeries(buckets.map((row) => ({
       farmId: row.farm_id, t: iso(row.t), rxBps: n(row.rx), txBps: n(row.tx), rxMaxBps: n(row.rx_max), txMaxBps: n(row.tx_max),
@@ -235,11 +252,10 @@ export async function networkPanel(database: Database, user: Principal, params: 
     })));
     const sources = found.map((row) => row.source);
     const synthetic = sources.includes('synthetic') || Boolean(ports?.synthetic) || vlanRows.some((row) => row.synthetic);
-    const switches = switchRows
-      .filter((row) => roleOf({ category: row.category, name: row.name, model: row.model, features: row.network_features }) === 'switch')
+    const switches = shownSwitches
       .map((row) => ({
         assetId: row.id, farmId: row.farm_id, farmName: row.farm_name, name: row.name, status: row.status,
-        ports: (row.ports ?? []).map((port) => ({
+        ports: (portsBySwitch.get(row.id) ?? []).map((port) => ({
           idx: port.idx, name: port.name, state: port.state, speedMbps: port.speedMbps === null ? null : Number(port.speedMbps),
           utilization: utilization(port.rxBps === null ? null : Number(port.rxBps), port.txBps === null ? null : Number(port.txBps), port.speedMbps === null ? null : Number(port.speedMbps)),
           poe: port.poe,
@@ -288,8 +304,8 @@ export async function networkPanel(database: Database, user: Principal, params: 
       vlans: groupVlans(vlanRows.map((row) => ({
         farmId: row.farm_id, vlanId: row.vlan_id, name: row.name, enabled: row.enabled, nativePorts: n(row.native_ports), taggedPorts: n(row.tagged_ports), synthetic: row.synthetic,
       }))),
-      switches: switches.slice(0, MAX_SWITCHES),
-      switchesTruncated: switches.length > MAX_SWITCHES,
+      switches,
+      switchesTruncated,
     };
   });
 }

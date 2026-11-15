@@ -30,7 +30,7 @@ Tipos em [`apps/web/src/server/network/panel.ts`](../apps/web/src/server/network
 | `topDevices` | Até 8 dispositivos com mais volume de uplink no período. |
 | `topPorts` | Até 8 portas com maior taxa atual derivada de contadores. |
 | `vlans` | Catálogo agrupado pelo número da VLAN entre as fazendas, com portas nativas e marcadas. |
-| `switches` | Até 40 switches com as portas na ordem física e a utilização atual de cada uma (`switchesTruncated` indica corte). |
+| `switches` | Até 40 switches com até 128 portas cada, na ordem física, e a utilização atual de cada porta. A consulta lê no máximo 2.000 ativos com portas para achar os switches e só então carrega as portas dos 40 exibidos. `switchesTruncated` indica corte (mais de 40 switches ou o teto de 2.000 ativos atingido). Os indicadores continuam contando todas as portas. |
 | `synthetic` | Verdadeiro quando algum dado é fictício (demo); a tela mostra "Dados de rede fictícios". |
 
 Utilização de porta = maior sentido (RX ou TX) ÷ velocidade negociada, limitada a 100% (porta full duplex). Sem

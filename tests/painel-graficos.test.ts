@@ -5,10 +5,10 @@ import { after, describe, test } from 'node:test';
 import {
   areaPath, formatBits, gapThreshold, formatBytes, formatPercent, formatPower, heatLevel, linePath, nearestIndex, niceCeiling, project, segments,
 } from '../apps/web/src/components/dashboard/network-format';
-import { database, DEMO_ORG } from '../apps/web/src/server/db';
+import { database, DEMO_ORG, setOrg } from '../apps/web/src/server/db';
 import { HttpError } from '../apps/web/src/server/http';
 import type { Principal } from '../apps/web/src/server/identity';
-import { groupVlans, mergeSeries, networkPanel, utilization } from '../apps/web/src/server/network/panel';
+import { groupVlans, MAX_PORTS_PER_SWITCH, MAX_SWITCHES, mergeSeries, networkPanel, utilization } from '../apps/web/src/server/network/panel';
 
 process.env.MALHA_MODE = 'demo';
 process.env.MALHA_DEMO_DB = 'memory://';
@@ -148,6 +148,32 @@ describe('API do painel de rede no demo', () => {
     assert.equal(panel.kpis.errors, null);
     assert.equal(panel.kpis.poe.powerMw, null);
     assert.deepEqual([panel.traffic, panel.topDevices, panel.topPorts, panel.vlans, panel.switches], [[], [], [], [], []]);
+  });
+
+  test('muitos switches: no máximo 40 na tira de calor, portas limitadas por switch e corte sinalizado', async () => {
+    const db = await database();
+    const user: Principal = { orgId: randomUUID(), actor: 'grande', role: 'admin', farmIds: null, demo: false };
+    const farmId = randomUUID();
+    await db.transaction(async (tx) => {
+      await tx.query('INSERT INTO organizations (id, name) VALUES ($1, $2)', [user.orgId, 'Grupo com muitos switches']);
+      await setOrg(tx, user.orgId);
+      await tx.query('INSERT INTO farms (org_id, id, name, location) VALUES ($1, $2, $3, $4)', [user.orgId, farmId, 'Fazenda grande', 'MT']);
+      await tx.query(`INSERT INTO assets (org_id, farm_id, id, name, category, source, external_id, network_features)
+        SELECT $1, $2, gen_random_uuid(), 'Switch ' || lpad(n::text, 3, '0'), 'Switch', 'unifi', 'sw-' || n, ARRAY['switching']
+        FROM generate_series(1, ${MAX_SWITCHES + 5}) AS n`, [user.orgId, farmId]);
+      await tx.query(`INSERT INTO device_ports (org_id, farm_id, asset_id, idx, state, speed_mbps, observed_at)
+        SELECT a.org_id, a.farm_id, a.id, p, 'UP', 1000, now() FROM assets a
+        CROSS JOIN LATERAL generate_series(1, CASE WHEN a.name = 'Switch 001' THEN ${MAX_PORTS_PER_SWITCH + 20} ELSE 8 END) AS p
+        WHERE a.org_id = $1 AND a.farm_id = $2`, [user.orgId, farmId]);
+    });
+    const panel = await networkPanel(db, user, new URLSearchParams({ period: '24h' }));
+    assert.equal(panel.switches.length, MAX_SWITCHES);
+    assert.equal(panel.switchesTruncated, true);
+    assert.equal(panel.switches[0].name, 'Switch 001');
+    assert.equal(panel.switches[0].ports.length, MAX_PORTS_PER_SWITCH);
+    assert.deepEqual(panel.switches[0].ports.slice(0, 3).map((port) => port.idx), [1, 2, 3], 'portas na ordem física');
+    assert.ok(panel.switches.slice(1).every((item) => item.ports.length === 8 && item.farmId === farmId));
+    assert.equal(panel.kpis.ports.total, MAX_PORTS_PER_SWITCH + 20 + (MAX_SWITCHES + 4) * 8, 'os indicadores continuam contando todas as portas');
   });
 
   test('outro grupo e fazenda fora do escopo respondem como inexistentes; sem fazenda, só o escopo do usuário', async () => {
