@@ -123,6 +123,8 @@ export function Alerts({ farms, online }: { farms: DashboardFarm[]; online: bool
   const [deliveries, setDeliveries] = useState<Delivery[]>();
   const [statusFilter, setStatusFilter] = useState('');
   const [error, setError] = useState('');
+  // Erro ao carregar a lista fica separado do erro de uma ação: recarregar não pode apagar o motivo de um teste que falhou.
+  const [loadError, setLoadError] = useState('');
   const [notice, setNotice] = useState('');
   const [editing, setEditing] = useState<string>();
   const [busy, setBusy] = useState<string>();
@@ -134,8 +136,8 @@ export function Alerts({ farms, online }: { farms: DashboardFarm[]; online: bool
     let active = true;
     const query = statusFilter ? `?status=${encodeURIComponent(statusFilter)}` : '';
     Promise.all([requestJson<Channel[]>('/api/alerts/channels'), requestJson<Delivery[]>(`/api/alerts/deliveries${query}`)]).then(
-      ([nextChannels, nextDeliveries]) => { if (active) { setChannels(nextChannels); setDeliveries(nextDeliveries); setError(''); } },
-      (problem: unknown) => { if (active) setError(problem instanceof Error ? problem.message : 'Falha ao consultar os canais de alerta.'); },
+      ([nextChannels, nextDeliveries]) => { if (active) { setChannels(nextChannels); setDeliveries(nextDeliveries); setLoadError(''); } },
+      (problem: unknown) => { if (active) setLoadError(problem instanceof Error ? problem.message : 'Falha ao consultar os canais de alerta.'); },
     );
     return () => { active = false; };
   }, [reload, statusFilter]);
@@ -178,6 +180,7 @@ export function Alerts({ farms, online }: { farms: DashboardFarm[]; online: bool
         </div>
         <div className="admin-body"><ChannelForm farms={farms} online={online} onSaved={load} /></div>
         {error && <p className="message danger occurrence-error" role="alert">{error}</p>}
+        {loadError && <p className="message danger occurrence-error" role="alert">{loadError}</p>}
         {notice && <p className="message success occurrence-error" role="status">{notice}</p>}
         {channels && !channels.length && <EmptyState title="Nenhum canal cadastrado">Cadastre um bot do Telegram ou uma lista de e-mails para receber as ocorrências.</EmptyState>}
         <ul className="admin-list" aria-label="Canais cadastrados">

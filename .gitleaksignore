@@ -1,3 +1,4 @@
 # Falsos positivos revisados: segredos fictícios usados só nos testes automatizados.
 5dec92ac9739ba5a7bc171a75ffbe3e2538bd85a:tests/monitoring-apply.test.ts:generic-api-key:12
 5b73fa6386a5cfae02ce41bc720eef83bfb43fe4:tests/ldap.test.ts:generic-api-key:9
+0cd5b23389418510dae401ca3e6ad7ffe4c38d81:tests/alertas-push.test.ts:generic-api-key:17
