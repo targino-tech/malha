@@ -58,7 +58,9 @@ svg { flex-shrink: 0; }
 .skip-link:focus { top: .75rem; }
 
 .shell { display: grid; grid-template-columns: 14.5rem minmax(0, 1fr); min-height: 100dvh; }
-.sidebar { position: sticky; top: 0; height: 100dvh; padding: 1.5rem 1rem; background: var(--sidebar); color: var(--text); border-right: 1px solid var(--line); }
+.sidebar { position: sticky; top: 0; height: 100dvh; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; padding: 1.5rem 1rem; background: var(--sidebar); color: var(--text); border-right: 1px solid var(--line); }
+/* Em telas baixas o menu (14 itens) rola por dentro em vez de esconder os últimos. */
+@media (max-height: 860px) { .navigation { margin-top: 1.5rem; gap: .25rem; } }
 .brand { display: inline-flex; gap: .7rem; align-items: center; color: var(--text); border: 0; padding: .375rem .5rem; background: transparent; text-align: left; border-radius: .5rem; }
 .brand strong { display: block; color: var(--text); font: 700 2rem/1 var(--display); letter-spacing: -.01em; }
 .brand small { display: block; color: var(--sidebar-text); font-size: .6875rem; margin-top: .375rem; white-space: nowrap; }
