@@ -1,0 +1,103 @@
+/* Mapa das fazendas: usa os tokens do painel (verde de campo, trigo, âmbar) definidos em globals.css. */
+.layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.25rem; transition: opacity 160ms; }
+.layout[data-loading] { opacity: .7; }
+
+.controls { display: flex; flex-wrap: wrap; align-items: end; gap: 1rem 1.75rem; padding: 1rem 1.25rem; }
+.metricField { border: 0; margin: 0; padding: 0; min-width: 0; max-width: 100%; display: grid; gap: .5rem; }
+.metricField legend, .periodField > span:first-child { color: var(--muted); font-size: .75rem; font-weight: 600; padding: 0; margin-bottom: .5rem; }
+.periodField > span:first-child strong { color: var(--text); font-weight: 650; }
+.segmented { display: flex; flex-wrap: wrap; gap: .375rem; }
+.segment { position: relative; display: inline-flex; }
+.segment input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.segment span { display: inline-flex; align-items: center; min-height: 2.75rem; padding: .5rem .875rem; border: 1px solid var(--line); border-radius: .5rem;
+  color: var(--muted); background: var(--surface); font-size: .8125rem; font-weight: 610; }
+.segment:hover span { color: var(--text); border-color: var(--line-strong); }
+.segment input:checked + span { color: var(--text); background: var(--forest-light); border-color: var(--forest); }
+.segment input:focus-visible + span { outline: .1875rem solid var(--focus); outline-offset: .1875rem; }
+
+.periodField { display: grid; min-width: min(100%, 15rem); flex: 0 1 18rem; }
+.periodField input[type='range'] { width: 100%; min-height: 2.75rem; margin: 0; accent-color: var(--forest); cursor: pointer; }
+.ticks { display: flex; justify-content: space-between; color: var(--faint); font-size: .6875rem; font-variant-numeric: tabular-nums; }
+
+.toggle { display: inline-flex; align-items: center; gap: .5rem; min-height: 2.75rem; font-size: .8125rem; color: var(--text); cursor: pointer; }
+.toggle input { width: 1.125rem; height: 1.125rem; accent-color: var(--forest); margin: 0; }
+
+.mapPanel { overflow: hidden; }
+.stage { position: relative; height: clamp(20rem, 62vh, 38rem); margin: 0 1.25rem; border: 1px solid var(--line); border-radius: .625rem; overflow: hidden; background: var(--surface-2); }
+/* O MapLibre aplica position: relative ao contêiner; largura e altura explícitas mantêm o mapa cheio. */
+.canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.stageNote { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: .875rem; }
+.fallback { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: .5rem; padding: 1.5rem; text-align: center; color: var(--muted); font-size: .8125rem; }
+.fallback strong { color: var(--text); font-size: .9375rem; }
+.fallback span { max-width: 42ch; }
+
+.legend { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem 1.5rem; padding: .875rem 1.25rem 0; color: var(--muted); font-size: .75rem; }
+.legend ul { display: flex; flex-wrap: wrap; gap: .375rem 1rem; }
+.legend li { display: inline-flex; align-items: center; gap: .375rem; }
+.dot { position: relative; width: .75rem; height: .75rem; border-radius: 50%; background: var(--forest); border: 2px solid var(--page); box-sizing: content-box; }
+.dot[data-health='missing'] { background: var(--muted); }
+.dot[data-health='warning'] { background: var(--amber); box-shadow: 0 0 0 1.5px var(--page), 0 0 0 3px var(--amber); }
+.dot[data-health='critical'] { background: var(--danger); box-shadow: 0 0 0 1.5px var(--page), 0 0 0 4px var(--danger); }
+.heatLegend { display: inline-flex; align-items: center; gap: .5rem; font-variant-numeric: tabular-nums; }
+.heatScale { width: 7rem; height: .5rem; border-radius: .25rem;
+  background: linear-gradient(90deg, rgb(182 243 122 / .25), rgb(217 184 102 / .6), rgb(241 180 91 / .8), rgb(255 143 133 / .9)); }
+
+.notes { display: grid; gap: .375rem; padding: .75rem 1.25rem 1.25rem; color: var(--muted); font-size: .75rem; max-width: 80ch; }
+.notes code { font-family: var(--mono); color: var(--wheat-soft); }
+.synthetic { display: inline-flex; align-items: center; gap: .375rem; color: var(--wheat-soft); }
+
+.areaToggle { display: inline-flex; gap: .25rem; }
+.areaToggle button[aria-pressed='true'] { background: var(--forest-light); border-color: var(--forest); }
+
+.number { font-variant-numeric: tabular-nums; }
+.number small, .farmCell small { display: block; color: var(--muted); font-size: .6875rem; }
+.farmCell { display: grid; gap: .125rem; }
+.farmCell strong { font-size: .8125rem; }
+.farmTable tbody tr[data-selected] { background: var(--forest-light); }
+.farmTable tbody th { font-weight: 500; color: var(--text); }
+.farmCell strong, .farmCell small { white-space: normal; min-width: 10rem; max-width: 16rem; }
+.sortButton { display: inline-flex; align-items: center; gap: .25rem; min-height: 2.25rem; padding: 0; border: 0; background: none; color: inherit; font: inherit; font-weight: 650; }
+.sortButton:hover { color: var(--text); }
+.muted { color: var(--muted); font-size: .75rem; }
+.retry { padding: 1rem; }
+
+/* Controles do MapLibre no tema do painel. */
+.canvas :global(.maplibregl-ctrl-group) { background: var(--surface); border: 1px solid var(--line-strong); box-shadow: none; }
+.canvas :global(.maplibregl-ctrl-group button) { width: 2.25rem; height: 2.25rem; }
+.canvas :global(.maplibregl-ctrl-group button + button) { border-top-color: var(--line-strong); }
+.canvas :global(.maplibregl-ctrl-icon) { filter: invert(1) hue-rotate(180deg); }
+.canvas :global(.maplibregl-ctrl-attrib), .canvas :global(.maplibregl-ctrl-attrib.maplibregl-compact) { background: rgb(4 7 5 / .82); color: var(--muted); }
+.canvas :global(.maplibregl-ctrl-attrib-inner) { color: var(--muted); }
+.canvas :global(.maplibregl-ctrl-attrib a) { color: var(--wheat-soft); }
+.canvas :global(.maplibregl-ctrl-attrib-button) { filter: invert(1); }
+.canvas :global(.maplibregl-canvas:focus-visible) { outline: .1875rem solid var(--focus); outline-offset: -.1875rem; }
+.canvas :global(.maplibregl-cooperative-gesture-screen) { background: rgb(4 7 5 / .72); color: var(--text); font-size: .875rem; }
+.canvas :global(.maplibregl-popup-content) { background: var(--surface-3); color: var(--text); border: 1px solid var(--line-strong); border-radius: .625rem;
+  padding: .75rem .875rem; box-shadow: 0 12px 30px -14px rgb(0 0 0 / .85); }
+.canvas :global(.maplibregl-popup-tip) { border-top-color: var(--line-strong) !important; border-bottom-color: var(--line-strong) !important; }
+.canvas :global(.maplibregl-popup-close-button) { width: 2rem; height: 2rem; color: var(--muted); font-size: 1.125rem; }
+.canvas :global(.maplibregl-popup-close-button:hover) { color: var(--text); background: transparent; }
+
+.popup { display: grid; gap: .25rem; font-size: .75rem; padding-right: 1.25rem; }
+.popup strong { font-size: .875rem; }
+.popup > span:nth-of-type(1) { color: var(--muted); }
+.popupHealth { justify-self: start; margin: .25rem 0; padding: .125rem .5rem; border-radius: 1rem; font-weight: 660; background: var(--forest-light); color: var(--forest); }
+.popupHealth[data-health='missing'] { background: var(--surface-2); color: var(--muted); }
+.popupHealth[data-health='warning'] { background: var(--amber-light); color: var(--amber); }
+.popupHealth[data-health='critical'] { background: var(--danger-light); color: var(--danger); }
+.popup dl { display: grid; grid-template-columns: auto auto; gap: .25rem .75rem; margin: 0; }
+.popup dt { color: var(--muted); }
+.popup dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.popup small { color: var(--wheat-soft); margin-top: .25rem; }
+
+@media (max-width: 38rem) {
+  .controls { padding: .875rem 1rem; }
+  .stage { margin: 0 .75rem; height: clamp(18rem, 55vh, 28rem); }
+  .legend, .notes { padding-inline: 1rem; }
+  .segment { flex: 1 1 calc(50% - .375rem); }
+  .segment span { width: 100%; justify-content: center; text-align: center; }
+}
+@media (prefers-reduced-motion: reduce) { .layout { transition: none; } }
+@media (forced-colors: active) { .dot, .heatScale { forced-color-adjust: none; } }
+/* Os rótulos ocultos das tabelas (legenda, "Ações") ficam presos à área de rolagem e não alargam a página. */
+.tableWrap { position: relative; }

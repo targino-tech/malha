@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { mapCspOrigins } from './components/dashboard/geo/config';
 
 /**
  * Content-Security-Policy com nonce para as páginas dinâmicas (painel e portal de entrada).
@@ -10,14 +11,19 @@ export function proxy(request: NextRequest) {
   const bytes = new Uint8Array(16);
   crypto.getRandomValues(bytes);
   const nonce = btoa(String.fromCharCode(...bytes));
+  // O mapa do painel busca estilo, tiles, glifos e sprites só nas origens configuradas (sem curinga) e roda o
+  // worker do MapLibre servido pelo próprio Malha. O portal de entrada não ganha nada disso.
+  const map = request.nextUrl.pathname === '/' ? mapCspOrigins() : [];
+  const external = map.length ? ` ${map.join(' ')}` : '';
   const policy = [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${process.env.NODE_ENV === 'production' ? '' : " 'unsafe-eval'"}`,
     // Estilos inline vêm do React e das animações; com nonce aqui o navegador ignoraria 'unsafe-inline'.
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob:",
+    `img-src 'self' data: blob:${external}`,
     "font-src 'self' data:",
-    "connect-src 'self'",
+    `connect-src 'self'${external}`,
+    ...(request.nextUrl.pathname === '/' ? ["worker-src 'self'"] : []),
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
