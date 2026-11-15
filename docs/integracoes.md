@@ -72,4 +72,7 @@ O worker (`pnpm worker`) envia e-mail só para ocorrências de ativos críticos,
 
 ## Exportações
 
-Inventário, ocorrências e auditoria saem em CSV com separador `;` (abre direto no Excel em português), sempre no escopo de fazendas de quem exporta, com células que começam por fórmula neutralizadas. Cada exportação fica registrada na auditoria.
+Inventário, ocorrências (evidências) e auditoria saem em dois formatos, sempre no escopo de fazendas de quem exporta e registrados na auditoria:
+
+- **Planilha (XLSX)**: padronizada com a identidade do Malha. Traz no topo o grupo, o escopo, quem exportou e quando; cabeçalho e rodapé de impressão com os mesmos dados em todas as páginas; marca d'água "MALHA · USO INTERNO" ao fundo (visível no Excel); cabeçalho congelado, filtros e datas como datas. Todo texto é gravado como texto: nada vira fórmula.
+- **CSV**: separador `;` (abre direto no Excel em português), com células que começam por fórmula neutralizadas.

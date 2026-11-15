@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Download } from 'lucide-react';
+import { Download, FileSpreadsheet } from 'lucide-react';
 import type { DashboardFarm } from '../../server/dashboard';
 import type { Indicators as IndicatorData } from '../../server/metrics';
 import { EmptyState, formatDate, requestJson, wholeNumber } from './presentation';
@@ -112,7 +112,8 @@ export function Indicators({ farms, farmId, canExport, canBaseline, online }: {
           </select>
         </label>
         <p className="cell-detail">Desde {formatDate(data.from)}. Indicadores calculados no escopo das fazendas que você acessa.</p>
-        {canExport && <a className="button secondary" href={`/api/exports/occurrences?${exportParams}`} download><Download size={16} aria-hidden="true" /> Exportar evidências</a>}
+        {canExport && <a className="button secondary" href={`/api/exports/occurrences?${exportParams}&format=xlsx`} download><FileSpreadsheet size={16} aria-hidden="true" /> Evidências em planilha</a>}
+        {canExport && <a className="button secondary" href={`/api/exports/occurrences?${exportParams}`} download><Download size={16} aria-hidden="true" /> CSV</a>}
       </div>
       {result?.error && <p className="message warning" role="status">{result.error} Exibindo o último cálculo.</p>}
       <ul className="indicator-grid" aria-label="Indicadores de valor">

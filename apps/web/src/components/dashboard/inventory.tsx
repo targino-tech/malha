@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Archive, ArchiveRestore, ArrowDown, ArrowLeft, ArrowRight, Box, Download, Pencil, Plus, Search, Wrench } from 'lucide-react';
+import { Archive, ArchiveRestore, ArrowDown, ArrowLeft, ArrowRight, Box, Download, FileSpreadsheet, Pencil, Plus, Search, Wrench } from 'lucide-react';
 import type { InventoryAsset } from '../../server/assets';
 import type { DashboardFarm, TechnicalLocation } from '../../server/dashboard';
 import type { TimelineEntry } from '../../server/reconciliation';
@@ -248,14 +248,17 @@ export function Inventory({ farms, locations, farmId, canEdit, canExport, online
   const items = page?.items ?? [];
   const start = pageIndex * 25;
   // Só um UUID vira parâmetro do link de exportação; qualquer outro valor exporta o escopo inteiro.
-  const exportHref = FARM_ID.test(farmId) ? `/api/exports/assets?${new URLSearchParams({ farmId })}` : '/api/exports/assets';
+  const exportQuery = (format: 'csv' | 'xlsx') => new URLSearchParams({ ...(FARM_ID.test(farmId) ? { farmId } : {}), format }).toString();
+  const exportHref = `/api/exports/assets?${exportQuery('csv')}`;
+  const sheetHref = `/api/exports/assets?${exportQuery('xlsx')}`;
 
   return (
     <section className="panel" aria-labelledby="inventory-title" aria-busy={loading}>
       <div className="panel-heading">
         <div><h2 id="inventory-title">Equipamentos</h2><p>Localize um ativo por nome, categoria, etiqueta, IP, MAC ou responsável.</p></div>
         <div className="inline-actions">
-          {canExport && <a className="button secondary" href={exportHref} download><Download size={16} aria-hidden="true" /> Exportar CSV</a>}
+          {canExport && <a className="button secondary" href={sheetHref} download><FileSpreadsheet size={16} aria-hidden="true" /> Planilha</a>}
+          {canExport && <a className="button secondary" href={exportHref} download><Download size={16} aria-hidden="true" /> CSV</a>}
           {canEdit && farms.length > 0 && <button className="button primary" type="button" disabled={!online} onClick={() => setEditing('new')}><Plus size={17} aria-hidden="true" /> Novo ativo</button>}
         </div>
       </div>

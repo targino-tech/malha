@@ -157,7 +157,7 @@ test('exportação neutraliza fórmulas, respeita escopo e fica auditada', async
   const g = await setup();
   await createAsset(db, g.admin, { farmId: g.farmId, name: '=cmd|calc', category: 'Teste', critical: false });
   const file = await exportAssets(db, g.admin, new URLSearchParams());
-  assert.match(file.body, /'=cmd\|calc/);
+  assert.match(String(file.body), /'=cmd\|calc/);
   await assert.rejects(exportAssets(db, { ...g.admin, role: 'diretoria' }, new URLSearchParams()), status(403));
   await assert.rejects(exportAssets(db, { ...g.admin, role: 'ti', farmIds: [randomUUID()] }, new URLSearchParams({ farmId: g.farmId })), status(404));
 
@@ -166,7 +166,7 @@ test('exportação neutraliza fórmulas, respeita escopo e fica auditada', async
   const [{ id }] = await g.query<{ id: string }>('SELECT id FROM occurrences WHERE org_id = $1', [g.orgId]);
   await acknowledgeOccurrence(db, g.admin, id);
   const evidence = await exportOccurrences(db, { ...g.admin, role: 'auditor' }, new URLSearchParams({ days: '7' }));
-  assert.match(evidence.body, /collector_silent;critical;Coletor sem contato/);
+  assert.match(String(evidence.body), /collector_silent;critical;Coletor sem contato/);
 
   const audit = await listAudit(db, { ...g.admin, role: 'auditor' }, new URLSearchParams());
   assert.deepEqual(audit.items.slice(0, 3).map((entry) => entry.action), ['export.occurrences', 'occurrence.acknowledge', 'export.assets']);
@@ -179,5 +179,5 @@ test('exportação neutraliza fórmulas, respeita escopo e fica auditada', async
   const otherFarm = await listAudit(db, { ...g.admin, role: 'auditor', farmIds: [randomUUID()] }, new URLSearchParams());
   assert.equal(otherFarm.items.length, 0);
   const exported = await exportAudit(db, { ...g.admin, role: 'auditor', farmIds: [randomUUID()] }, new URLSearchParams({ days: '30' }));
-  assert.equal(exported.body.trim().split('\r\n').length, 1);
+  assert.equal(String(exported.body).trim().split('\r\n').length, 1);
 });

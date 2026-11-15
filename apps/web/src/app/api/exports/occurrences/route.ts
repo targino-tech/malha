@@ -1,5 +1,5 @@
 import { database } from '@/server/db';
-import { exportOccurrences } from '@/server/exports';
+import { downloadResponse, exportOccurrences } from '@/server/exports';
 import { handle } from '@/server/http';
 import { principal, rejectCrossSite } from '@/server/identity';
 
@@ -10,11 +10,6 @@ export function GET(request: Request) {
   return handle(async () => {
     rejectCrossSite(request);
     const file = await exportOccurrences(await database(), await principal(), new URL(request.url).searchParams);
-    return new Response(file.body, { headers: {
-      'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; filename="${file.filename}"`,
-      'Cache-Control': 'no-store',
-      'X-Content-Type-Options': 'nosniff',
-    } });
+    return downloadResponse(file);
   });
 }

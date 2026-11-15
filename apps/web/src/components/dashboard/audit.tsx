@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Download } from 'lucide-react';
+import { Download, FileSpreadsheet } from 'lucide-react';
 import type { AuditEntry } from '../../server/exports';
 import { EmptyState, formatDate, requestJson } from './presentation';
 
@@ -46,7 +46,10 @@ export function Audit({ farmNames }: { farmNames: Map<string, string> }) {
     <section className="panel" aria-labelledby="audit-title">
       <div className="panel-heading">
         <div><h2 id="audit-title">Trilha de auditoria</h2><p>Mutações e exportações por ator, ação e escopo. Retida por 365 dias.</p></div>
-        <a className="button secondary" href="/api/exports/audit?days=90" download><Download size={16} aria-hidden="true" /> Exportar 90 dias</a>
+        <div className="inline-actions">
+          <a className="button secondary" href="/api/exports/audit?days=90&format=xlsx" download><FileSpreadsheet size={16} aria-hidden="true" /> Planilha de 90 dias</a>
+          <a className="button secondary" href="/api/exports/audit?days=90" download><Download size={16} aria-hidden="true" /> CSV</a>
+        </div>
       </div>
       {error && <p className="message danger occurrence-error" role="alert">{error}</p>}
       {!items.length && !loading ? <EmptyState title="Nenhum registro">As ações no Malha aparecem aqui.</EmptyState> : (

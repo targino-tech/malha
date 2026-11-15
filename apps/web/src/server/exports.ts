@@ -5,6 +5,7 @@ import { requireFarm, requirePermission } from './authz';
 import { setOrg, type Database, type Queryable } from './db';
 import { HttpError, uuidPattern } from './http';
 import type { Principal } from './identity';
+import { buildXlsx, type Cell } from './xlsx';
 
 /**
  * Célula segura para planilhas: neutraliza fórmulas (=, +, -, @, tab, CR) com apóstrofo e escapa aspas.
@@ -29,16 +30,35 @@ async function audit(tx: Queryable, user: Principal, action: string, scope: obje
 const exportSchema = z.object({
   farmId: z.string().regex(uuidPattern).optional(),
   days: z.enum(['7', '30', '90', '365']).default('30'),
+  format: z.enum(['csv', 'xlsx']).default('csv'),
 });
+type Format = 'csv' | 'xlsx';
 
 function exportScope(user: Principal, params: URLSearchParams) {
   const parsed = exportSchema.safeParse(Object.fromEntries(params));
   if (!parsed.success) throw new HttpError(400, 'Filtro de exportação inválido.');
   if (parsed.data.farmId) requireFarm(user, parsed.data.farmId);
-  return { farmIds: parsed.data.farmId ? [parsed.data.farmId] : user.farmIds, days: Number(parsed.data.days), farmId: parsed.data.farmId ?? null };
+  return { farmIds: parsed.data.farmId ? [parsed.data.farmId] : user.farmIds, days: Number(parsed.data.days), farmId: parsed.data.farmId ?? null, format: parsed.data.format as Format };
 }
 
-export type ExportFile = { filename: string; body: string };
+export type ExportFile = { filename: string; body: string | Buffer; contentType: string };
+const XLSX_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+/**
+ * Entrega a mesma tabela em CSV (como sempre) ou em XLSX padronizado, com o grupo, o escopo,
+ * quem exportou e a marca d'água do Malha.
+ */
+async function deliver(tx: Queryable, user: Principal, file: { name: string; title: string; header: string[]; rows: Cell[][]; farmId: string | null; format: Format }): Promise<ExportFile> {
+  if (file.format === 'csv') return { filename: `${file.name}.csv`, body: toCsv(file.header, file.rows), contentType: 'text/csv; charset=utf-8' };
+  const { rows: [meta] } = await tx.query<{ org: string; actor_name: string | null; farm: string | null }>(`SELECT o.name AS org, m.display_name AS actor_name, f.name AS farm
+    FROM organizations o
+    LEFT JOIN memberships m ON m.org_id = o.id AND m.entra_oid::text = $2
+    LEFT JOIN farms f ON f.org_id = o.id AND f.id = $3::uuid
+    WHERE o.id = $1`, [user.orgId, user.actor, file.farmId]);
+  const scope = meta?.farm ?? (user.farmIds ? `${user.farmIds.length} fazenda(s) atribuída(s)` : 'Todas as fazendas');
+  const body = buildXlsx({ title: file.title, group: meta?.org ?? 'Grupo', scope, exportedBy: meta?.actor_name ?? `Usuário ${user.actor.slice(0, 8)}`, exportedAt: new Date() }, file.header, file.rows);
+  return { filename: `${file.name}.xlsx`, body, contentType: XLSX_TYPE };
+}
 
 export async function exportAssets(database: Database, user: Principal, params: URLSearchParams): Promise<ExportFile> {
   requirePermission(user, 'exports.run');
@@ -49,14 +69,14 @@ export async function exportAssets(database: Database, user: Principal, params: 
         ${ASSET_STATUS} AS status, a.ip, a.mac, a.model, a.firmware, a.critical, a.last_observed_at, a.reviewed_at, a.maintenance_until, a.archived_at
       FROM ${ASSET_FROM} JOIN farms f ON f.org_id = a.org_id AND f.id = a.farm_id
       WHERE a.org_id = $1 AND ($2::uuid[] IS NULL OR a.farm_id = ANY($2::uuid[])) ORDER BY f.name, a.name, a.id`, [user.orgId, scope.farmIds]);
-    await audit(tx, user, 'export.assets', { farmId: scope.farmId, rows: rows.length });
-    return {
-      filename: 'malha-inventario.csv',
-      body: toCsv(['fazenda', 'etiqueta', 'nome', 'categoria', 'local', 'responsavel', 'origem', 'estado', 'ip', 'mac', 'modelo', 'firmware',
+    await audit(tx, user, 'export.assets', { farmId: scope.farmId, rows: rows.length, format: scope.format });
+    return deliver(tx, user, {
+      name: 'malha-inventario', title: 'Inventário de ativos', farmId: scope.farmId, format: scope.format,
+      header: ['fazenda', 'etiqueta', 'nome', 'categoria', 'local', 'responsavel', 'origem', 'estado', 'ip', 'mac', 'modelo', 'firmware',
         'critico', 'ultima_observacao', 'conferido_em', 'manutencao_ate', 'arquivado_em'],
-      rows.map((row) => [row.farm, row.tag, row.name, row.category, row.location, row.owner, row.source, row.status, row.ip, row.mac, row.model,
-        row.firmware, row.critical ? 'sim' : 'não', row.last_observed_at, row.reviewed_at, row.maintenance_until, row.archived_at])),
-    };
+      rows: rows.map((row) => [row.farm, row.tag, row.name, row.category, row.location, row.owner, row.source, row.status, row.ip, row.mac, row.model,
+        row.firmware, row.critical ? 'sim' : 'não', row.last_observed_at, row.reviewed_at, row.maintenance_until, row.archived_at] as Cell[]),
+    });
   });
 }
 
@@ -71,12 +91,12 @@ export async function exportOccurrences(database: Database, user: Principal, par
       LEFT JOIN memberships m ON m.org_id = o.org_id AND m.entra_oid::text = o.acknowledged_by
       WHERE o.org_id = $1 AND ($2::uuid[] IS NULL OR o.farm_id = ANY($2::uuid[])) AND o.opened_at >= now() - make_interval(days => $3)
       ORDER BY o.opened_at DESC`, [user.orgId, scope.farmIds, scope.days]);
-    await audit(tx, user, 'export.occurrences', { farmId: scope.farmId, days: scope.days, rows: rows.length });
-    return {
-      filename: 'malha-ocorrencias.csv',
-      body: toCsv(['fazenda', 'regra', 'severidade', 'titulo', 'evidencia_desde', 'aberta_em', 'reconhecida_em', 'reconhecida_por', 'encerrada_em'],
-        rows.map((row) => [row.farm, row.rule, row.severity, row.title, row.first_observed_at, row.opened_at, row.acknowledged_at, row.acknowledged_by, row.resolved_at])),
-    };
+    await audit(tx, user, 'export.occurrences', { farmId: scope.farmId, days: scope.days, rows: rows.length, format: scope.format });
+    return deliver(tx, user, {
+      name: 'malha-ocorrencias', title: `Ocorrências dos últimos ${scope.days} dias`, farmId: scope.farmId, format: scope.format,
+      header: ['fazenda', 'regra', 'severidade', 'titulo', 'evidencia_desde', 'aberta_em', 'reconhecida_em', 'reconhecida_por', 'encerrada_em'],
+      rows: rows.map((row) => [row.farm, row.rule, row.severity, row.title, row.first_observed_at, row.opened_at, row.acknowledged_at, row.acknowledged_by, row.resolved_at] as Cell[]),
+    });
   });
 }
 
@@ -124,18 +144,19 @@ export async function listAudit(database: Database, user: Principal, params: URL
 
 export async function exportAudit(database: Database, user: Principal, params: URLSearchParams): Promise<ExportFile> {
   requirePermission(user, 'audit.read');
-  const { days } = exportScope({ ...user, farmIds: null }, new URLSearchParams({ days: params.get('days') ?? '30' }));
+  const { days, format } = exportScope({ ...user, farmIds: null }, new URLSearchParams({ days: params.get('days') ?? '30', format: params.get('format') ?? 'csv' }));
   return database.transaction(async (tx) => {
     await setOrg(tx, user.orgId);
     const { rows } = await tx.query<Record<string, unknown>>(`SELECT a.occurred_at, a.actor, m.display_name, a.action, a.scope
       FROM audit_log a LEFT JOIN memberships m ON m.org_id = a.org_id AND m.entra_oid::text = a.actor
       WHERE a.org_id = $1 AND a.occurred_at >= now() - make_interval(days => $2) AND ${AUDIT_FARM_FILTER('$3')}
       ORDER BY a.occurred_at DESC`, [user.orgId, days, user.farmIds]);
-    await audit(tx, user, 'export.audit', { days, rows: rows.length });
-    return {
-      filename: 'malha-auditoria.csv',
-      body: toCsv(['horario', 'ator', 'nome', 'acao', 'escopo'], rows.map((row) => [row.occurred_at, row.actor, row.display_name, row.action, JSON.stringify(row.scope)])),
-    };
+    await audit(tx, user, 'export.audit', { days, rows: rows.length, format });
+    return deliver(tx, user, {
+      name: 'malha-auditoria', title: `Auditoria dos últimos ${days} dias`, farmId: null, format,
+      header: ['horario', 'ator', 'nome', 'acao', 'escopo'],
+      rows: rows.map((row) => [row.occurred_at, row.actor, row.display_name, row.action, JSON.stringify(row.scope)] as Cell[]),
+    });
   });
 }
 
@@ -151,4 +172,14 @@ export async function applyRetention(database: Database) {
           AND c.id = b.capture_id AND c.applied_at IS NOT NULL)`, [id]);
     });
   }
+}
+
+/** Resposta de download para CSV ou XLSX, sem cache e com o tipo declarado. */
+export function downloadResponse(file: ExportFile) {
+  return new Response(typeof file.body === 'string' ? file.body : new Uint8Array(file.body), { headers: {
+    'Content-Type': file.contentType,
+    'Content-Disposition': `attachment; filename="${file.filename}"`,
+    'Cache-Control': 'no-store',
+    'X-Content-Type-Options': 'nosniff',
+  } });
 }
