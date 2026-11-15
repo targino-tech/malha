@@ -1,0 +1,42 @@
+name: Funcionalidade
+description: Proponha uma melhoria ou recurso novo.
+title: '[Funcionalidade] '
+labels: [funcionalidade, triagem]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ideias ainda abertas funcionam melhor primeiro nas [discussões](https://github.com/targino-tech/malha/discussions/categories/ideas). Use esta issue quando o problema e o resultado esperado já estiverem claros.
+  - type: textarea
+    id: problema
+    attributes:
+      label: Qual problema isso resolve
+      description: Quem sofre com ele (TI da matriz, técnico da fazenda, diretoria) e com que frequência.
+    validations:
+      required: true
+  - type: textarea
+    id: proposta
+    attributes:
+      label: Proposta
+      description: Como deveria funcionar, do ponto de vista de quem usa.
+    validations:
+      required: true
+  - type: textarea
+    id: alternativas
+    attributes:
+      label: Alternativas consideradas
+  - type: checkboxes
+    id: escopo
+    attributes:
+      label: Regras do projeto
+      description: Veja o [AGENTS.md](https://github.com/targino-tech/malha/blob/main/AGENTS.md).
+      options:
+        - label: A proposta mantém o escopo por grupo e por fazenda.
+          required: true
+        - label: A proposta não exige escrita do coletor na rede da fazenda.
+          required: true
+  - type: dropdown
+    id: contribuir
+    attributes:
+      label: Você quer implementar?
+      options: [Sim, Talvez com ajuda, Não]

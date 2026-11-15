@@ -65,25 +65,29 @@
 
   <rect width="760" height="400" fill="url(#fade)"/>
 
-  <!-- Símbolo -->
+  <!-- Símbolo: folha cujas nervuras formam a rede, com nós quadrados e um grão de trigo -->
   <g transform="translate(72 104)">
     <rect x=".75" y=".75" width="126.5" height="126.5" rx="27" fill="#060a07" stroke="#24402b" stroke-width="1.5"/>
-    <g transform="scale(2)">
-      <path d="M15 46V18l17 17 17-17v28" fill="none" stroke="#b6f37a" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
-      <path d="M15 46h34M32 35v11" fill="none" stroke="#3f6b47" stroke-width="1.6" stroke-linecap="round"/>
-      <g fill="#e6ffd0">
-        <circle class="node" cx="15" cy="18" r="3.6"/><circle class="node n2" cx="49" cy="18" r="3.6"/>
-        <circle class="node n3" cx="32" cy="35" r="3.6"/><circle class="node n4" cx="15" cy="46" r="3.6"/>
-        <circle class="node n5" cx="49" cy="46" r="3.6"/>
+    <g transform="translate(14 14) scale(1.5625)">
+      <path d="M8 56C8 27 27 8 56 8c0 29-19 48-48 48Z" fill="#b6f37a"/>
+      <path d="M8 56C8 27 27 8 56 8L8 56Z" fill="#9fdc63"/>
+      <g stroke="#060a07" stroke-width="3.4" stroke-linecap="square" fill="none">
+        <path d="M15 49 45 19"/>
+        <path d="M25 39V27M33 31h12"/>
       </g>
+      <g fill="#060a07">
+        <rect class="node" x="21.5" y="22" width="7" height="7" rx="1"/>
+        <rect class="node n2" x="42" y="27.5" width="7" height="7" rx="1"/>
+        <rect class="node n3" x="42.5" y="13.5" width="7" height="7" rx="1"/>
+      </g>
+      <g transform="rotate(-45 10 54)"><ellipse cx="10" cy="54" rx="7.5" ry="3.9" fill="#d9b866" stroke="#060a07" stroke-width="1.6"/><path d="M4.5 54h11" stroke="#8a6f2c" stroke-width="1.2" stroke-linecap="round"/></g>
     </g>
   </g>
-
   <g font-family="'Barlow Condensed', 'Arial Narrow', 'Roboto Condensed', Impact, sans-serif" font-weight="700">
     <text x="232" y="212" font-size="112" fill="#ecf4e8" letter-spacing="-2">malha<tspan fill="#b6f37a">.</tspan></text>
   </g>
   <g font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
     <text x="236" y="262" font-size="24" fill="#ecf4e8">Inventário vivo de rede e ativos para grupos agrícolas</text>
-    <text x="236" y="298" font-size="16" fill="#92a595">Coletor UniFi somente leitura · painel multi-fazenda · alertas em 3 minutos</text>
+    <text x="236" y="298" font-size="16" fill="#92a595">Open source e grátis · coletor UniFi somente leitura · Zabbix e Grafana do inventário</text>
   </g>
 </svg>

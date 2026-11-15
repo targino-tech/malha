@@ -1,8 +1,7 @@
 name: Site no GitHub Pages
 
 # Publica a versão estática do site público (apps/web/src/app/site) em https://<dono>.github.io/malha/.
-# O build roda sempre; a publicação só acontece com o repositório público e o Pages ativado
-# em Settings → Pages → Source: GitHub Actions.
+# O build roda sempre; a publicação acontece com o repositório público.
 on:
   push:
     branches: [main]
@@ -31,6 +30,8 @@ jobs:
       MALHA_PAGES_BASE: /${{ github.event.repository.name }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version-file: .node-version

@@ -1,0 +1,31 @@
+# Rótulos de área aplicados automaticamente nos pull requests (actions/labeler).
+'área: web':
+  - changed-files:
+      - any-glob-to-any-file: ['apps/web/src/**', '!apps/web/src/app/site/**']
+'área: site':
+  - changed-files:
+      - any-glob-to-any-file: ['apps/web/src/app/site/**', 'apps/web/public/**', 'scripts/build-static-site.mjs']
+'área: coletor':
+  - changed-files:
+      - any-glob-to-any-file: ['collector/**']
+'área: banco':
+  - changed-files:
+      - any-glob-to-any-file: ['packages/db/**']
+'área: worker':
+  - changed-files:
+      - any-glob-to-any-file: ['apps/worker/**']
+'área: infra':
+  - changed-files:
+      - any-glob-to-any-file: ['infra/**', 'Dockerfile', 'compose.yml', '.dockerignore']
+'área: monitoramento':
+  - changed-files:
+      - any-glob-to-any-file: ['apps/web/src/server/monitoring*.ts', 'apps/web/src/server/catalog.ts', 'apps/web/src/components/dashboard/monitoring.tsx']
+'área: login':
+  - changed-files:
+      - any-glob-to-any-file: ['apps/web/src/server/identity.ts', 'apps/web/src/server/ldap.ts', 'apps/web/src/server/oidc.ts', 'apps/web/src/app/api/auth/**', 'apps/web/src/app/entrar/**']
+documentação:
+  - changed-files:
+      - any-glob-to-any-file: ['**/*.md', 'docs/**']
+ci:
+  - changed-files:
+      - any-glob-to-any-file: ['.github/**']

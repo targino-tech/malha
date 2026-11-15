@@ -1,0 +1,37 @@
+name: Apoio na implantação
+description: Peça ajuda para levar o Malha às fazendas do seu grupo.
+title: '[Implantação] '
+labels: [implantação, triagem]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Esta issue é **pública**. Não informe CNPJ, endereços, IPs, nomes reais de fazendas nem contatos pessoais. Se precisar trocar dados privados, peça um canal na própria issue.
+  - type: input
+    id: fazendas
+    attributes:
+      label: Quantas fazendas, aproximadamente
+      placeholder: '5'
+  - type: dropdown
+    id: rede
+    attributes:
+      label: Rede nas fazendas
+      multiple: true
+      options: [UniFi, MikroTik, Cisco, Huawei, Intelbras, Outro, Sem controladora]
+  - type: dropdown
+    id: login
+    attributes:
+      label: Login da equipe
+      multiple: true
+      options: [Microsoft Entra ID, Active Directory / LDAP, Google Workspace, Okta, Keycloak, Outro]
+  - type: dropdown
+    id: hospedagem
+    attributes:
+      label: Onde pretende hospedar
+      options: [AWS (Terraform do projeto), Servidor próprio com Docker, Ainda não sei]
+  - type: textarea
+    id: duvida
+    attributes:
+      label: Em que você precisa de ajuda
+    validations:
+      required: true

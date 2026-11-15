@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 124" width="1200" height="124" role="img" aria-label="O que dá para fazer a seguir">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 124" width="1200" height="124" role="img" aria-label="Roadmap">
   <style>
     .sheen { animation: sheen 6s ease-in-out infinite; }
     @keyframes sheen { 0% { transform: translateX(-420px) } 60%, 100% { transform: translateX(1320px) } }
@@ -13,12 +13,12 @@
     <clipPath id="c"><rect width="1200" height="124" rx="20"/></clipPath>
   </defs>
   <g clip-path="url(#c)">
-    <rect width="1200" height="124" fill="#d8ff9e"/>
+    <rect width="1200" height="124" fill="#2f6b3a"/>
     <rect class="sheen" x="0" y="0" width="360" height="124" fill="url(#g)"/>
-    <rect class="bar" x="0" y="118" width="1200" height="6" fill="#2f6b3a" opacity=".55"/>
+    <rect class="bar" x="0" y="118" width="1200" height="6" fill="#d8ff9e" opacity=".55"/>
   </g>
-  <text x="40" y="74" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="22" font-weight="700" fill="#3f6b47">08</text>
-  <text x="96" y="78" font-family="'Barlow Condensed', 'Arial Narrow', 'Roboto Condensed', Impact, sans-serif" font-weight="700" font-size="50" fill="#0a110c" letter-spacing="-.5">O que dá para fazer a seguir</text>
-  <text x="98" y="104" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#3f6b47" letter-spacing="2">ROADMAP PÓS-PILOTO</text>
-  <circle class="dot" style="animation-delay:0.00s" cx="900" cy="62" r="5" fill="#2f6b3a"/><circle class="dot" style="animation-delay:0.18s" cx="926" cy="62" r="5" fill="#2f6b3a"/><circle class="dot" style="animation-delay:0.36s" cx="952" cy="62" r="5" fill="#2f6b3a"/><circle class="dot" style="animation-delay:0.54s" cx="978" cy="62" r="5" fill="#2f6b3a"/><circle class="dot" style="animation-delay:0.72s" cx="1004" cy="62" r="5" fill="#2f6b3a"/><circle class="dot" style="animation-delay:0.90s" cx="1030" cy="62" r="5" fill="#2f6b3a"/><circle class="dot" style="animation-delay:1.08s" cx="1056" cy="62" r="5" fill="#2f6b3a"/><circle class="dot" style="animation-delay:1.26s" cx="1082" cy="62" r="5" fill="#2f6b3a"/><circle class="dot" style="animation-delay:1.44s" cx="1108" cy="62" r="5" fill="#2f6b3a"/>
+  <text x="40" y="74" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="22" font-weight="700" fill="#cfe8c9">08</text>
+  <text x="96" y="78" font-family="'Barlow Condensed', 'Arial Narrow', 'Roboto Condensed', Impact, sans-serif" font-weight="700" font-size="50" fill="#f5fbe9" letter-spacing="-.5">Roadmap</text>
+  <text x="98" y="104" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#cfe8c9" letter-spacing="2">O QUE VEM A SEGUIR</text>
+  <circle class="dot" style="animation-delay:0.00s" cx="900" cy="62" r="5" fill="#d8ff9e"/><circle class="dot" style="animation-delay:0.18s" cx="926" cy="62" r="5" fill="#d8ff9e"/><circle class="dot" style="animation-delay:0.36s" cx="952" cy="62" r="5" fill="#d8ff9e"/><circle class="dot" style="animation-delay:0.54s" cx="978" cy="62" r="5" fill="#d8ff9e"/><circle class="dot" style="animation-delay:0.72s" cx="1004" cy="62" r="5" fill="#d8ff9e"/><circle class="dot" style="animation-delay:0.90s" cx="1030" cy="62" r="5" fill="#d8ff9e"/><circle class="dot" style="animation-delay:1.08s" cx="1056" cy="62" r="5" fill="#d8ff9e"/><circle class="dot" style="animation-delay:1.26s" cx="1082" cy="62" r="5" fill="#d8ff9e"/><circle class="dot" style="animation-delay:1.44s" cx="1108" cy="62" r="5" fill="#d8ff9e"/>
 </svg>

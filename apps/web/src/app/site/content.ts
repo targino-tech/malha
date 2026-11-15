@@ -128,5 +128,5 @@ export const openSource = [
 // Versão estática (GitHub Pages): sem servidor, então portal e cadastro apontam para o repositório.
 export const STATIC_SITE = process.env.NEXT_PUBLIC_MALHA_STATIC === '1';
 export const DEMO_HREF = `${REPOSITORY_URL}#rode-o-demo`;
-export const SUPPORT_HREF = `${REPOSITORY_URL}/issues/new?title=${encodeURIComponent('Apoio na implantação')}&labels=implantacao`;
+export const SUPPORT_HREF = `${REPOSITORY_URL}/issues/new?template=implantacao.yml`;
 export const PORTAL = STATIC_SITE ? { href: DEMO_HREF, label: 'Rodar o demo' } : { href: '/entrar', label: 'Entrar' };

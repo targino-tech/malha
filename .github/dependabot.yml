@@ -1,17 +1,52 @@
 version: 2
 updates:
-  # Dependabot uses the npm ecosystem for pnpm and reads pnpm-lock.yaml.
+  # Dependabot usa o ecossistema npm para pnpm e lê o pnpm-lock.yaml.
   - package-ecosystem: npm
     directory: /
     schedule:
       interval: weekly
+      day: monday
+    open-pull-requests-limit: 10
+    labels: [dependências]
+    commit-message:
+      prefix: Atualiza
+    groups:
+      # Patches e minors de ferramentas de desenvolvimento num PR só; o resto, um por pacote.
+      desenvolvimento:
+        dependency-type: development
+        update-types: [minor, patch]
+      next-react:
+        patterns: ['next', 'react', 'react-dom', '@types/react*', 'eslint-config-next']
 
   - package-ecosystem: gomod
     directory: /collector
     schedule:
       interval: weekly
+      day: monday
+    labels: [dependências, 'área: coletor']
+    commit-message:
+      prefix: Atualiza
 
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+      day: monday
+    labels: [dependências, ci]
+    commit-message:
+      prefix: Atualiza
+    groups:
+      actions:
+        patterns: ['*']
+
+  # A imagem base do Dockerfile vem de um ARG fixado por digest, que o Dependabot não lê:
+  # atualize junto com .node-version.
+
+  - package-ecosystem: terraform
+    directory: /infra
+    schedule:
+      interval: weekly
+      day: monday
+    labels: [dependências, 'área: infra']
+    commit-message:
+      prefix: Atualiza

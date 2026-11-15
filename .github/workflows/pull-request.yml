@@ -1,0 +1,43 @@
+name: Pull request
+
+# Verificações próprias de pull request: dependências novas e rótulos de área.
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  dependency-review:
+    name: Revisão de dependências
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      # Bloqueia dependências novas com vulnerabilidade moderada ou pior e licenças incompatíveis com a AGPL-3.0.
+      - uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4.9.0
+        with:
+          fail-on-severity: moderate
+          deny-licenses: SSPL-1.0, BUSL-1.1, Elastic-2.0, CC-BY-NC-4.0, CC-BY-NC-SA-4.0, Commons-Clause
+          comment-summary-in-pr: never
+
+  labels:
+    name: Rótulos de área
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Em PRs de forks o token é somente leitura; o rótulo fica para a triagem.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/labeler@b8dd2d9be0f68b860e7dae5dae7d772984eacd6d # v6.2.0
+        with:
+          sync-labels: false

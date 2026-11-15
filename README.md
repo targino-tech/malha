@@ -1,15 +1,30 @@
 <p align="center">
-  <img src="docs/media/readme-banner.svg" alt="Malha: inventário vivo de rede e ativos para grupos agrícolas. Coletor UniFi somente leitura, painel multi-fazenda e alertas em 3 minutos." width="100%">
+  <img src="docs/media/readme-banner.svg" alt="Malha: inventário vivo de rede e ativos para grupos agrícolas. Open source e grátis, coletor UniFi somente leitura, Zabbix e Grafana montados do inventário." width="100%">
+</p>
+
+<p align="center">
+  <a href="https://targino-tech.github.io/malha/"><b>Site</b></a> ·
+  <a href="#rode-o-demo"><b>Rodar o demo</b></a> ·
+  <a href="docs/integracoes.md"><b>Integrações</b></a> ·
+  <a href="CONTRIBUTING.md"><b>Contribuir</b></a> ·
+  <a href="https://github.com/targino-tech/malha/discussions"><b>Comunidade</b></a> ·
+  <a href="ROADMAP.md"><b>Roadmap</b></a>
 </p>
 
 <p align="center">
   <a href="https://github.com/targino-tech/malha/actions/workflows/ci.yml"><img src="https://github.com/targino-tech/malha/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/targino-tech/malha/actions/workflows/security.yml"><img src="https://github.com/targino-tech/malha/actions/workflows/security.yml/badge.svg" alt="Segurança"></a>
+  <a href="https://github.com/targino-tech/malha/actions/workflows/codeql.yml"><img src="https://github.com/targino-tech/malha/actions/workflows/codeql.yml/badge.svg" alt="CodeQL"></a>
+  <a href="https://scorecard.dev/viewer/?uri=github.com/targino-tech/malha"><img src="https://api.scorecard.dev/projects/github.com/targino-tech/malha/badge" alt="OpenSSF Scorecard"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/licen%C3%A7a-AGPL--3.0-b6f37a" alt="Licença AGPL-3.0"></a>
+  <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-bem--vindos-2f6b3a" alt="Pull requests bem-vindos"></a>
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/Node.js-24_LTS-2f6b3a" alt="Node.js 24">
-  <img src="https://img.shields.io/badge/Next.js-16.4-0a110c" alt="Next.js 16">
+  <img src="https://img.shields.io/badge/Next.js-16-0a110c" alt="Next.js 16">
   <img src="https://img.shields.io/badge/Go-1.27-2f6b3a" alt="Go 1.27">
   <img src="https://img.shields.io/badge/PostgreSQL-17-0a110c" alt="PostgreSQL 17">
-  <img src="https://img.shields.io/badge/AWS-sa--east--1-d9b866" alt="AWS São Paulo">
 </p>
 
 <img src="docs/media/secao-o-que-e.svg" alt="01 · O que é o Malha" width="100%">
@@ -62,29 +77,38 @@ O Malha mostra à matriz de um grupo agrícola, em um só painel, **quais fazend
 
 <p align="center"><img src="docs/media/readme-paleta.svg" alt="Paleta da marca: tinta, painel, verde-limão, broto, mata, trigo, solo e alerta." width="100%"></p>
 
-O símbolo é uma malha de cinco nós ligados em forma de **M**, a rede de fazendas conversando com a matriz. O site usa fundo tinta com verde-limão e trigo da colheita; o painel usa base clara com verde-mata para leitura prolongada. A tipografia combina **Barlow Condensed** nos títulos, **Inter** no texto e monoespaçada só em identificadores técnicos.
+<img src="docs/media/marca/malha-simbolo.svg" alt="Símbolo do Malha" width="72" align="right">
 
-| Site público | Planos |
+O símbolo é uma **folha cujas nervuras formam uma rede**: os nós quadrados são as fazendas e equipamentos, e o grão de trigo no talo lembra a safra. Site e painel usam o mesmo tema escuro, com fundo tinta, verde-limão e trigo da colheita. A tipografia combina **Barlow Condensed** nos títulos, **Inter** no texto e monoespaçada só em identificadores técnicos. Arquivos da marca em [`docs/media/marca`](docs/media/marca).
+
+| Visão geral do parque | Painéis da operação |
 | --- | --- |
-| <img src="docs/media/telas/site.png" alt="Site do Malha: título A rede do campo, à vista da matriz, com globo ASCII de rotas a partir de Mato Grosso."> | <img src="docs/media/telas/site-planos.png" alt="Página de planos do Malha."> |
-| **Visão geral** | **Ocorrências** |
-| <img src="docs/media/telas/visao-geral.png" alt="Visão geral com indicadores, aviso de ocorrências abertas e lista de fazendas."> | <img src="docs/media/telas/ocorrencias.png" alt="Lista de ocorrências com coletor sem contato e ativo offline, com botões de reconhecer e registrar atendimento."> |
-| **Indicadores** | **Conciliação** |
-| <img src="docs/media/telas/indicadores.png" alt="Indicadores de cobertura, inventário conferido, tempos de detecção e reconhecimento e economia."> | <img src="docs/media/telas/conciliacao.png" alt="Filas de conciliação com descobertas da coleta e cadastro a conferir."> |
-| **Integrações** | **Detalhe do ativo** |
-| <img src="docs/media/telas/integracoes.png" alt="Estado dos coletores por fazenda, com geração de código de ativação."> | <img src="docs/media/telas/ativo.png" alt="Detalhe do ativo com identificação, origem e linha do tempo."> |
+| <img src="docs/media/telas/visao-geral.webp" alt="Visão geral: parque tecnológico com 8 ativos em 3 fazendas, coletores em contato, críticos offline, ocorrências abertas e mapa das fazendas."> | <img src="docs/media/telas/paineis.webp" alt="Painéis: estado dos ativos por fazenda, ocorrências abertas por dia, tempo sem contato por coletor e ativos por categoria."> |
+| **Ocorrências** | **Monitoramento (Zabbix e Grafana)** |
+| <img src="docs/media/telas/ocorrencias.webp" alt="Ocorrências abertas com coletor sem contato e ativo offline, com botões de reconhecer e registrar atendimento."> | <img src="docs/media/telas/monitoramento.webp" alt="Monitoramento: escolha entre Modelo Malha e Modelo base e prévia dos hosts por família com templates do Zabbix."> |
+| **Inventário** | **Conciliação** |
+| <img src="docs/media/telas/inventario.webp" alt="Inventário de ativos com origem do cadastro e estado da última observação."> | <img src="docs/media/telas/conciliacao.webp" alt="Filas de conciliação com descobertas da coleta e cadastro a conferir."> |
+| **Indicadores** | **Integrações** |
+| <img src="docs/media/telas/indicadores.webp" alt="Indicadores de cobertura, inventário conferido, tempos de detecção e reconhecimento e economia."> | <img src="docs/media/telas/integracoes.webp" alt="Estado dos coletores por fazenda, com geração de código de ativação."> |
+| **Detalhe do ativo** | **Site público** |
+| <img src="docs/media/telas/ativo.webp" alt="Detalhe do Switch do armazém: fazenda, estado offline, etiqueta, origem UniFi, IP, MAC, criticidade e histórico com a ocorrência aberta."> | <img src="docs/media/telas/site.webp" alt="Site do Malha: título A rede do campo, à vista da matriz, com globo ASCII de Mato Grosso."> |
+
+<sub>Todas as telas usam os dados fictícios do modo demo.</sub>
 
 <details>
 <summary><b>Princípios de interface</b></summary>
 
 - Estados diferentes têm rótulos diferentes: “Seu navegador está sem conexão”, “Coletor sem contato” e “Coleta UniFi desatualizada” nunca se confundem. Sem dado fresco, o estado é **Indeterminado**, nunca “online”.
+- Cor nunca é a única pista: cada estado tem ícone, rótulo e, no offline, hachura; todo gráfico tem tabela alternativa.
 - Meta WCAG 2.2 AA: foco visível, controle completo por teclado, contraste 4,5:1, alvos de 44 px e diálogos nativos.
 - Funciona a 360 px sem rolagem horizontal da página; no celular o inventário vira lista compacta e o menu rola em uma linha.
-- Movimento só em aberturas e feedback de 120 a 200 ms, sempre respeitando `prefers-reduced-motion` (inclusive nas artes deste README).
+- Movimento sempre respeitando `prefers-reduced-motion` (inclusive nas artes deste README).
 - Horários gravados em UTC e exibidos no fuso IANA da fazenda.
 
-<p align="center"><img src="docs/media/telas/celular.png" alt="Painel do Malha em um celular." width="320"></p>
+<p align="center"><img src="docs/media/telas/celular.webp" alt="Painel do Malha em um celular." width="320"></p>
 </details>
+
+<a id="rode-o-demo"></a>
 
 <img src="docs/media/secao-rodar.svg" alt="05 · Rode o demo" width="100%">
 
@@ -114,7 +138,7 @@ docker run --rm -p 3000:3000 -e MALHA_MODE=demo -e MALHA_DEMO_DB=memory:// malha
 6. Em **Conciliação**, confira um item do cadastro e confirme ou vincule uma descoberta UniFi.
 7. Em **Indicadores**, defina a linha de base. Em **Ocorrências**, registre um atendimento e volte aos indicadores.
 8. Em **Auditoria**, veja as ações registradas e exporte o CSV.
-9. No site, abra **Planos** e envie o **cadastro**. Liste as solicitações com `pnpm db requests`.
+9. No site, abra **Open source** e envie o **cadastro** de apoio. Liste as solicitações com `pnpm db requests`.
 
 O CSV aceita UTF-8, até 5 MiB e 10 mil linhas, com as colunas `etiqueta`, `nome` e `categoria` e, opcionalmente, `criticidade`, `mac` e `ip`.
 </details>
@@ -181,51 +205,60 @@ cd collector && go test ./...
 O CI roda tudo isso com PostgreSQL 17 real, constrói e sobe a imagem Docker e valida o Terraform. O workflow de segurança roda Semgrep, auditoria de dependências, Gitleaks e ClamAV.
 </details>
 
-<img src="docs/media/secao-processo.svg" alt="06 · Como foi construído" width="100%">
 
-<p align="center"><img src="docs/media/readme-processo.svg" alt="Linha do tempo: MVP inicial, Fase 1 ocorrências, Fase 2 operação, Fase 3 valor medido e Fase 4 produção." width="100%"></p>
+<img src="docs/media/secao-integracoes.svg" alt="06 · Integrações" width="100%">
 
-O ponto de partida foi o documento de arquitetura técnica do MVP. Comparado com o código, ele mostrou que a parte difícil (coleta assinada, idempotência, RLS, Entra ID) estava pronta e que faltava o que faz o cliente usar o produto sozinho. Daí saíram quatro fases, cada uma entregue com testes unitários, testes no navegador e CI verde antes de entrar na `main`:
+| Integração | O que faz | Como |
+| --- | --- | --- |
+| **UniFi Network** | Coletor Go na fazenda lê a API local só com GET e envia lotes assinados | [Coletor](docs/integracoes.md#coletor-unifi) |
+| **Planilha CSV** | Importa o cadastro patrimonial com prévia e erro por linha | [CSV](docs/integracoes.md#planilha-csv) |
+| **Zabbix 7.0** | Hosts por ativo, agrupados por fazenda e família, com templates SNMP/agente | [Zabbix e Grafana](docs/integracoes.md#zabbix-e-grafana) |
+| **Grafana** | Um painel por família (tráfego, erros, CPU, memória, latência) | [Zabbix e Grafana](docs/integracoes.md#zabbix-e-grafana) |
+| **Microsoft Entra ID** | Login com MFA e escopo do diretório do cliente | [Piloto](#rode-o-demo) |
+| **Active Directory / LDAP** | Login com a conta da rede, por LDAPS ou StartTLS | [LDAP](#login-por-active-directory-ou-ldap) |
+| **Google Workspace, Okta, Keycloak** | Login OpenID Connect por convite de e-mail | [OIDC](#login-por-google-workspace-okta-keycloak-ou-outro-openid-connect) |
+| **SMTP / Amazon SES** | E-mail de alertas críticos agrupado por fazenda | [Alertas](docs/integracoes.md#e-mail-de-alertas) |
 
-| Etapa | O que entrou |
+### Modelos de monitoramento
+
+O Malha classifica cada ativo numa família (núcleo, Wi-Fi, rádio, domínio, servidores, estações, campo, segurança física) e num fabricante (Cisco, Huawei, Ubiquiti, MikroTik, Fortinet, Aruba, Intelbras, TP-Link, Windows, Linux). Daí sai o monitoramento:
+
+- **Modelo Malha**: templates oficiais do Zabbix 7.0 por família e fabricante (por exemplo, `Cisco IOS by SNMP`, `Ubiquiti AirOS by SNMP`, `Windows by Zabbix agent`) e painéis com tráfego, erros, CPU e memória.
+- **Modelo base**: só disponibilidade, latência e perda por ICMP. Funciona em qualquer Zabbix, sem SNMP nem agente.
+
+Entrega por arquivo (JSON do Zabbix e painéis do Grafana para importar) ou direto pela API, com o token cifrado. Detalhes e a tabela completa no [guia de integrações](docs/integracoes.md#zabbix-e-grafana).
+
+
+<img src="docs/media/secao-comunidade.svg" alt="07 · Comunidade" width="100%">
+
+O Malha é feito em comunidade, por gente de TI, do agro e do software livre. Qualquer ajuda conta:
+
+| Quero… | Caminho |
 | --- | --- |
-| **MVP inicial** | Inventário por CSV, coletor UniFi assinado, painel, login Entra ID e site de apresentação ([#1](https://github.com/targino-tech/malha/pull/1)) |
-| **Fase 1 · Ocorrências** | Regras a cada minuto, supressão durante perda de contato, reconhecimento auditado, e-mail de críticos agrupado por fazenda |
-| **Fase 2 · Operação** | Administração e integrações na interface, papéis técnico e auditor com escopo por fazenda, cadastro e edição de ativos, inventário paginado no servidor |
-| **Fase 3 · Valor medido** | Histórico de observações, conciliação, atendimentos e linha de base, indicadores da diretoria, auditoria e exportações seguras |
-| **Fase 4 · Produção** | Docker, Terraform AWS, deploy com OIDC, release assinada do coletor, health check, logs estruturados e métricas EMF |
-| **Site e portal** | Globo ASCII, planos, cadastro de interessados e portal de entrada ([#8](https://github.com/targino-tech/malha/pull/8)), correção da validação de e-mail da CLI ([#7](https://github.com/targino-tech/malha/pull/7)) |
+| Tirar uma dúvida | [Discussões → Perguntas e respostas](https://github.com/targino-tech/malha/discussions/categories/q-a) |
+| Sugerir uma ideia | [Discussões → Ideias](https://github.com/targino-tech/malha/discussions/categories/ideas) |
+| Mostrar como uso o Malha | [Discussões → Mostre e conte](https://github.com/targino-tech/malha/discussions/categories/show-and-tell) |
+| Relatar um erro | [Issue de erro](https://github.com/targino-tech/malha/issues/new?template=erro.yml) |
+| Pedir um fabricante, template ou provedor novo | [Issue de integração](https://github.com/targino-tech/malha/issues/new?template=integracao.yml) |
+| Contribuir com código ou documentação | [Como contribuir](CONTRIBUTING.md) e as [boas primeiras issues](https://github.com/targino-tech/malha/labels/boa%20primeira%20issue) |
+| Pedir apoio na implantação | [Issue de implantação](https://github.com/targino-tech/malha/issues/new?template=implantacao.yml) |
 
-<img src="docs/media/secao-branches.svg" alt="07 · Branches e entrega" width="100%">
+Todo pull request passa pelo CI (web, banco, navegador, coletor, Docker e Terraform), pela análise de segurança (CodeQL, Semgrep, Gitleaks, ClamAV, dependências) e pela revisão de um mantenedor. Os critérios completos estão no [CONTRIBUTING](CONTRIBUTING.md#critérios-para-aceitar-um-pull-request); os papéis e como as decisões são tomadas, na [governança](GOVERNANCE.md). Todos seguem o [código de conduta](CODE_OF_CONDUCT.md).
 
-<p align="center"><img src="docs/media/readme-branches.svg" alt="Fluxo: branches feat em PRs para a main; main promovida para staging, que implanta em homologação; staging promovida para production com aprovação." width="100%"></p>
+<a href="https://github.com/targino-tech/malha/graphs/contributors"><img src="https://contrib.rocks/image?repo=targino-tech/malha" alt="Pessoas que contribuíram com o Malha"></a>
 
-| Branch | Papel | Como muda |
-| --- | --- | --- |
-| `main` | Código integrado e sempre verde | Só por PR com CI aprovado |
-| `staging` | O que está em homologação | PR da `main`; o push constrói as imagens e implanta em `staging` |
-| `production` | O que está em produção | PR da `staging` com aprovação; o push promove o mesmo digest já validado |
-| `feat/*`, `fix/*` | Uma mudança por vez | Saem da `main` e voltam por PR |
-| `dependabot/*` | Atualizações automáticas | Revisadas e mergeadas pela `main` |
 
-O deploy automático fica desligado até a conta AWS existir: defina a variável de repositório `DEPLOY_ENABLED=true` e os GitHub Environments `staging` e `production` conforme [`infra/README.md`](infra/README.md).
+<img src="docs/media/secao-proximos.svg" alt="08 · Roadmap" width="100%">
 
-<img src="docs/media/secao-proximos.svg" alt="08 · O que dá para fazer a seguir" width="100%">
-
-| Próximo passo | Por que | Depende de |
-| --- | --- | --- |
-| Homologação em campo | Validar console física, firmware, Entra do cliente e 24 h sem WAN | Hardware e diretório do cliente |
-| Prontidão de safra | Checklists versionados por fazenda com evidências e prazo | Responsável por fazenda |
-| Conectores MikroTik e FortiGate | Mesmo contrato de observações para outras redes | Inventário de modelos e permissões |
-| Starlink e link de failover | Saber se a fazenda caiu ou só trocou de link | Elegibilidade da conta Starlink |
-| Servidor MCP somente leitura | Triagem assistida com o escopo de cada usuário | Qualidade de dados medida no piloto |
-| Entrada e saída de pessoas | Admissão e desligamento ligados a SAP/TOTVS e Entra | Sistema de RH do cliente |
-| Autocura com aprovação | Reiniciar porta PoE ou forçar failover com janela e retorno | Telemetria estável e ensaio em bancada |
-| Provisionamento automático | Do cadastro do site ao grupo pronto sem a equipe | Fluxo de aprovação definido |
+Em andamento: exportação de planilhas padronizada com marca d'água, validação dos templates do Zabbix em servidor real e testes do login OIDC com provedores reais. Depois: conectores MikroTik e FortiGate, Starlink e failover, prontidão de safra e tradução. A lista completa, com o porquê de cada item, está no [ROADMAP](ROADMAP.md).
 
 ## Segurança
 
-Resultados de código, dependências, segredos e malware ficam no [workflow de segurança](https://github.com/targino-tech/malha/actions/workflows/security.yml). Consulte a [política de segurança](SECURITY.md) para relatar uma vulnerabilidade por um canal privado.
+Vulnerabilidades vão pelo **[relato privado do GitHub](https://github.com/targino-tech/malha/security/advisories/new)**, nunca por issue pública. Veja a [política de segurança](SECURITY.md) para o escopo e como tratamos cada relato.
+
+A cada mudança rodam [CodeQL](https://github.com/targino-tech/malha/actions/workflows/codeql.yml), [Semgrep, Gitleaks, ClamAV e auditoria de dependências](https://github.com/targino-tech/malha/actions/workflows/security.yml), revisão de dependências nos pull requests e o [OpenSSF Scorecard](https://scorecard.dev/viewer/?uri=github.com/targino-tech/malha). Os resultados ficam em **Security → Code scanning**.
+
+> **Nunca exponha o modo demo na internet.** Ele entra como administrador sem login e usa chaves fixas, feitas só para teste local. Em qualquer instalação acessível por outras pessoas, use `MALHA_MODE=pilot` com `MALHA_AUTH_SECRET` própria.
 
 ## Login por Active Directory ou LDAP
 
@@ -254,12 +287,12 @@ export MALHA_OIDC_NAME='Google'                           # rótulo do botão "E
 
 O acesso continua por convite: em Administração, crie o membro com o **e-mail do convite** (o identificador no diretório pode ficar em branco). No primeiro login, o Malha só aceita a conta se o provedor confirmar o e-mail como verificado; a partir daí a conta fica ligada pelo identificador estável do provedor (`iss` + `sub`), mesmo que o e-mail mude depois. O convite só pode ser usado uma vez, a ligação vai para a auditoria e desativar o membro bloqueia o login.
 
+
 ## Site público no GitHub Pages
 
 A versão estática do site (sem painel e sem servidor) é publicada pelo workflow [`pages.yml`](.github/workflows/pages.yml) a cada mudança no site na `main`. Com o repositório público, ative em **Settings → Pages → Source: GitHub Actions**; o endereço fica `https://<dono>.github.io/malha/`. Para gerar localmente: `node scripts/build-static-site.mjs` (saída em `apps/site-static/out`). Nessa versão, "Entrar" e o cadastro apontam para o repositório: rodar o demo e pedir apoio por issue.
 
-## Licença e contribuição
+
+## Licença
 
 O Malha é software livre e gratuito, distribuído sob a [GNU Affero General Public License v3.0 ou posterior](LICENSE). Você pode usar, estudar, modificar e redistribuir o código. Se oferecer uma versão modificada como serviço pela rede, a AGPL exige disponibilizar o código-fonte dessa versão aos usuários dela.
-
-Contribuições são bem-vindas. Veja [como contribuir](CONTRIBUTING.md).

@@ -1,0 +1,12 @@
+# Responsáveis pela revisão. A regra mais específica, mais abaixo, prevalece.
+*                         @targino-tech
+
+# Áreas sensíveis: segurança, escopo de dados, ingestão e entrega.
+/packages/db/             @targino-tech
+/apps/web/src/server/     @targino-tech
+/apps/web/src/app/v1/     @targino-tech
+/collector/               @targino-tech
+/infra/                   @targino-tech
+/.github/                 @targino-tech
+/SECURITY.md              @targino-tech
+/LICENSE                  @targino-tech

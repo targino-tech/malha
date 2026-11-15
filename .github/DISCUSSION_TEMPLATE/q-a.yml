@@ -1,0 +1,20 @@
+title: '[Dúvida] '
+body:
+  - type: markdown
+    attributes:
+      value: Remova IPs, tokens, senhas e nomes reais de fazendas antes de enviar.
+  - type: textarea
+    id: pergunta
+    attributes:
+      label: Sua pergunta
+    validations:
+      required: true
+  - type: textarea
+    id: tentativa
+    attributes:
+      label: O que você já tentou
+  - type: input
+    id: versao
+    attributes:
+      label: Versão e modo
+      placeholder: main eedb3d3, demo

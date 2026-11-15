@@ -1,0 +1,40 @@
+name: Integração ou modelo de monitoramento
+description: Peça suporte a um novo equipamento, fabricante, provedor de login ou ferramenta.
+title: '[Integração] '
+labels: [funcionalidade, 'área: monitoramento', triagem]
+body:
+  - type: dropdown
+    id: tipo
+    attributes:
+      label: Tipo
+      options:
+        - Fabricante ou família no catálogo de modelos (Zabbix/Grafana)
+        - Nova fonte de coleta (além do UniFi)
+        - Provedor de login
+        - Exportação ou ferramenta externa
+        - Outro
+    validations:
+      required: true
+  - type: input
+    id: produto
+    attributes:
+      label: Produto e versão
+      placeholder: MikroTik RouterOS 7.16, Zabbix 7.0, Keycloak 26
+    validations:
+      required: true
+  - type: textarea
+    id: uso
+    attributes:
+      label: Como você usa hoje e o que o Malha deveria fazer
+    validations:
+      required: true
+  - type: textarea
+    id: referencias
+    attributes:
+      label: Referências
+      description: Nome do template oficial do Zabbix, documentação da API, MIBs, exemplo de resposta (sem dados reais).
+  - type: dropdown
+    id: testar
+    attributes:
+      label: Você pode testar em um ambiente seu?
+      options: [Sim, Não]

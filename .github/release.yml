@@ -1,0 +1,17 @@
+# Categorias das notas de release geradas automaticamente pelo GitHub, a partir dos rótulos dos PRs.
+changelog:
+  exclude:
+    labels: [duplicada, não planejado]
+  categories:
+    - title: Segurança
+      labels: [segurança]
+    - title: Novidades
+      labels: [funcionalidade]
+    - title: Correções
+      labels: [erro]
+    - title: Documentação
+      labels: [documentação]
+    - title: Dependências e automação
+      labels: [dependências, ci]
+    - title: Outras mudanças
+      labels: ['*']

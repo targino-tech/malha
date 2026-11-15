@@ -1,0 +1,22 @@
+title: '[Ideia] '
+labels: [funcionalidade]
+body:
+  - type: markdown
+    attributes:
+      value: Conte a ideia do jeito que vier. A comunidade ajuda a lapidar antes de virar issue.
+  - type: textarea
+    id: ideia
+    attributes:
+      label: A ideia
+      description: Que problema do campo ou da TI ela resolve?
+    validations:
+      required: true
+  - type: textarea
+    id: como
+    attributes:
+      label: Como imagina que funcione
+  - type: dropdown
+    id: area
+    attributes:
+      label: Área
+      options: [Painel, Coletor, Monitoramento, Login, Exportações, Site, Outra]

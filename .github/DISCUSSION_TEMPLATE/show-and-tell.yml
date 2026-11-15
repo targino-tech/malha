@@ -1,0 +1,16 @@
+title: '[Na prática] '
+body:
+  - type: markdown
+    attributes:
+      value: Mostre como o Malha está ajudando no seu grupo. Fotos e capturas são bem-vindas, sem dados sensíveis.
+  - type: textarea
+    id: historia
+    attributes:
+      label: Como você usa o Malha
+      description: Quantas fazendas, que equipamentos, que integrações e o que mudou na rotina da TI.
+    validations:
+      required: true
+  - type: textarea
+    id: dicas
+    attributes:
+      label: Dicas para quem está começando

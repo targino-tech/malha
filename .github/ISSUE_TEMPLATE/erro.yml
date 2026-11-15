@@ -1,0 +1,78 @@
+name: Erro
+description: Algo não funciona como deveria e dá para reproduzir.
+title: '[Erro] '
+labels: [erro, triagem]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por relatar! **Vulnerabilidades não vão aqui**: use o [relato privado de segurança](https://github.com/targino-tech/malha/security/advisories/new).
+        Remova IPs, nomes de fazendas, tokens e senhas de logs e capturas de tela.
+  - type: dropdown
+    id: componente
+    attributes:
+      label: Onde acontece
+      options:
+        - Painel web
+        - Site público
+        - Coletor (fazenda)
+        - Ingestão / API
+        - Worker (ocorrências, e-mail)
+        - Monitoramento (Zabbix / Grafana)
+        - Login (Entra, AD/LDAP, OIDC)
+        - Banco / migrações
+        - Infraestrutura (Terraform, Docker)
+        - Outro
+    validations:
+      required: true
+  - type: dropdown
+    id: modo
+    attributes:
+      label: Modo
+      options: [Demo, Piloto / produção]
+    validations:
+      required: true
+  - type: input
+    id: versao
+    attributes:
+      label: Versão
+      description: SHA da `main`, tag do coletor (`collector-v…`) ou data do download.
+      placeholder: eedb3d3
+    validations:
+      required: true
+  - type: textarea
+    id: passos
+    attributes:
+      label: Passos para reproduzir
+      placeholder: |
+        1. Em Inventário, filtre a Fazenda Vale Verde
+        2. Clique em Exportar CSV
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: esperado
+    attributes:
+      label: O que você esperava e o que aconteceu
+    validations:
+      required: true
+  - type: textarea
+    id: ambiente
+    attributes:
+      label: Ambiente
+      description: Navegador, sistema operacional, versão do UniFi/Zabbix/Grafana, Node.js, Go.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs ou capturas de tela
+      description: Sem dados sensíveis.
+      render: text
+  - type: checkboxes
+    id: confirmacoes
+    attributes:
+      label: Confirmações
+      options:
+        - label: Procurei e não achei uma issue igual aberta.
+          required: true
+        - label: Removi credenciais, IPs e dados de clientes do que enviei.
+          required: true

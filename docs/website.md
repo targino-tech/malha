@@ -3,21 +3,21 @@
 O site, o portal e o painel rodam no mesmo app Next.js (`apps/web`). Assim compartilham sessão, banco e deploy, e o cliente passa do site ao painel sem trocar de domínio.
 
 ```text
-Visitante ──► /site ──► /site/planos ──► /site/cadastro ──► POST /api/site/requests ──► site_requests
+Visitante ──► /site ──► /site/open-source ──► /site/cadastro ──► POST /api/site/requests ──► site_requests
                                                                                           │
                                          equipe Malha: pnpm db requests ◄─────────────────┘
                                                        pnpm db configure / farm / enroll
                                                                                           │
-Cliente ───► /entrar (portal) ──► Microsoft Entra ID ──► / (painel do grupo) ◄────────────┘
+Cliente ───► /entrar (portal) ──► Entra ID, AD/LDAP ou OIDC ──► / (painel do grupo) ◄────────────┘
 ```
 
 | Rota | Papel |
 | --- | --- |
-| `/site` | Apresentação: globo ASCII, história do campo guiada pelo scroll, prévia do painel, segurança, planos e dúvidas |
-| `/site/planos` | Planos, recursos incluídos e etapas de contratação |
-| `/site/cadastro` | Formulário de solicitação. O plano chega pré-selecionado por `?plano=` |
+| `/site` | Apresentação: globo ASCII, história do campo guiada pelo scroll, prévia do painel, segurança, open source e dúvidas |
+| `/site/open-source` | Licença, como usar, como contribuir e etapas de implantação (`/site/planos` redireciona para cá) |
+| `/site/cadastro` | Pedido de apoio na implantação |
 | `/site/privacidade` | O que o formulário coleta e como os dados são usados (LGPD). Revise com o jurídico antes de divulgar |
-| `/entrar` | Portal do cliente. Inicia o login Entra ID (no demo, abre o painel direto) |
+| `/entrar` | Portal do cliente: Entra ID, AD/LDAP ou o provedor OIDC configurado (no demo, abre o painel direto) |
 | `/` | Painel web do grupo autenticado |
 
 ## Cadastro
@@ -32,9 +32,12 @@ Cliente ───► /entrar (portal) ──► Microsoft Entra ID ──► / (
 
 ## Ainda não implementado
 
-- **Cobrança e assinatura recorrente.** Os planos aparecem como "sob consulta" e a contratação é por proposta. Para cobrança online, o próximo passo é um provedor (Stripe, Pagar.me ou Asaas) com checkout hospedado e webhook assinado que mude o status da solicitação para `provisioned` e dispare o provisionamento do grupo.
 - **Provisionamento automático.** Hoje o grupo, as fazendas e os códigos de ativação são criados pela CLI. Um painel administrativo interno pode transformar uma solicitação aprovada em grupo.
 - **Aviso à equipe.** O worker pode enviar um e-mail a cada solicitação nova, reaproveitando o SMTP dos alertas.
+
+## GitHub Pages
+
+A versão estática (`node scripts/build-static-site.mjs`) publica só as páginas de `/site` em `https://targino-tech.github.io/malha/`. Sem servidor, o portal vira "Rodar o demo" e o cadastro aponta para uma issue de implantação no GitHub.
 
 ## Animações e acessibilidade
 
