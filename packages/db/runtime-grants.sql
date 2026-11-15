@@ -48,3 +48,6 @@ GRANT UPDATE (invite_email) ON memberships TO malha_runtime;
 GRANT SELECT, INSERT ON oidc_identities TO malha_runtime;
 -- Dados de rede: portas, VLANs, leituras de contadores, série de tráfego e ligações (RLS).
 GRANT SELECT, INSERT, UPDATE, DELETE ON device_ports, network_vlans, port_counter_readings, traffic_samples, network_links TO malha_runtime;
+-- Canais de notificação (Telegram e e-mail) e a outbox de entregas, por grupo (RLS).
+GRANT SELECT, INSERT, UPDATE ON notification_channels TO malha_runtime;
+GRANT SELECT, INSERT, UPDATE, DELETE ON notification_deliveries TO malha_runtime;

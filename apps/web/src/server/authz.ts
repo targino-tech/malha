@@ -23,6 +23,7 @@ const grants = {
   'monitoring.export': ['admin', 'ti'],
   'monitoring.apply': ['admin'],
   'audit.read': ['admin', 'auditor'],
+  'alerts.manage': ['admin', 'ti'],
 } satisfies Record<string, Role[]>;
 
 export type Permission = keyof typeof grants;

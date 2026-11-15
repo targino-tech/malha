@@ -6,6 +6,7 @@ import { emitMetrics, errorName, log } from '../web/src/server/log';
 import { operationalMetrics } from '../web/src/server/operations';
 import { sendPendingNotifications, transportFromEnv } from '../web/src/server/notifications';
 import { processInventoryJob } from '../web/src/server/projection';
+import { dispatchChannelNotifications } from '../web/src/server/push';
 
 const EVALUATION_INTERVAL_MS = 60_000;
 const RETENTION_INTERVAL_MS = 60 * 60_000;
@@ -30,6 +31,13 @@ async function run() {
           if (evaluation && (evaluation.opened || evaluation.resolved || sent)) log.info('Ocorrências avaliadas', { ...evaluation, emailsSent: sent });
         } catch (error) {
           log.error('Falha ao avaliar ocorrências', { error: errorName(error) });
+        }
+        try {
+          // Canais por grupo (Telegram e e-mail): outbox própria com retentativa e limite por canal.
+          const pushed = await dispatchChannelNotifications(db, { transport });
+          if (pushed.routed || pushed.sent || pushed.failed) log.info('Notificações de canal processadas', pushed);
+        } catch (error) {
+          log.error('Falha ao enviar notificações de canal', { error: errorName(error) });
         }
         try {
           const metrics = await operationalMetrics(db);
