@@ -141,6 +141,18 @@ func refreshCapture(ctx context.Context, site string, unifi unifiReader, queue *
 	defer cancel()
 	observedAt := time.Now()
 	devices, err := unifi.inventory(captureCtx, site)
+	var networks *[]network
+	if err == nil {
+		// Portas, uplink e VLANs são complementares: falham sem descartar o inventário.
+		err = unifi.enrich(captureCtx, site, devices)
+	}
+	if err == nil {
+		var networkErr error
+		networks, networkErr = unifi.networks(captureCtx, site)
+		if networkErr != nil && ctx.Err() == nil {
+			slog.Warn("leitura de redes UniFi falhou", "erro", networkErr)
+		}
+	}
 	if err != nil {
 		healthy.Store(false)
 		if ctx.Err() == nil {
@@ -154,7 +166,7 @@ func refreshCapture(ctx context.Context, site string, unifi unifiReader, queue *
 		}
 		return
 	}
-	lost, err := queue.store(ctx, observedAt, devices)
+	lost, err := queue.store(ctx, observedAt, devices, networks)
 	healthy.Store(err == nil)
 	if err != nil {
 		if ctx.Err() == nil {

@@ -167,6 +167,9 @@ export async function applyRetention(database: Database) {
     await database.transaction(async (tx) => {
       await setOrg(tx, id);
       await tx.query(`DELETE FROM asset_observations WHERE org_id = $1 AND observed_at < now() - interval '30 days'`, [id]);
+      // Dados de rede: série de tráfego por 30 dias; leituras brutas de contadores só pelo tempo do recálculo.
+      await tx.query(`DELETE FROM traffic_samples WHERE org_id = $1 AND observed_at < now() - interval '30 days'`, [id]);
+      await tx.query(`DELETE FROM port_counter_readings WHERE org_id = $1 AND observed_at < now() - interval '2 days'`, [id]);
       await tx.query(`DELETE FROM capture_batches b WHERE b.org_id = $1 AND b.received_at < now() - interval '30 days'
         AND EXISTS (SELECT 1 FROM captures c WHERE c.org_id = b.org_id AND c.farm_id = b.farm_id AND c.collector_id = b.collector_id
           AND c.id = b.capture_id AND c.applied_at IS NOT NULL)`, [id]);

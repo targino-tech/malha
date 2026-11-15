@@ -20,6 +20,8 @@ O coletor é um binário Go que roda num Linux da fazenda, lê a API local de In
 3. Na máquina da fazenda, compile o coletor (`cd collector && go build -trimpath -o malha-collector .`) ou use uma [release assinada](https://github.com/targino-tech/malha/releases) quando houver uma tag `collector-v*` publicada, e siga o [`collector/README.md`](../collector/README.md): `sites` → `enroll` → `run` (há um serviço systemd de exemplo).
 4. A primeira coleta aparece em **Integrações** em até 5 minutos; o heartbeat chega a cada 60 s.
 
+Além do inventário, o coletor lê portas, uplink, taxa de uplink e redes/VLANs do site (lote versão 2). O que a API do UniFi expõe, as lacunas e o contrato da API de rede estão em [`docs/rede.md`](rede.md).
+
 Outros fabricantes (MikroTik, FortiGate) estão no [roadmap](../ROADMAP.md). O contrato de observações é o mesmo: veja [`docs/arquitetura.md`](arquitetura.md) se quiser propor um coletor novo.
 
 ## Planilha CSV
