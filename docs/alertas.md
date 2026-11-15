@@ -57,4 +57,4 @@ O worker precisa de saída HTTPS para `api.telegram.org:443`. Se a VPC restringe
 
 ## Banco
 
-A migração `012_alertas_push.sql` cria `notification_channels` e `notification_deliveries`, as duas com RLS (`org_scope` sobre `malha.org_id`), e `runtime-grants.sql` concede `SELECT, INSERT, UPDATE` ao `malha_runtime`. Não há `DELETE`: canais são desativados e o histórico fica.
+A migração `014_alertas_push.sql` cria `notification_channels` e `notification_deliveries`, as duas com RLS (`org_scope` sobre `malha.org_id`), e `runtime-grants.sql` concede `SELECT, INSERT, UPDATE` ao `malha_runtime`. Não há `DELETE`: canais são desativados e o histórico fica.

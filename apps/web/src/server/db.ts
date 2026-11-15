@@ -100,27 +100,28 @@ export async function setOrg(tx: Queryable, orgId: string) {
 }
 
 export async function migrate(db: Database) {
-  const migrations = [
-    readFileSync(/* turbopackIgnore: true */ resolve('packages/db/001_inventory.sql'), 'utf8'),
-    readFileSync(/* turbopackIgnore: true */ resolve('packages/db/002_collector_limits.sql'), 'utf8'),
-    readFileSync(/* turbopackIgnore: true */ resolve('packages/db/003_occurrences.sql'), 'utf8'),
-    readFileSync(/* turbopackIgnore: true */ resolve('packages/db/004_access_inventory.sql'), 'utf8'),
-    readFileSync(/* turbopackIgnore: true */ resolve('packages/db/005_history_value.sql'), 'utf8'),
-    readFileSync(/* turbopackIgnore: true */ resolve('packages/db/006_clock_skew.sql'), 'utf8'),
-    readFileSync(/* turbopackIgnore: true */ resolve('packages/db/007_site_requests.sql'), 'utf8'),
-    readFileSync(/* turbopackIgnore: true */ resolve('packages/db/008_farm_coordinates.sql'), 'utf8'),
-    readFileSync(/* turbopackIgnore: true */ resolve('packages/db/009_ldap.sql'), 'utf8'),
-    readFileSync(/* turbopackIgnore: true */ resolve('packages/db/010_monitoring_connections.sql'), 'utf8'),
-    readFileSync(/* turbopackIgnore: true */ resolve('packages/db/011_oidc_identities.sql'), 'utf8'),
-    readFileSync(/* turbopackIgnore: true */ resolve('packages/db/012_alertas_push.sql'), 'utf8'),
+  // A versão gravada em malha_migrations é o número do arquivo, não a posição na lista.
+  // Assim, números reservados por outras frentes podem ficar livres sem deslocar as demais.
+  const migrations: Array<readonly [number, string]> = [
+    [1, readFileSync(/* turbopackIgnore: true */ resolve('packages/db/001_inventory.sql'), 'utf8')],
+    [2, readFileSync(/* turbopackIgnore: true */ resolve('packages/db/002_collector_limits.sql'), 'utf8')],
+    [3, readFileSync(/* turbopackIgnore: true */ resolve('packages/db/003_occurrences.sql'), 'utf8')],
+    [4, readFileSync(/* turbopackIgnore: true */ resolve('packages/db/004_access_inventory.sql'), 'utf8')],
+    [5, readFileSync(/* turbopackIgnore: true */ resolve('packages/db/005_history_value.sql'), 'utf8')],
+    [6, readFileSync(/* turbopackIgnore: true */ resolve('packages/db/006_clock_skew.sql'), 'utf8')],
+    [7, readFileSync(/* turbopackIgnore: true */ resolve('packages/db/007_site_requests.sql'), 'utf8')],
+    [8, readFileSync(/* turbopackIgnore: true */ resolve('packages/db/008_farm_coordinates.sql'), 'utf8')],
+    [9, readFileSync(/* turbopackIgnore: true */ resolve('packages/db/009_ldap.sql'), 'utf8')],
+    [10, readFileSync(/* turbopackIgnore: true */ resolve('packages/db/010_monitoring_connections.sql'), 'utf8')],
+    [11, readFileSync(/* turbopackIgnore: true */ resolve('packages/db/011_oidc_identities.sql'), 'utf8')],
+    [14, readFileSync(/* turbopackIgnore: true */ resolve('packages/db/014_alertas_push.sql'), 'utf8')],
   ];
   await db.transaction(async (tx) => {
     await tx.exec('SELECT pg_advisory_xact_lock(58147261)');
     await tx.exec('CREATE TABLE IF NOT EXISTS malha_migrations (version integer PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())');
     const { rows } = await tx.query<{ version: number }>('SELECT version FROM malha_migrations');
     const completed = new Set(rows.map(({ version }) => version));
-    for (const [index, sql] of migrations.entries()) {
-      const version = index + 1;
+    for (const [version, sql] of migrations) {
       if (completed.has(version)) continue;
       await tx.exec(sql);
       await tx.query('INSERT INTO malha_migrations(version) VALUES ($1)', [version]);
