@@ -53,7 +53,7 @@ try {
     const to = Math.min(duration, Number(option('to', String(duration))));
     const total = Math.round((to - from) * fps);
     const ffmpeg = spawn('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(fps), '-c:v', 'png', '-i', '-',
-      '-c:v', 'libx264', '-preset', 'slow', '-crf', '17', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out], { stdio: ['pipe', 'inherit', 'inherit'] });
+      '-c:v', 'libx264', '-preset', 'slow', '-crf', '20', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out], { stdio: ['pipe', 'inherit', 'inherit'] });
     const finished = new Promise((done, fail) => ffmpeg.on('close', (code) => (code === 0 ? done() : fail(new Error(`ffmpeg saiu com ${code}`)))));
     const started = Date.now();
     for (let index = 0; index < total; index += 1) {

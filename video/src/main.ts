@@ -68,7 +68,6 @@ function grainTile() {
   ctx.putImageData(image, 0, 0);
   return canvas.toDataURL();
 }
-const hash = (n: number) => { const x = Math.sin(n * 91.345) * 47453.5453; return x - Math.floor(x); };
 
 // Posição do brilho de fundo ao longo do vídeo.
 const GLOW: Array<[number, number, number]> = [
@@ -88,6 +87,7 @@ function setup() {
   const stage = one('#stage');
   const glow = one('#glow');
   const grain = one('#grain');
+  // Textura fixa: dá o grão de filme sem pesar no vídeo (ruído que muda a cada quadro não comprime).
   grain.style.backgroundImage = `url(${grainTile()})`;
   const fade = one('#fade');
   const barTop = one('#bar-top');
@@ -193,7 +193,6 @@ function setup() {
 
   function seek(time: number) {
     const t = clamp(time, 0, DURATION);
-    const frame = Math.round(t * 60);
 
     // Moldura: barras de cinema abrem no início e fecham no fim; ruído e brilho acompanham.
     const open = outExpo(range(t, 0.15, 1.3)) * (1 - inOut(range(t, 44.1, 45)));
@@ -201,7 +200,6 @@ function setup() {
     barTop.style.height = `${bar}px`;
     barBottom.style.height = `${bar}px`;
     fade.style.opacity = (1 - range(t, 0, 0.5) + range(t, 44.5, 45)).toFixed(3);
-    grain.style.backgroundPosition = `${Math.round(hash(frame) * 256)}px ${Math.round(hash(frame + 3) * 256)}px`;
     const [gx, gy] = glowAt(t);
     glow.style.left = `${gx}px`;
     glow.style.top = `${gy}px`;
@@ -249,9 +247,9 @@ function setup() {
     }
 
     // 3 · Coleta: queda e recuperação (12,4 – 20,6 s)
-    const fieldOn = t > 12.3 && t < 20.7;
-    show(sField, fieldOn ? outCubic(range(t, 12.4, 13.0)) * (1 - range(t, 20.0, 20.6)) : 0,
-      `scale(${lerp(1.04, 1, outCubic(range(t, 12.4, 20.6))).toFixed(4)})`);
+    const fieldOn = t > 12.1 && t < 20.7;
+    show(sField, fieldOn ? outCubic(range(t, 12.2, 12.8)) * (1 - range(t, 20.0, 20.6)) : 0,
+      `scale(${lerp(1.04, 1, outCubic(range(t, 12.2, 20.6))).toFixed(4)})`);
     if (fieldOn) {
       copy(one('[data-copy="a"]', sField), t, 12.7, 14.9);
       copy(one('[data-copy="b"]', sField), t, 15.0, 17.9);
