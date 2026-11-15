@@ -33,6 +33,11 @@ test('ingestão assinada exige prova nova e projeta uma captura completa sem dup
   const accepted = await send(heartbeatPath, heartbeat, signed);
   expect(accepted.ok(), await accepted.text()).toBe(true);
   expect((await send(heartbeatPath, heartbeat, signed)).status()).toBe(409);
+  // O desvio de relógio vem do iat da prova assinada; coletor e servidor compartilham o relógio no teste.
+  const integrations = await (await request.get('/api/integrations')).json() as Array<{ farmId: string; clockSkewSeconds: number | null }>;
+  const skew = integrations.find((row) => row.farmId === enrolled!.farmId)?.clockSkewSeconds;
+  expect(skew).not.toBeNull();
+  expect(Math.abs(skew!)).toBeLessThanOrEqual(2);
 
   const batchPath = '/v1/collectors/batches';
   const shared = { schemaVersion: 1, captureId: randomUUID(), sequence: 1, observedAt: new Date().toISOString(), parts: 2 };

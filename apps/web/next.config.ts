@@ -6,6 +6,8 @@ const nextConfig: NextConfig = {
   agentRules: false,
   devIndicators: false,
   turbopack: { root: resolve(import.meta.dirname, '../..') },
+  outputFileTracingRoot: resolve(import.meta.dirname, '../..'),
+  ...(process.env.MALHA_STANDALONE === '1' ? { output: 'standalone' as const } : {}),
   serverExternalPackages: ['@electric-sql/pglite', 'pg'],
   async headers() {
     return [
@@ -15,6 +17,7 @@ const nextConfig: NextConfig = {
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'Referrer-Policy', value: 'same-origin' },
+          { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
         ],
       },
       {

@@ -174,10 +174,11 @@ tbody tr:hover { background: #f9faf7; }
 .integration-main { display: grid; gap: .25rem; justify-items: start; min-width: 0; }
 .integration-main strong { font-size: .875rem; }
 .integration-main span:not(.status) { color: var(--muted); font-size: .75rem; }
-.integration-facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .5rem; margin: 0; }
+.integration-facts { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .5rem; margin: 0; }
 .integration-facts dt { color: var(--muted); font-size: .6875rem; }
 .integration-facts dd { margin: 0; font-size: .8125rem; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .integration-actions { display: flex; justify-content: end; }
+.skew-warning { color: var(--amber); font-weight: 650; }
 .enrollment-code { grid-column: 1 / -1; display: grid; gap: .75rem; padding: 1rem; background: #f6f9f5; border: 1px dashed #a7b9aa; border-radius: .625rem; min-width: 0; }
 .enrollment-code .form-field { width: 100%; }
 .install-body { padding: 0 1.25rem 1.25rem; }

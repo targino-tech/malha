@@ -108,7 +108,7 @@ export async function enrollCollector(request: Request) {
 }
 
 async function authenticated<T>(request: Request, path: string, maxBytes: number,
-  operation: (tx: Queryable, collector: Collector, body: unknown, digest: string) => Promise<T>) {
+  operation: (tx: Queryable, collector: Collector, body: unknown, digest: string, clockSkew: number) => Promise<T>) {
   if (request.headers.get('Content-Encoding') && request.headers.get('Content-Encoding') !== 'identity') {
     throw new HttpError(415, 'Use JSON sem compressão.');
   }
@@ -130,17 +130,17 @@ async function authenticated<T>(request: Request, path: string, maxBytes: number
     const accepted = await tx.query(`INSERT INTO collector_nonces (key_id, nonce, expires_at)
       VALUES ($1, $2, to_timestamp($3) + interval '1 minute') ON CONFLICT DO NOTHING RETURNING nonce`, [keyId, proof.proof.jti, proof.proof.exp]);
     if (!accepted.rows.length) throw new HttpError(409, 'A assinatura já foi utilizada. Gere um nonce novo.');
-    return operation(tx, collector, parseJson(bytes), digest);
+    return operation(tx, collector, parseJson(bytes), digest, proof.proof.iat - Math.floor(Date.now() / 1000));
   });
 }
 
 export function acceptHeartbeat(request: Request) {
-  return authenticated(request, '/v1/collectors/heartbeat', 4096, async (tx, collector, body) => {
+  return authenticated(request, '/v1/collectors/heartbeat', 4096, async (tx, collector, body, _digest, clockSkew) => {
     const parsed = heartbeatSchema.safeParse(body);
     if (!parsed.success) throw new HttpError(400, 'Sinal do coletor inválido.');
-    await tx.query(`UPDATE collector_health SET last_heartbeat_at = now(), version = $4, queue_depth = $5, healthy = $6
+    await tx.query(`UPDATE collector_health SET last_heartbeat_at = now(), version = $4, queue_depth = $5, healthy = $6, clock_skew_seconds = $7
       WHERE org_id = $1 AND farm_id = $2 AND collector_id = $3`,
-    [collector.org_id, collector.farm_id, collector.collector_id, parsed.data.version, parsed.data.queueDepth, parsed.data.healthy]);
+    [collector.org_id, collector.farm_id, collector.collector_id, parsed.data.version, parsed.data.queueDepth, parsed.data.healthy, clockSkew]);
     return { accepted: true };
   });
 }

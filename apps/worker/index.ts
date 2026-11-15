@@ -2,6 +2,8 @@ import { setTimeout as wait } from 'node:timers/promises';
 import { evaluateAll } from '../web/src/server/alerts';
 import { connectPostgres } from '../web/src/server/db';
 import { applyRetention } from '../web/src/server/exports';
+import { emitMetrics, errorName, log } from '../web/src/server/log';
+import { operationalMetrics } from '../web/src/server/operations';
 import { sendPendingNotifications, transportFromEnv } from '../web/src/server/notifications';
 import { processInventoryJob } from '../web/src/server/projection';
 
@@ -23,22 +25,27 @@ async function run() {
       if (Date.now() >= nextEvaluation) {
         nextEvaluation = Date.now() + EVALUATION_INTERVAL_MS;
         try {
-          await evaluateAll(db);
-          await sendPendingNotifications(db, transport);
+          const evaluation = await evaluateAll(db);
+          const sent = await sendPendingNotifications(db, transport);
+          if (evaluation && (evaluation.opened || evaluation.resolved || sent)) log.info('Ocorrências avaliadas', { ...evaluation, emailsSent: sent });
         } catch (error) {
-          console.error('Falha ao avaliar ocorrências', error instanceof Error ? error.name : 'indefinida');
+          log.error('Falha ao avaliar ocorrências', { error: errorName(error) });
+        }
+        try {
+          const metrics = await operationalMetrics(db);
+          emitMetrics(metrics, { OutboxOldestSeconds: 'Seconds', MaxCaptureAgeSeconds: 'Seconds', MaxClockSkewSeconds: 'Seconds' });
+        } catch (error) {
+          log.error('Falha ao coletar métricas de operação', { error: errorName(error) });
         }
       }
       if (Date.now() >= nextRetention) {
         nextRetention = Date.now() + RETENTION_INTERVAL_MS;
-        await applyRetention(db).catch((error: unknown) => {
-          console.error('Falha na retenção de dados', error instanceof Error ? error.name : 'indefinida');
-        });
+        await applyRetention(db).catch((error: unknown) => log.error('Falha na retenção de dados', { error: errorName(error) }));
       }
       try {
         if (await processInventoryJob(db)) continue;
       } catch (error) {
-        console.error('Fila de inventário indisponível', error instanceof Error ? error.name : 'indefinida');
+        log.error('Fila de inventário indisponível', { error: errorName(error) });
       }
       await wait(1500, undefined, { signal: signal.signal }).catch((error: unknown) => {
         if (!signal.signal.aborted) throw error;
@@ -50,6 +57,6 @@ async function run() {
 }
 
 void run().catch((error: unknown) => {
-  console.error(error instanceof Error ? error.message : 'Falha ao iniciar o worker');
+  log.error('Falha ao iniciar o worker', { error: errorName(error), detail: error instanceof Error ? error.message : null });
   process.exitCode = 1;
 });

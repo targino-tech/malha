@@ -1,0 +1,75 @@
+name: Release do coletor
+
+# Publica binários Linux amd64/arm64 com checksum e manifesto assinados (Sigstore, identidade OIDC deste workflow).
+on:
+  push:
+    tags: ['collector-v*']
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  release:
+    name: Binários assinados
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: collector
+    env:
+      GOTOOLCHAIN: local
+      GOFLAGS: -mod=readonly
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: '1.27.4'
+          cache-dependency-path: collector/go.sum
+      - uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3
+
+      - name: Testar
+        run: go test -race ./...
+
+      - name: Compilar
+        run: |
+          version="${GITHUB_REF_NAME#collector-v}"
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::Use tags collector-vX.Y.Z."; exit 1; }
+          mkdir -p dist
+          for arch in amd64 arm64; do
+            CGO_ENABLED=0 GOOS=linux GOARCH="$arch" go build -trimpath -ldflags "-s -w -X main.version=$version" \
+              -o "dist/malha-collector-linux-$arch" .
+          done
+          cd dist
+          sha256sum malha-collector-linux-* > SHA256SUMS
+          jq -n --arg version "$version" --arg commit "$GITHUB_SHA" \
+            --argjson files "$(sha256sum malha-collector-linux-* | jq -R -s 'split("\n") | map(select(length > 0) | split("  ") | {sha256: .[0], name: .[1]})')" \
+            '{version: $version, commit: $commit, files: $files}' > manifest.json
+
+      - name: Assinar
+        working-directory: collector/dist
+        run: |
+          for file in manifest.json SHA256SUMS malha-collector-linux-amd64 malha-collector-linux-arm64; do
+            cosign sign-blob --yes --bundle "$file.sigstore.json" "$file"
+          done
+
+      - name: Publicar release
+        working-directory: collector/dist
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          identity="https://github.com/${GITHUB_REPOSITORY}/.github/workflows/collector-release.yml@${GITHUB_REF}"
+          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --title "Coletor ${GITHUB_REF_NAME#collector-v}" --notes "$(cat <<NOTES
+          Binários do coletor Malha para Linux amd64 e arm64.
+
+          Instale com \`collector/deploy/update.sh\`, que verifica assinatura e checksum, mantém a versão anterior e volta para ela se o serviço não subir.
+
+          Verificação manual:
+
+              cosign verify-blob --bundle manifest.json.sigstore.json \\
+                --certificate-identity '$identity' \\
+                --certificate-oidc-issuer https://token.actions.githubusercontent.com manifest.json
+          NOTES
+          )" ./*

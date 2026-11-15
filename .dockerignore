@@ -1,0 +1,17 @@
+.git
+.github
+.malha
+.next
+**/.next
+node_modules
+**/node_modules
+dist
+test-results
+playwright-report
+collector
+infra
+docs/media
+*.log
+.env
+.env.*
+!.env.example

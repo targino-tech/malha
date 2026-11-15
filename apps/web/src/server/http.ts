@@ -1,3 +1,5 @@
+import { errorName, log } from './log';
+
 export class HttpError extends Error {
   constructor(public status: number, message: string, public headers?: HeadersInit) { super(message); }
 }
@@ -13,7 +15,7 @@ export async function handle(operation: () => Promise<Response>) {
     return await operation();
   } catch (error) {
     if (error instanceof HttpError) return json({ error: error.message }, error.status, error.headers);
-    console.error('Falha na operação Malha', error instanceof Error ? error.name : 'indefinida');
+    log.error('Falha na operação Malha', { error: errorName(error) });
     return json({ error: 'Operação indisponível. Tente novamente.' }, 500);
   }
 }
