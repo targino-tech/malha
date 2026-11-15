@@ -21,3 +21,7 @@ dist/
 
 # Versão estática do site (GitHub Pages), gerada por scripts/build-static-site.mjs
 apps/site-static/
+
+# Vídeo: bundle e saídas geradas por video/render.mjs
+video/dist/
+video/out/

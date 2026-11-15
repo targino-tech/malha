@@ -17,6 +17,7 @@
     "test:e2e": "playwright test",
     "db": "tsx packages/db/manage.ts",
     "worker": "tsx apps/worker/index.ts",
+    "video": "node video/render.mjs",
     "bundle:worker": "esbuild worker=apps/worker/index.ts manage=packages/db/manage.ts --bundle --platform=node --target=node24 --format=cjs --outdir=dist --external:@electric-sql/pglite --external:pg-native --log-level=warning"
   },
   "dependencies": {

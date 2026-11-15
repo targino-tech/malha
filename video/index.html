@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1920, initial-scale=1">
+<title>Malha · vídeo de 45 s</title>
+<style>
+  @font-face { font-family: 'Barlow Condensed'; src: url('../apps/web/public/malha/barlow-condensed-700.woff2') format('woff2'); font-weight: 700; }
+  :root {
+    --page: #040705; --text: #ecf4e8; --muted: #92a595; --forest: #b6f37a; --leaf: #9fdc63; --wheat: #d9b866;
+    --warn: #f1b45b; --danger: #e0574f; --ok: #3ccf4e; --line: #1f3324;
+    --mono: 'DejaVu Sans Mono', ui-monospace, Menlo, Consolas, monospace;
+    --display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #000; }
+  #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: var(--page); color: var(--text); font-family: Inter, 'Segoe UI', sans-serif; }
+  .bg-grid { position: absolute; inset: 0; background-image: linear-gradient(#0c170f 1px, transparent 1px), linear-gradient(90deg, #0c170f 1px, transparent 1px); background-size: 48px 48px; }
+  .glow { position: absolute; width: 1500px; height: 1500px; border-radius: 50%; background: radial-gradient(circle, rgb(47 107 58 / .5), transparent 62%); transform: translate(-50%, -50%); }
+  #globe { position: absolute; inset: 0; width: 1920px; height: 1080px; }
+  .scene { position: absolute; inset: 0; opacity: 0; }
+  .letterbox { position: absolute; left: 0; right: 0; height: 72px; background: #000; z-index: 60; }
+  .letterbox.top { top: 0; } .letterbox.bottom { bottom: 0; }
+  .vignette { position: absolute; inset: 0; z-index: 58; background: radial-gradient(ellipse at center, transparent 52%, rgb(0 0 0 / .6)); pointer-events: none; }
+  .grain { position: absolute; inset: -128px; z-index: 59; opacity: .07; mix-blend-mode: screen; pointer-events: none; }
+  .fade { position: absolute; inset: 0; z-index: 57; background: #000; opacity: 1; pointer-events: none; }
+
+  .copy { position: absolute; left: 120px; top: 150px; width: 700px; }
+  .copy.wide { width: 1500px; }
+  .eyebrow { font: 600 19px var(--mono); letter-spacing: .32em; color: var(--wheat); text-transform: uppercase; }
+  .headline { font-family: var(--display); font-weight: 700; text-transform: uppercase; font-size: 104px; line-height: .93; letter-spacing: -.5px; margin: 22px 0 0; }
+  .wide .headline { font-size: 92px; }
+  #s-globe .headline { font-size: 92px; }
+  .headline .l { display: block; overflow: hidden; padding: 0 0 6px; }
+  .headline .l > span { display: block; will-change: transform; }
+  .accent { color: var(--forest); }
+  .sub { font-size: 30px; line-height: 1.42; color: var(--muted); max-width: 660px; margin-top: 26px; }
+  .wide .sub { max-width: 1180px; font-size: 28px; }
+  .card { position: absolute; background: linear-gradient(180deg, #0d170f, #08100a); border: 1px solid var(--line); border-radius: 24px; box-shadow: 0 30px 80px rgb(0 0 0 / .45); }
+  .mono { font-family: var(--mono); }
+  .chip { display: inline-flex; align-items: center; gap: 10px; padding: 9px 18px; border: 1px solid #2a3f2e; border-radius: 999px; font: 500 19px var(--mono); color: #cfe3c9; background: rgb(4 7 5 / .7); white-space: nowrap; }
+  .chip.warn { border-color: #6b4a1d; color: var(--wheat); }
+  .demo { position: absolute; font: 600 16px var(--mono); letter-spacing: .2em; color: var(--wheat); text-transform: uppercase; }
+
+  /* 1 · Marca */
+  #s-logo .lockup { position: absolute; left: 50%; top: 50%; display: flex; align-items: center; gap: 44px; transform: translate(-50%, -58%); }
+  .lockup svg { width: 230px; height: 230px; overflow: visible; }
+  .wordmark { font-family: var(--display); font-weight: 700; font-size: 250px; line-height: .8; letter-spacing: -4px; }
+  .wordmark .dot { color: var(--forest); display: inline-block; }
+  .wordmark-mask { overflow: hidden; padding: 20px 10px 20px 0; }
+  #s-logo .tagline { position: absolute; left: 0; right: 0; top: 690px; text-align: center; font-size: 36px; color: var(--muted); }
+  .vein { stroke-dasharray: 1; }
+  .node, .grain-seed { transform-box: fill-box; transform-origin: center; }
+
+  /* 3 · Campo */
+  .box { position: absolute; left: 30px; right: 30px; border: 1px solid #22382a; border-radius: 16px; padding: 18px 22px; background: rgb(4 7 5 / .55); }
+  .box h4 { margin: 0; font-size: 27px; font-weight: 600; }
+  .box p { margin: 6px 0 0; font: 500 18px var(--mono); color: var(--muted); }
+  .card-head { position: absolute; left: 30px; top: 24px; right: 30px; display: flex; justify-content: space-between; align-items: baseline; }
+  .card-head b { font: 700 19px var(--mono); letter-spacing: .2em; color: var(--wheat); }
+  .card-head span { font-size: 20px; color: var(--muted); }
+  .queue { display: flex; gap: 6px; margin-top: 12px; }
+  .queue i { width: 13px; height: 22px; border-radius: 3px; background: #1a2a1e; }
+  .queue i.on { background: var(--warn); }
+  .count { position: absolute; right: 22px; top: 18px; font: 700 40px var(--mono); }
+  .pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; font: 600 18px var(--mono); }
+  .pill.ok { color: #c8ffb0; background: rgb(60 207 78 / .14); border: 1px solid rgb(60 207 78 / .45); }
+  .pill.bad { color: #ffc2bc; background: rgb(224 87 79 / .14); border: 1px solid rgb(224 87 79 / .5); }
+  .toast { position: absolute; left: 30px; right: 30px; bottom: 26px; border-radius: 16px; padding: 18px 22px; }
+  .toast.bad { border: 1px solid rgb(224 87 79 / .6); background: rgb(224 87 79 / .1); }
+  .toast.good { border: 1px solid rgb(60 207 78 / .55); background: rgb(60 207 78 / .1); }
+  .toast b { display: block; font-size: 25px; }
+  .toast span { display: block; margin-top: 4px; font: 500 18px var(--mono); color: var(--muted); }
+  .packet { position: absolute; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 3px; background: #d8ff9e; box-shadow: 0 0 18px rgb(182 243 122 / .8); }
+  .link-label { position: absolute; transform: translate(-50%, -50%); }
+
+  /* 4 · Painel */
+  .device { position: absolute; left: 760px; top: 236px; width: 1060px; height: 662px; border-radius: 22px; border: 1px solid #263b2b; overflow: hidden; background: #050806; box-shadow: 0 40px 120px rgb(0 0 0 / .6), 0 0 0 8px rgb(16 28 19 / .6); transform-origin: 30% 50%; }
+  .device img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform-origin: 30% 30%; }
+  .ring { position: absolute; border-radius: 18px; outline: 3px solid var(--forest); box-shadow: 0 0 0 7px rgb(182 243 122 / .25), 0 0 40px rgb(182 243 122 / .35); }
+  .perspective { position: absolute; inset: 0; perspective: 1800px; }
+
+  /* 5 · Monitoramento */
+  .fam { position: absolute; left: 120px; width: 520px; height: 76px; display: flex; align-items: center; justify-content: space-between; padding: 0 26px; border-radius: 16px; border: 1px solid #22382a; background: rgb(8 14 10 / .9); font-size: 26px; font-weight: 600; }
+  .fam .n { font: 700 30px var(--mono); color: var(--forest); }
+  .target { left: 1120px; width: 680px; }
+  .target h3 { position: absolute; left: 32px; top: 26px; margin: 0; font-family: var(--display); font-size: 54px; letter-spacing: .5px; text-transform: uppercase; }
+  .target .meta { position: absolute; right: 32px; top: 34px; }
+  .tpl { position: absolute; left: 32px; right: 32px; top: 126px; display: flex; flex-wrap: wrap; gap: 12px; }
+  .hosts { position: absolute; left: 32px; bottom: 28px; font: 500 20px var(--mono); color: var(--muted); }
+  .hosts b { font: 700 44px var(--mono); color: var(--text); margin-right: 12px; }
+  .panels { position: absolute; left: 32px; right: 32px; top: 118px; bottom: 28px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .mini { position: relative; border: 1px solid #22382a; border-radius: 14px; background: rgb(4 7 5 / .6); overflow: hidden; }
+  .mini span { position: absolute; left: 14px; top: 12px; font: 600 16px var(--mono); color: var(--muted); }
+  .mini .bars { position: absolute; left: 14px; right: 14px; bottom: 14px; height: 120px; display: flex; align-items: flex-end; gap: 5px; }
+  .mini .bars i { flex: 1; border-radius: 3px 3px 0 0; background: var(--leaf); opacity: .85; }
+  .flow { position: absolute; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: #d8ff9e; box-shadow: 0 0 14px rgb(182 243 122 / .9); }
+
+  /* 6 · Acesso */
+  .provider { position: absolute; top: 520px; width: 540px; height: 190px; }
+  .provider h4 { position: absolute; left: 34px; top: 34px; margin: 0; font-size: 36px; font-weight: 700; }
+  .provider p { position: absolute; left: 34px; bottom: 30px; margin: 0; font: 500 19px var(--mono); color: var(--muted); }
+  .guard { position: absolute; top: 770px; width: 540px; display: flex; gap: 16px; align-items: flex-start; font-size: 27px; line-height: 1.35; }
+  .guard svg { flex: none; width: 34px; height: 34px; margin-top: 2px; }
+
+  /* 7 · Final */
+  #s-end .lockup { position: absolute; left: 50%; top: 330px; display: flex; align-items: center; gap: 34px; transform: translateX(-50%); }
+  #s-end .lockup svg { width: 170px; height: 170px; }
+  #s-end .wordmark { font-size: 190px; }
+  #s-end .claim { position: absolute; left: 0; right: 0; top: 600px; text-align: center; font-family: var(--display); font-weight: 700; font-size: 92px; text-transform: uppercase; letter-spacing: -.5px; }
+  #s-end .chips { position: absolute; left: 0; right: 0; top: 740px; display: flex; justify-content: center; gap: 14px; }
+  #s-end .url { position: absolute; left: 0; right: 0; top: 836px; text-align: center; font: 600 28px var(--mono); color: #cfe3c9; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="bg-grid"></div>
+  <div class="glow" id="glow"></div>
+  <canvas id="globe"></canvas>
+
+  <!-- 1 · Marca -->
+  <section class="scene" id="s-logo">
+    <div class="lockup">
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <g id="leaf">
+          <path d="M8 56C8 27 27 8 56 8c0 29-19 48-48 48Z" fill="#b6f37a"/>
+          <path d="M8 56C8 27 27 8 56 8L8 56Z" fill="#9fdc63"/>
+        </g>
+        <g stroke="#060a07" stroke-width="3.4" stroke-linecap="square" fill="none">
+          <path class="vein" pathLength="1" d="M15 49 45 19"/>
+          <path class="vein" pathLength="1" d="M25 39V27"/>
+          <path class="vein" pathLength="1" d="M33 31h12"/>
+        </g>
+        <g fill="#060a07">
+          <rect class="node" x="21.5" y="22" width="7" height="7" rx="1"/>
+          <rect class="node" x="42" y="27.5" width="7" height="7" rx="1"/>
+          <rect class="node" x="42.5" y="13.5" width="7" height="7" rx="1"/>
+        </g>
+        <g class="grain-seed"><g transform="rotate(-45 10 54)"><ellipse cx="10" cy="54" rx="7.5" ry="3.9" fill="#d9b866" stroke="#060a07" stroke-width="1.6"/><path d="M4.5 54h11" stroke="#8a6f2c" stroke-width="1.2" stroke-linecap="round"/></g></g>
+      </svg>
+      <div class="wordmark-mask"><div class="wordmark" id="wordmark">malha<span class="dot">.</span></div></div>
+    </div>
+    <div class="tagline" id="tagline">Inventário de rede e ativos para grupos agrícolas</div>
+  </section>
+
+  <!-- 2 · Globo -->
+  <section class="scene" id="s-globe">
+    <div class="copy" data-copy="a" style="width:760px">
+      <div class="eyebrow">01 · O campo</div>
+      <h2 class="headline"><span class="l"><span>A rede do campo,</span></span><span class="l"><span class="accent">longe da matriz.</span></span></h2>
+      <p class="sub">Coletores, switches e antenas espalhados por fazendas que a TI não consegue ver.</p>
+    </div>
+    <div class="copy" data-copy="b" style="width:760px">
+      <div class="eyebrow">01 · O campo</div>
+      <h2 class="headline"><span class="l"><span>Cada fazenda,</span></span><span class="l"><span class="accent">à vista da matriz.</span></span></h2>
+      <p class="sub">O Malha junta o que a rede observa com o inventário da sua equipe, separado por fazenda.</p>
+    </div>
+    <div class="chip warn" id="globe-note" style="position:absolute;right:120px;bottom:120px">ILUSTRAÇÃO · fazendas de exemplo</div>
+  </section>
+
+  <!-- 3 · Campo: queda e recuperação -->
+  <section class="scene" id="s-field">
+    <div class="copy wide" data-copy="a">
+      <div class="eyebrow">02 · Coleta</div>
+      <h2 class="headline"><span class="l"><span>O coletor lê a rede <span class="accent">e avisa a matriz.</span></span></span></h2>
+      <p class="sub">Somente leitura na controladora UniFi. A conexão sempre parte da fazenda, sem abrir porta.</p>
+    </div>
+    <div class="copy wide" data-copy="b">
+      <div class="eyebrow">02 · Coleta</div>
+      <h2 class="headline"><span class="l"><span>Caiu a internet? <span class="accent">A matriz sabe em 3 min.</span></span></span></h2>
+      <p class="sub">Enquanto isso, o coletor guarda até 72 horas de capturas na fila local.</p>
+    </div>
+    <div class="copy wide" data-copy="c">
+      <div class="eyebrow">02 · Coleta</div>
+      <h2 class="headline"><span class="l"><span>Voltou a conexão? <span class="accent">Nada se perde.</span></span></span></h2>
+      <p class="sub">As capturas chegam com recibo, na ordem certa e sem duplicar.</p>
+    </div>
+
+    <div class="card" id="farm" style="left:120px;top:500px;width:600px;height:430px">
+      <div class="card-head"><b>FAZENDA SANTA LUZIA</b><span>Juara · MT</span></div>
+      <div class="box" style="top:84px"><h4>Controladora UniFi</h4><p>API local · somente GET</p></div>
+      <div class="box" style="top:236px;height:166px"><h4>Coletor Malha</h4><p>Fila local · até 72 h</p><div class="count" id="queue-count">0</div><div class="queue" id="queue"></div></div>
+    </div>
+    <div class="card" id="hq" style="left:1200px;top:500px;width:600px;height:430px">
+      <div class="card-head"><b>MATRIZ · CUIABÁ</b><span>Painel Malha</span></div>
+      <div style="position:absolute;left:30px;top:92px;right:30px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:26px;font-weight:600">Coletor Santa Luzia</span><span class="pill ok" id="hq-pill">● Em contato</span></div>
+      <div style="position:absolute;left:30px;top:150px;right:30px;display:flex;justify-content:space-between;align-items:baseline"><span class="mono" style="font-size:19px;color:var(--muted)">Último sinal há</span><span class="mono" id="hq-timer" style="font-size:56px;font-weight:700">0:00</span></div>
+      <div class="mono" id="hq-fast" style="position:absolute;right:30px;top:226px;font-size:15px;letter-spacing:.2em;color:var(--wheat)">TEMPO ACELERADO</div>
+      <div class="toast bad" id="toast-bad"><b>Ocorrência crítica · Coletor sem contato</b><span>Fazenda Santa Luzia · aberta pelo Malha</span></div>
+      <div class="toast good" id="toast-good"><b>Coletor de volta · 24 capturas recebidas</b><span>Fila zerada · recibo de cada lote</span></div>
+    </div>
+    <svg id="link" width="1920" height="1080" style="position:absolute;inset:0;overflow:visible">
+      <line id="link-ok" x1="720" y1="715" x2="1200" y2="715" stroke="#b6f37a" stroke-width="3" stroke-dasharray="2 12" stroke-linecap="round"/>
+      <line id="link-bad" x1="720" y1="715" x2="1200" y2="715" stroke="#e0574f" stroke-width="3" stroke-dasharray="14 12"/>
+    </svg>
+    <div id="packets"></div>
+    <div class="chip link-label" id="label-ok" style="left:960px;top:655px">HTTPS 443 · assinado Ed25519</div>
+    <div class="chip link-label" id="label-bad" style="left:960px;top:655px;border-color:#7a2f2a;color:#ffc2bc">✕ sem internet</div>
+    <div class="chip link-label" id="label-flush" style="left:960px;top:655px">↻ reenviando a fila</div>
+  </section>
+
+  <!-- 4 · Painel -->
+  <section class="scene" id="s-panel">
+    <div class="copy" data-copy="a" style="width:600px">
+      <div class="eyebrow">03 · Matriz</div>
+      <h2 class="headline" style="font-size:96px"><span class="l"><span>O parque</span></span><span class="l"><span>tecnológico</span></span><span class="l"><span class="accent">numa tela.</span></span></h2>
+      <p class="sub" style="max-width:560px">Ativos, coletores, ocorrências e cobertura UniFi de todas as fazendas.</p>
+    </div>
+    <div class="copy" data-copy="b" style="width:600px">
+      <div class="eyebrow">03 · Matriz</div>
+      <h2 class="headline" style="font-size:96px"><span class="l"><span>Painéis</span></span><span class="l"><span>da operação,</span></span><span class="l"><span class="accent">por fazenda.</span></span></h2>
+      <p class="sub" style="max-width:560px">Estado dos ativos, ocorrências por dia e tempo sem contato, com tabela alternativa.</p>
+    </div>
+    <div class="perspective">
+      <div class="device" id="device">
+        <img id="shot-a" src="assets/visao-geral.webp" alt="">
+        <img id="shot-b" src="assets/paineis.webp" alt="">
+        <div class="ring" id="ring-a" style="left:18.3%;top:25.2%;width:42.9%;height:25.4%"></div>
+        <div class="ring" id="ring-b" style="left:61.7%;top:25.2%;width:34.5%;height:25.4%"></div>
+        <div class="ring" id="ring-c" style="left:16.75%;top:53.5%;width:81%;height:24.5%"></div>
+        <div class="ring" id="ring-d" style="left:16.75%;top:31.5%;width:40.4%;height:35.8%"></div>
+        <div class="ring" id="ring-e" style="left:57.4%;top:31.5%;width:40.4%;height:35.8%"></div>
+      </div>
+    </div>
+    <div class="demo" style="left:760px;top:922px">Dados de demonstração</div>
+  </section>
+
+  <!-- 5 · Monitoramento -->
+  <section class="scene" id="s-mon">
+    <div class="copy" data-copy="a" style="width:900px">
+      <div class="eyebrow">04 · Monitoramento</div>
+      <h2 class="headline" style="font-size:96px"><span class="l"><span>Zabbix e Grafana</span></span><span class="l"><span class="accent">do inventário.</span></span></h2>
+      <p class="sub" style="max-width:860px">Modelo Malha ou base, por arquivo ou direto pela API.</p>
+    </div>
+    <div class="mono" id="inv-head" style="position:absolute;left:120px;top:548px;font-size:19px;letter-spacing:.24em;color:var(--wheat)">INVENTÁRIO · FAMÍLIAS COM IP</div>
+    <div class="fam" style="top:592px"><span>Núcleo e roteamento</span><span class="n">2</span></div>
+    <div class="fam" style="top:682px"><span>Acesso Wi-Fi</span><span class="n">2</span></div>
+    <div class="fam" style="top:772px"><span>Equipamentos de campo</span><span class="n">1</span></div>
+    <div class="fam" style="top:862px"><span>Segurança física</span><span class="n">1</span></div>
+    <svg id="mon-links" width="1920" height="1080" style="position:absolute;inset:0;overflow:visible"></svg>
+    <div id="flows"></div>
+    <div class="card target" id="zbx" style="top:210px;height:380px">
+      <h3>Zabbix 7.0</h3><div class="chip meta" id="zbx-api">✓ aplicado pela API</div>
+      <div class="tpl">
+        <span class="chip">ICMP Ping</span><span class="chip">Network Generic Device by SNMP</span><span class="chip">Cisco IOS by SNMP</span><span class="chip">Windows by Zabbix agent</span>
+      </div>
+      <div class="hosts"><b id="zbx-hosts">0</b>hosts por fazenda e família</div>
+    </div>
+    <div class="card target" id="gfn" style="top:620px;height:320px">
+      <h3>Grafana</h3><div class="chip meta">um painel por família</div>
+      <div class="panels" id="gfn-panels"></div>
+    </div>
+    <div class="demo" style="left:120px;top:960px">Dados de demonstração</div>
+  </section>
+
+  <!-- 6 · Acesso e segurança -->
+  <section class="scene" id="s-login">
+    <div class="copy wide" data-copy="a">
+      <div class="eyebrow">05 · Acesso</div>
+      <h2 class="headline"><span class="l"><span>Entre com a conta <span class="accent">da empresa.</span></span></span></h2>
+      <p class="sub">Acesso por convite, com papel e restrição por fazenda.</p>
+    </div>
+    <div class="copy wide" data-copy="b">
+      <div class="eyebrow">05 · Segurança</div>
+      <h2 class="headline"><span class="l"><span>Feito para dados <span class="accent">de várias empresas.</span></span></span></h2>
+      <p class="sub">Cada grupo isolado no banco, coletor que só lê e segredos cifrados.</p>
+    </div>
+    <div class="card provider" style="left:120px"><h4>Microsoft Entra ID</h4><p>MFA · PKCE</p></div>
+    <div class="card provider" style="left:690px"><h4>Active Directory / LDAP</h4><p>LDAPS ou StartTLS</p></div>
+    <div class="card provider" style="left:1260px"><h4>Google · Okta · Keycloak</h4><p>OpenID Connect · convite por e-mail</p></div>
+    <div class="guard" style="left:120px"><svg viewBox="0 0 24 24" fill="none" stroke="#b6f37a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span>Cada grupo só vê os próprios dados</span></div>
+    <div class="guard" style="left:690px"><svg viewBox="0 0 24 24" fill="none" stroke="#b6f37a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span>O coletor só lê: nunca escreve na rede</span></div>
+    <div class="guard" style="left:1260px"><svg viewBox="0 0 24 24" fill="none" stroke="#b6f37a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span>Tokens de integração cifrados</span></div>
+  </section>
+
+  <!-- 7 · Final -->
+  <section class="scene" id="s-end">
+    <div class="lockup">
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <path d="M8 56C8 27 27 8 56 8c0 29-19 48-48 48Z" fill="#b6f37a"/><path d="M8 56C8 27 27 8 56 8L8 56Z" fill="#9fdc63"/>
+        <g stroke="#060a07" stroke-width="3.4" stroke-linecap="square" fill="none"><path d="M15 49 45 19"/><path d="M25 39V27M33 31h12"/></g>
+        <g fill="#060a07"><rect x="21.5" y="22" width="7" height="7" rx="1"/><rect x="42" y="27.5" width="7" height="7" rx="1"/><rect x="42.5" y="13.5" width="7" height="7" rx="1"/></g>
+        <g transform="rotate(-45 10 54)"><ellipse cx="10" cy="54" rx="7.5" ry="3.9" fill="#d9b866" stroke="#060a07" stroke-width="1.6"/><path d="M4.5 54h11" stroke="#8a6f2c" stroke-width="1.2" stroke-linecap="round"/></g>
+      </svg>
+      <div class="wordmark">malha<span class="dot">.</span></div>
+    </div>
+    <div class="claim">Grátis e <span class="accent">open source.</span></div>
+    <div class="chips"><span class="chip">AGPL-3.0</span><span class="chip">UniFi</span><span class="chip">Zabbix</span><span class="chip">Grafana</span><span class="chip">Entra · AD · OIDC</span></div>
+    <div class="url">targino-tech.github.io/malha · github.com/targino-tech/malha</div>
+  </section>
+
+  <div class="fade" id="fade"></div>
+  <div class="vignette"></div>
+  <div class="grain" id="grain"></div>
+  <div class="letterbox top" id="bar-top"></div>
+  <div class="letterbox bottom" id="bar-bottom"></div>
+</div>
+<script src="dist/main.js"></script>
+</body>
+</html>
