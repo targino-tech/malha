@@ -763,3 +763,8 @@
   .primaryButton, .secondaryButton, .previewHighlight, .question summary svg, .header, .storyDots button, .panelImage { transition: none; }
   .primaryButton:hover, .secondaryButton:hover { transform: none; }
 }
+
+.portalDivider { display: flex; align-items: center; gap: .75rem; margin-top: .4rem; color: var(--faint); font-size: .78rem; }
+.portalDivider::before, .portalDivider::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+.portalForm { display: grid; gap: .85rem; }
+.portalForm button { justify-self: start; }

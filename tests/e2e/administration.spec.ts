@@ -12,7 +12,7 @@ test('admin cadastra fazenda, gera código do coletor e mantém um ativo manual'
   await expect(page.getByRole('list', { name: 'Fazendas cadastradas' }).getByText('Fazenda Boa Esperança')).toBeVisible();
 
   const memberForm = page.getByRole('form', { name: 'Novo membro' });
-  await memberForm.getByLabel('Object ID (OID) no Entra ID').fill('3f1c2a9e-7b4d-4c1a-9e2f-5a6b7c8d9e0f');
+  await memberForm.getByLabel('Identificador no diretório').fill('3f1c2a9e-7b4d-4c1a-9e2f-5a6b7c8d9e0f');
   await memberForm.getByLabel('Nome de exibição').fill('Técnica Boa Esperança');
   await memberForm.getByLabel('Papel').selectOption('tecnico');
   await memberForm.getByLabel('Fazenda Boa Esperança').check();

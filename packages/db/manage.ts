@@ -1,7 +1,9 @@
+import { readFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { issueEnrollmentCode, revokeCollectorKey } from '../../apps/web/src/server/admin';
 import { connectPostgres, migrate, setOrg, type Database } from '../../apps/web/src/server/db';
 import { uuidPattern } from '../../apps/web/src/server/http';
+import { sealSecret } from '../../apps/web/src/server/ldap';
 import { email } from './email';
 
 function uuid(value: string | undefined, label: string) {
@@ -62,6 +64,25 @@ async function requests(db: Database) {
   if (!rows.length) console.log('Nenhuma solicitação recebida pelo site.');
 }
 
+async function ldapDirectory(db: Database, orgId: string, domain: string, url: string, baseDn: string, bindDn: string) {
+  const secret = process.env.MALHA_AUTH_SECRET;
+  const file = process.env.MALHA_LDAP_BIND_PASSWORD_FILE;
+  if (!secret || Buffer.byteLength(secret) < 32) throw new Error('Defina MALHA_AUTH_SECRET (32+ bytes), a mesma do serviço web.');
+  if (!file) throw new Error('Informe a senha da conta de serviço em MALHA_LDAP_BIND_PASSWORD_FILE.');
+  const password = readFileSync(file, 'utf8').trim();
+  if (!password) throw new Error('A senha da conta de serviço está vazia.');
+  const startTls = url.startsWith('ldap://');
+  const caFile = process.env.MALHA_LDAP_CA_FILE;
+  const idAttribute = process.env.MALHA_LDAP_ID_ATTRIBUTE === 'entryUUID' ? 'entryUUID' : 'objectGUID';
+  const userAttribute = process.env.MALHA_LDAP_USER_ATTRIBUTE ?? (idAttribute === 'objectGUID' ? 'sAMAccountName' : 'uid');
+  await db.query(`INSERT INTO ldap_directories (org_id, domain, url, start_tls, base_dn, bind_dn, bind_secret, user_attribute, id_attribute, ca_pem)
+    VALUES ($1, lower($2), $3, $4, $5, $6, $7, $8, $9, $10)
+    ON CONFLICT (org_id) DO UPDATE SET domain = excluded.domain, url = excluded.url, start_tls = excluded.start_tls, base_dn = excluded.base_dn,
+      bind_dn = excluded.bind_dn, bind_secret = excluded.bind_secret, user_attribute = excluded.user_attribute, id_attribute = excluded.id_attribute,
+      ca_pem = excluded.ca_pem, enabled = true`,
+  [orgId, domain, url, startTls, baseDn, bindDn, sealSecret(password, secret), userAttribute, idAttribute, caFile ? readFileSync(caFile, 'utf8') : null]);
+}
+
 async function main() {
   const [command, one, two, three] = process.argv.slice(2);
   const db = connectPostgres(process.env.DATABASE_ADMIN_URL ?? process.env.DATABASE_URL);
@@ -81,10 +102,15 @@ async function main() {
     } else if (command === 'recipient' || command === 'recipient-remove') {
       await recipient(db, uuid(one, 'o grupo'), email(two), command === 'recipient');
       console.log(command === 'recipient' ? 'Destinatário de alertas ativo.' : 'Destinatário de alertas desativado.');
+    } else if (command === 'ldap') {
+      const [, , domain, url, baseDn, bindDn] = process.argv.slice(2);
+      if (!domain || !url || !baseDn || !bindDn) throw new Error('Use ldap <grupo> <dominio> <ldaps://host:636> <base-dn> <bind-dn>.');
+      await ldapDirectory(db, uuid(one, 'o grupo'), domain, url, baseDn, bindDn);
+      console.log('Diretório LDAP configurado. Cadastre os membros pelo objectGUID (ou entryUUID) em Administração.');
     } else if (command === 'requests') {
       await requests(db);
     } else {
-      throw new Error('Use migrate, requests, recipient <grupo> <email>, recipient-remove <grupo> <email>, configure <tenant> <oid> [nome], farm <grupo> <nome> <local>, enroll <grupo> <fazenda> ou revoke <grupo> <fazenda>.');
+      throw new Error('Use migrate, requests, ldap <grupo> <dominio> <url> <base-dn> <bind-dn>, recipient <grupo> <email>, recipient-remove <grupo> <email>, configure <tenant> <oid> [nome], farm <grupo> <nome> <local>, enroll <grupo> <fazenda> ou revoke <grupo> <fazenda>.');
     }
   } finally {
     await db.close();

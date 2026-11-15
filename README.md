@@ -51,7 +51,9 @@ O Malha mostra à matriz de um grupo agrícola, em um só painel, **quais fazend
 | **Conciliação** | Descobertas UniFi, vínculos automáticos por MAC para confirmar ou desfazer, cadastro de referência para conferir, histórico transferido na fusão |
 | **Painéis** | Estado dos ativos por fazenda, ocorrências por dia e severidade, tempo sem contato por coletor e ativos por categoria, com tabela alternativa, teclado e filtro de período |
 | **Valor** | Atendimentos, linha de base aprovada pelo cliente, cobertura, inventário conferido, detecção (mediana e P90), reconhecimento, horas e economia, tendência semanal |
-| **Acesso** | Admin, TI, técnico de fazenda, diretoria e auditor, com restrição por fazenda; administração de fazendas, membros e coletores pela interface |
+| **Acesso** | Login Entra ID ou Active Directory/LDAP; admin, TI, técnico de fazenda, diretoria e auditor, com restrição por fazenda; administração de fazendas, membros e coletores pela interface |
+| **Monitoramento** | Zabbix 7.0 e painéis Grafana montados do inventário por família de ativos, com Modelo Malha ou Modelo base |
+| **Parque** | Visão do parque tecnológico com mapa ASCII das fazendas, saúde por estado e famílias de ativos por fabricante |
 | **Evidências** | Trilha de auditoria, exportação CSV de inventário, ocorrências e auditoria com fórmulas neutralizadas |
 | **Site e portal** | Landing cinematográfica com globo ASCII, página open source, pedido de apoio na implantação com limite e honeypot, portal de entrada do cliente |
 | **Produção** | Imagens Docker, Terraform AWS, deploy por OIDC com migração dedicada e smoke test, release assinada do coletor com retorno automático |
@@ -224,6 +226,18 @@ O deploy automático fica desligado até a conta AWS existir: defina a variável
 ## Segurança
 
 Resultados de código, dependências, segredos e malware ficam no [workflow de segurança](https://github.com/targino-tech/malha/actions/workflows/security.yml). Consulte a [política de segurança](SECURITY.md) para relatar uma vulnerabilidade por um canal privado.
+
+## Login por Active Directory ou LDAP
+
+Além do Microsoft Entra ID, o portal aceita a conta da rede. Configure o diretório do grupo pela CLI, com a senha da conta de serviço em arquivo protegido:
+
+```sh
+export MALHA_AUTH_SECRET='<a mesma do serviço web>'
+export MALHA_LDAP_BIND_PASSWORD_FILE='/caminho/protegido/senha-servico'
+pnpm db ldap <org-id> grupo.local ldaps://dc.grupo.local:636 'DC=grupo,DC=local' 'CN=svc-malha,OU=Servicos,DC=grupo,DC=local'
+```
+
+Só conexões cifradas são aceitas (`ldaps://`, ou `ldap://` com StartTLS automático). Para OpenLDAP, use `MALHA_LDAP_ID_ATTRIBUTE=entryUUID`; para uma CA própria, `MALHA_LDAP_CA_FILE`. Cada pessoa entra como membro em Administração pelo `objectGUID` (ou `entryUUID`). A senha da conta de serviço fica cifrada no banco, as tentativas são limitadas e o login vai para a auditoria.
 
 ## Licença e contribuição
 

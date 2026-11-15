@@ -78,8 +78,9 @@ function MemberForm({ member, farms, online, onSaved, onCancel }: {
   return (
     <form className="inline-form" onSubmit={submit} aria-label={member ? `Editar ${member.displayName ?? member.oid}` : 'Novo membro'}>
       {!member && (
-        <label className="form-field" htmlFor={`${prefix}-oid`}>Object ID (OID) no Entra ID
-          <input id={`${prefix}-oid`} name="oid" required className="technical" pattern="[0-9a-fA-F-]{36}" placeholder="00000000-0000-0000-0000-000000000000" />
+        <label className="form-field" htmlFor={`${prefix}-oid`}>Identificador no diretório
+          <input id={`${prefix}-oid`} name="oid" required className="technical" pattern="[0-9a-fA-F-]{36}" placeholder="00000000-0000-0000-0000-000000000000" aria-describedby={`${prefix}-oid-hint`} />
+          <small id={`${prefix}-oid-hint`}>Object ID do Entra ID, ou objectGUID do Active Directory (Get-ADUser nome | Select ObjectGUID).</small>
         </label>
       )}
       <label className="form-field" htmlFor={`${prefix}-name`}>Nome de exibição<input id={`${prefix}-name`} name="displayName" defaultValue={member?.displayName ?? ''} maxLength={120} /></label>

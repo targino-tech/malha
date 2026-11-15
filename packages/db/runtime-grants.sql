@@ -38,3 +38,6 @@ GRANT DELETE ON assets, capture_batches TO malha_runtime;
 GRANT SELECT ON audit_log TO malha_runtime;
 -- O site público grava solicitações e conta envios recentes para o limite por cliente.
 GRANT SELECT, INSERT ON site_requests TO malha_runtime;
+-- Login por diretório: lê a configuração do grupo e registra tentativas para o limite.
+GRANT SELECT ON ldap_directories TO malha_runtime;
+GRANT SELECT, INSERT, DELETE ON login_attempts TO malha_runtime;
