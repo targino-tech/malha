@@ -41,6 +41,7 @@ O modo demo usa PGlite em memória e não precisa de banco externo. Mais opçõe
 
 1. Faça um fork e crie uma branch a partir da `main`: `feat/mapa-por-talhao`, `fix/csv-acentos`, `docs/integracao-okta`.
 2. Faça commits pequenos, com mensagem no imperativo e em português, como no histórico: `Adiciona filtro por fabricante no parque`.
+   Para fechar uma issue pelo commit ou pelo pull request, use a palavra-chave em inglês, que é a única que o GitHub reconhece: `Closes #12`, `Fixes #12` ou `Resolves #12` ("Fecha #12" só cria a menção, não fecha).
 3. Rode as verificações abaixo.
 4. Abra o pull request para a `main` preenchendo o modelo. Pull requests em rascunho são bem-vindos para pedir opinião cedo.
 
