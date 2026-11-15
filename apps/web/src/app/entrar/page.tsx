@@ -20,7 +20,7 @@ const ERRORS: Record<string, string> = {
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ erro?: string }> }) {
   const { erro } = await searchParams;
-  const error = erro ? ERRORS[erro] : undefined;
+  const error = erro && Object.hasOwn(ERRORS, erro) ? ERRORS[erro as keyof typeof ERRORS] : undefined;
   // Sem o Entra configurado (grupo só com AD/LDAP), o botão Microsoft levaria a um erro: fica oculto.
   const entra = process.env.MALHA_MODE === 'demo' || Boolean(process.env.ENTRA_TENANT_ID && process.env.ENTRA_CLIENT_ID && process.env.ENTRA_CLIENT_SECRET);
   const provider = oidcProvider();

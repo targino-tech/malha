@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { lookup } from 'node:dns/promises';
-import { isIP } from 'node:net';
+import { BlockList, isIP } from 'node:net';
 import { z } from 'zod';
 import { requirePermission } from './authz';
 import { setOrg, type Database } from './db';
@@ -26,15 +26,26 @@ const TIMEOUT = 15_000;
 const defaultFetcher: Fetcher = (url, init) => fetch(url, { ...init, redirect: 'error', cache: 'no-store' });
 const defaultResolver: Resolver = async (host) => (await lookup(host, { all: true })).map((entry) => entry.address);
 
-function blocked(address: string): boolean {
-  if (isIP(address) === 6) {
-    const value = address.toLowerCase();
-    if (value === '::1' || value === '::' || value.startsWith('fe80:') || value.startsWith('fd00:ec2')) return true;
-    const mapped = value.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
-    return mapped ? blocked(mapped[1]) : false;
-  }
-  const [a, b] = address.split('.').map(Number);
-  return a === 127 || a === 0 || (a === 169 && b === 254) || (a === 100 && b >= 64 && b <= 127) || a >= 224;
+// Faixas que nunca são destino de integração: loopback, "este host", link-local (inclui metadados de nuvem),
+// CGNAT, multicast e reservadas. Endereços IPv6 que embutem IPv4 (mapeado ::ffff:, NAT64) são checados pelo IPv4.
+const DENY = new BlockList();
+for (const [network, prefix] of [['0.0.0.0', 8], ['127.0.0.0', 8], ['169.254.0.0', 16], ['100.64.0.0', 10], ['224.0.0.0', 3]] as const) DENY.addSubnet(network, prefix, 'ipv4');
+for (const [network, prefix] of [['::', 128], ['::1', 128], ['fe80::', 10], ['ff00::', 8], ['fd00:ec2::', 32]] as const) DENY.addSubnet(network, prefix, 'ipv6');
+
+function embeddedIpv4(address: string): string | null {
+  const parsed = new URL(`http://[${address}]/`).hostname.slice(1, -1).toLowerCase();
+  const tail = parsed.match(/^(?:::ffff:|64:ff9b::)([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+  if (!tail) return null;
+  const high = parseInt(tail[1], 16);
+  const low = parseInt(tail[2], 16);
+  return [high >> 8, high & 255, low >> 8, low & 255].join('.');
+}
+
+export function blocked(address: string): boolean {
+  if (isIP(address) === 4) return DENY.check(address, 'ipv4');
+  if (isIP(address) !== 6) return true;
+  const v4 = embeddedIpv4(address);
+  return v4 ? DENY.check(v4, 'ipv4') : DENY.check(address, 'ipv6');
 }
 
 export async function safeEndpoint(raw: string, resolve: Resolver = defaultResolver) {

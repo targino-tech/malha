@@ -7,7 +7,7 @@ import { createAsset } from '../apps/web/src/server/assets';
 import { migrate, pgliteDatabase, setOrg, type Database } from '../apps/web/src/server/db';
 import { HttpError } from '../apps/web/src/server/http';
 import type { Principal } from '../apps/web/src/server/identity';
-import { applyGrafana, applyZabbix, listConnections, safeEndpoint, saveConnection, type Fetcher, type Resolver } from '../apps/web/src/server/monitoring-apply';
+import { applyGrafana, applyZabbix, blocked, listConnections, safeEndpoint, saveConnection, type Fetcher, type Resolver } from '../apps/web/src/server/monitoring-apply';
 
 process.env.MALHA_AUTH_SECRET = 'segredo-de-teste-com-mais-de-32-bytes-aqui';
 let db: Database;
@@ -86,4 +86,13 @@ test('aplica no Zabbix e no Grafana com o token guardado cifrado', async () => {
   const otherOrg = randomUUID();
   await db.query('INSERT INTO organizations (id, name) VALUES ($1, $2)', [otherOrg, 'Outro']);
   await assert.rejects(applyZabbix(db, { ...admin, orgId: otherOrg }, new URLSearchParams(), fetcher, resolve), status(404));
+});
+
+test('bloqueia loopback, link-local e metadados também em IPv6 que embute IPv4', () => {
+  for (const address of ['127.0.0.1', '169.254.169.254', '100.64.0.1', '0.0.0.0', '224.0.0.1', '::1', '::', '::ffff:127.0.0.1', '::ffff:7f00:1', '::ffff:a9fe:a9fe', '64:ff9b::7f00:1', 'fe80::1', 'febf::1', 'ff02::1']) {
+    assert.equal(blocked(address), true, address);
+  }
+  for (const address of ['10.0.0.5', '172.16.4.2', '192.168.1.10', '8.8.8.8', '::ffff:a00:5', '2001:4860::8888']) {
+    assert.equal(blocked(address), false, address);
+  }
 });

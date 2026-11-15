@@ -123,6 +123,11 @@ export async function finishLogin(request: Request) {
   return Response.redirect(params.origin, 303);
 }
 
+/** Para GET que registram auditoria (exportações): recusa navegações iniciadas por outro site. */
+export function rejectCrossSite(request: Request) {
+  if (request.headers.get('Sec-Fetch-Site') === 'cross-site') throw new HttpError(403, 'Origem da requisição inválida.');
+}
+
 export function requireSameOrigin(request: Request) {
   if (request.headers.get('Sec-Fetch-Site') === 'cross-site') throw new HttpError(403, 'Origem da requisição inválida.');
   if (mode() === 'pilot' && request.headers.get('Origin') !== publicOrigin()) {

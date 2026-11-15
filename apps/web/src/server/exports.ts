@@ -14,7 +14,7 @@ export function csvCell(value: unknown) {
   if (value === null || value === undefined) return '';
   let text = value instanceof Date ? value.toISOString() : String(value);
   if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`;
-  return /[";\n\r]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+  return /[";,\n\r]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 }
 
 export function toCsv(header: string[], rows: unknown[][]) {
@@ -85,6 +85,12 @@ export type AuditEntry = { id: string; occurredAt: string; actor: string; actorN
 const auditSchema = z.object({ cursor: z.string().max(200).optional(), action: z.string().regex(/^[a-z_.]{1,60}$/).optional() });
 
 /** Trilha de auditoria do grupo, mais recente primeiro, com paginação por cursor (horário, id). */
+/**
+ * Quem tem acesso restrito a fazendas só vê eventos dessas fazendas. Eventos do grupo inteiro
+ * (membros, diretórios, integrações) ficam só para quem enxerga todas as fazendas.
+ */
+const AUDIT_FARM_FILTER = (param: string) => `(${param}::uuid[] IS NULL OR a.scope->>'farmId' = ANY(${param}::text[]))`;
+
 export async function listAudit(database: Database, user: Principal, params: URLSearchParams) {
   requirePermission(user, 'audit.read');
   const parsed = auditSchema.safeParse(Object.fromEntries(params));
@@ -104,7 +110,8 @@ export async function listAudit(database: Database, user: Principal, params: URL
       LEFT JOIN memberships m ON m.org_id = a.org_id AND m.entra_oid::text = a.actor
       WHERE a.org_id = $1 AND ($2::text IS NULL OR a.action LIKE $2 || '%')
         AND ($3::timestamptz IS NULL OR (a.occurred_at, a.id) < ($3::timestamptz, $4::uuid))
-      ORDER BY a.occurred_at DESC, a.id DESC LIMIT 51`, [user.orgId, parsed.data.action ?? null, cursor?.at ?? null, cursor?.id ?? null]);
+        AND ${AUDIT_FARM_FILTER('$5')}
+      ORDER BY a.occurred_at DESC, a.id DESC LIMIT 51`, [user.orgId, parsed.data.action ?? null, cursor?.at ?? null, cursor?.id ?? null, user.farmIds]);
     const page = rows.slice(0, 50);
     const last = page.at(-1);
     return {
@@ -122,7 +129,8 @@ export async function exportAudit(database: Database, user: Principal, params: U
     await setOrg(tx, user.orgId);
     const { rows } = await tx.query<Record<string, unknown>>(`SELECT a.occurred_at, a.actor, m.display_name, a.action, a.scope
       FROM audit_log a LEFT JOIN memberships m ON m.org_id = a.org_id AND m.entra_oid::text = a.actor
-      WHERE a.org_id = $1 AND a.occurred_at >= now() - make_interval(days => $2) ORDER BY a.occurred_at DESC`, [user.orgId, days]);
+      WHERE a.org_id = $1 AND a.occurred_at >= now() - make_interval(days => $2) AND ${AUDIT_FARM_FILTER('$3')}
+      ORDER BY a.occurred_at DESC`, [user.orgId, days, user.farmIds]);
     await audit(tx, user, 'export.audit', { days, rows: rows.length });
     return {
       filename: 'malha-auditoria.csv',

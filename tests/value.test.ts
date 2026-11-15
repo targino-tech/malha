@@ -6,7 +6,7 @@ import { createFarm } from '../apps/web/src/server/admin';
 import { evaluateAll } from '../apps/web/src/server/alerts';
 import { createAsset } from '../apps/web/src/server/assets';
 import { migrate, pgliteDatabase, setOrg, type Database } from '../apps/web/src/server/db';
-import { csvCell, exportAssets, exportOccurrences, listAudit, toCsv } from '../apps/web/src/server/exports';
+import { csvCell, exportAssets, exportAudit, exportOccurrences, listAudit, toCsv } from '../apps/web/src/server/exports';
 import { HttpError } from '../apps/web/src/server/http';
 import type { Principal } from '../apps/web/src/server/identity';
 import { indicators, recordService, saveBaseline } from '../apps/web/src/server/metrics';
@@ -147,6 +147,8 @@ test('indicadores medem cobertura, conferência, detecção, reconhecimento e ec
 test('exportação neutraliza fórmulas, respeita escopo e fica auditada', async () => {
   assert.equal(csvCell('=HYPERLINK("x")'), `"'=HYPERLINK(""x"")"`);
   assert.equal(csvCell('+55 65'), "'+55 65");
+  // Em planilhas com separador vírgula, a vírgula não pode abrir uma célula nova começando com fórmula.
+  assert.equal(csvCell('AP,=1+1'), '"AP,=1+1"');
   assert.equal(csvCell('-1'), "'-1");
   assert.equal(csvCell('@SUM'), "'@SUM");
   assert.equal(csvCell('a;b'), '"a;b"');
@@ -169,4 +171,13 @@ test('exportação neutraliza fórmulas, respeita escopo e fica auditada', async
   const audit = await listAudit(db, { ...g.admin, role: 'auditor' }, new URLSearchParams());
   assert.deepEqual(audit.items.slice(0, 3).map((entry) => entry.action), ['export.occurrences', 'occurrence.acknowledge', 'export.assets']);
   await assert.rejects(listAudit(db, { ...g.admin, role: 'ti' }, new URLSearchParams()), status(403));
+
+  // Auditor restrito a fazendas vê só os eventos delas; eventos do grupo inteiro ficam de fora.
+  const ownFarm = await listAudit(db, { ...g.admin, role: 'auditor', farmIds: [g.farmId] }, new URLSearchParams());
+  assert.ok(ownFarm.items.length > 0);
+  assert.ok(ownFarm.items.every((entry) => entry.scope.farmId === g.farmId));
+  const otherFarm = await listAudit(db, { ...g.admin, role: 'auditor', farmIds: [randomUUID()] }, new URLSearchParams());
+  assert.equal(otherFarm.items.length, 0);
+  const exported = await exportAudit(db, { ...g.admin, role: 'auditor', farmIds: [randomUUID()] }, new URLSearchParams({ days: '30' }));
+  assert.equal(exported.body.trim().split('\r\n').length, 1);
 });

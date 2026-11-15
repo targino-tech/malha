@@ -1,6 +1,6 @@
 import { database } from '@/server/db';
 import { handle } from '@/server/http';
-import { principal } from '@/server/identity';
+import { principal, rejectCrossSite } from '@/server/identity';
 import { planMonitoring, recordMonitoringExport, zabbixExport } from '@/server/monitoring';
 
 export const dynamic = 'force-dynamic';
@@ -8,6 +8,7 @@ export const runtime = 'nodejs';
 
 export function GET(request: Request) {
   return handle(async () => {
+    rejectCrossSite(request);
     const db = await database();
     const user = await principal();
     const plan = await planMonitoring(db, user, new URL(request.url).searchParams);

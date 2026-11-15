@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { database, mode } from '@/server/db';
-import { HttpError } from '@/server/http';
+import { HttpError, requestBytes } from '@/server/http';
 import { publicOrigin, requireSameOrigin } from '@/server/identity';
 import { authenticateLdap } from '@/server/ldap';
 
@@ -19,7 +19,9 @@ export async function POST(request: Request) {
     requireSameOrigin(request);
     const secret = process.env.MALHA_AUTH_SECRET;
     if (!secret || Buffer.byteLength(secret) < 32) throw new HttpError(503, 'Login por diretório indisponível.');
-    const form = await request.formData();
+    // Corpo limitado antes de qualquer leitura: a rota é pública e o formulário só tem três campos curtos.
+    if (!request.headers.get('Content-Type')?.toLowerCase().startsWith('application/x-www-form-urlencoded')) throw new HttpError(400, 'Formulário inválido.');
+    const form = new URLSearchParams(new TextDecoder().decode(await requestBytes(request, 4096)));
     // O proxy HTTPS acrescenta o cliente ao fim de X-Forwarded-For; só esse valor é confiável.
     const client = request.headers.get('X-Forwarded-For')?.split(',').map((value) => value.trim()).filter(Boolean).at(-1) ?? 'direto';
     const { token } = await authenticateLdap(await database(), {
