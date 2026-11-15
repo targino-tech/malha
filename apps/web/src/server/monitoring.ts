@@ -22,18 +22,30 @@ const GENERIC_SNMP = 'Network Generic Device by SNMP';
 type Interface = 'snmp' | 'agent' | 'none';
 type Recipe = { templates: string[]; iface: Interface };
 
-// Templates que acompanham o Zabbix 7.0 LTS. O "Modelo base" usa só ICMP Ping, presente em qualquer instalação.
+// Templates que acompanham o Zabbix 7.0 LTS, conferidos pelo nome técnico no repositório oficial
+// (zabbix/zabbix, branch release/7.0, pasta templates/). O "Modelo base" usa só ICMP Ping.
+// Intelbras não tem template oficial e fica com o SNMP genérico; Aruba só tem o da linha CX 8300.
 const VENDOR_SNMP: Partial<Record<VendorId, string>> = {
   cisco: 'Cisco IOS by SNMP',
   huawei: 'Huawei VRP by SNMP',
+  fortinet: 'FortiGate by SNMP',
+  mikrotik: 'Mikrotik by SNMP',
+  tplink: 'TP-LINK by SNMP',
 };
+const ARUBA_CX_8300 = 'Aruba CX 8300s by SNMP';
 
-function recipe(family: FamilyId, vendor: VendorId | null, model: Model): Recipe {
+/** Template SNMP do fabricante; o da Aruba só vale para a linha CX 8300, identificada pelo modelo ou nome. */
+function vendorSnmp(vendor: VendorId | null, text = '') {
+  if (vendor === 'aruba') return /\b8300\b/.test(text) ? ARUBA_CX_8300 : GENERIC_SNMP;
+  return (vendor && VENDOR_SNMP[vendor]) ?? GENERIC_SNMP;
+}
+
+function recipe(family: FamilyId, vendor: VendorId | null, model: Model, text = ''): Recipe {
   if (model === 'base') return { templates: [ICMP], iface: 'none' };
   switch (family) {
     case 'core':
     case 'wifi':
-      return { templates: [ICMP, (vendor && VENDOR_SNMP[vendor]) ?? GENERIC_SNMP], iface: 'snmp' };
+      return { templates: [ICMP, vendorSnmp(vendor, text)], iface: 'snmp' };
     case 'radio':
       return { templates: [ICMP, vendor === 'ubiquiti' ? 'Ubiquiti AirOS by SNMP' : GENERIC_SNMP], iface: 'snmp' };
     case 'servers':
@@ -56,7 +68,8 @@ export function catalogEntries() {
     base: recipe(family.id as FamilyId, null, 'base').templates,
     malha: [...new Set([
       ...recipe(family.id as FamilyId, null, 'malha').templates,
-      ...(['cisco', 'huawei', 'ubiquiti', 'windows', 'linux'] as VendorId[]).flatMap((vendor) => recipe(family.id as FamilyId, vendor, 'malha').templates),
+      ...(['cisco', 'huawei', 'fortinet', 'mikrotik', 'tplink', 'ubiquiti', 'windows', 'linux'] as VendorId[]).flatMap((vendor) => recipe(family.id as FamilyId, vendor, 'malha').templates),
+      ...(['core', 'wifi'].includes(family.id) ? [ARUBA_CX_8300] : []),
     ])],
     panels: panelsFor(family.id as FamilyId, 'malha').map((panel) => panel.title),
   }));
@@ -122,7 +135,7 @@ export async function planMonitoring(database: Database, user: Principal, params
       skipped.push({ assetId: row.id, name: row.name, farm: row.farm, reason: 'Sem IP no cadastro' });
       continue;
     }
-    const { templates, iface } = recipe(family, vendor, model);
+    const { templates, iface } = recipe(family, vendor, model, `${row.name} ${row.model ?? ''}`);
     hosts.push({
       assetId: row.id, host: `malha-${slug(row.tag || row.name) || 'ativo'}-${row.id.slice(0, 8)}`, name: `${row.name} · ${row.farm}`,
       farm: row.farm, family, vendor, ip: row.ip, mac: row.mac, category: row.category, model: row.model, templates, iface,

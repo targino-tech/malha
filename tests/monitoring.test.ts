@@ -7,7 +7,7 @@ import { createAsset } from '../apps/web/src/server/assets';
 import { migrate, pgliteDatabase, setOrg, type Database } from '../apps/web/src/server/db';
 import { HttpError } from '../apps/web/src/server/http';
 import type { Principal } from '../apps/web/src/server/identity';
-import { grafanaExport, planMonitoring, zabbixExport } from '../apps/web/src/server/monitoring';
+import { catalogEntries, grafanaExport, planMonitoring, zabbixExport } from '../apps/web/src/server/monitoring';
 
 let db: Database;
 before(async () => {
@@ -72,4 +72,36 @@ test('monitoramento gera Zabbix e Grafana no escopo do usuário', async () => {
   const outsider: Principal = { orgId: otherOrg, actor: randomUUID(), role: 'admin', farmIds: null, demo: false };
   assert.equal((await planMonitoring(db, outsider, new URLSearchParams())).hosts.length, 0);
   await assert.rejects(planMonitoring(db, outsider, new URLSearchParams({ farmId: farmA })), (error) => error instanceof HttpError && error.status === 404);
+});
+
+// Nomes técnicos conferidos no repositório oficial do Zabbix (zabbix/zabbix, release/7.0, templates/).
+const ZABBIX_70_TEMPLATES = new Set([
+  'ICMP Ping', 'Network Generic Device by SNMP', 'Cisco IOS by SNMP', 'Huawei VRP by SNMP', 'Ubiquiti AirOS by SNMP',
+  'FortiGate by SNMP', 'Mikrotik by SNMP', 'TP-LINK by SNMP', 'Aruba CX 8300s by SNMP', 'Windows by Zabbix agent', 'Linux by Zabbix agent',
+]);
+
+test('fabricantes recebem o template oficial do Zabbix 7.0 e o catálogo só usa nomes existentes', async () => {
+  const orgId = randomUUID();
+  await db.query('INSERT INTO organizations (id, name) VALUES ($1, $2)', [orgId, 'Grupo fabricantes']);
+  const admin: Principal = { orgId, actor: randomUUID(), role: 'admin', farmIds: null, demo: false };
+  const farmId = (await createFarm(db, admin, { name: 'Fazenda C', location: 'Juara · MT' })).id;
+  const assets: Array<[string, string, string]> = [
+    ['FortiGate 60F', 'Firewall', '10.2.0.1'],
+    ['Switch TP-Link Omada', 'Switch', '10.2.0.2'],
+    ['MikroTik hEX', 'Roteador', '10.2.0.3'],
+    ['Core Aruba CX 8300', 'Switch', '10.2.0.4'],
+    ['AP Aruba 515', 'Ponto de acesso', '10.2.0.5'],
+    ['Switch Intelbras SG 2404', 'Switch', '10.2.0.6'],
+  ];
+  for (const [name, category, ip] of assets) await createAsset(db, admin, { farmId, name, category, ip, critical: false });
+  const plan = await planMonitoring(db, admin, new URLSearchParams({ model: 'malha' }));
+  const templateOf = (name: string) => plan.hosts.find((host) => host.name.startsWith(name))!.templates[1];
+  assert.equal(templateOf('FortiGate'), 'FortiGate by SNMP');
+  assert.equal(templateOf('Switch TP-Link'), 'TP-LINK by SNMP');
+  assert.equal(templateOf('MikroTik'), 'Mikrotik by SNMP');
+  assert.equal(templateOf('Core Aruba CX 8300'), 'Aruba CX 8300s by SNMP');
+  assert.equal(templateOf('AP Aruba'), 'Network Generic Device by SNMP');
+  assert.equal(templateOf('Switch Intelbras'), 'Network Generic Device by SNMP');
+  for (const template of plan.templates) assert.ok(ZABBIX_70_TEMPLATES.has(template), template);
+  for (const entry of catalogEntries()) for (const template of [...entry.base, ...entry.malha]) assert.ok(ZABBIX_70_TEMPLATES.has(template), template);
 });

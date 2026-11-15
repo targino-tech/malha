@@ -40,13 +40,13 @@ Em **Monitoramento**, o Malha monta um host do Zabbix por ativo com IP, agrupado
 
 | Família | Modelo base | Modelo Malha |
 | --- | --- | --- |
-| Núcleo e roteamento, Acesso Wi-Fi | ICMP Ping | ICMP Ping + `Cisco IOS by SNMP`, `Huawei VRP by SNMP` ou `Network Generic Device by SNMP` |
+| Núcleo e roteamento, Acesso Wi-Fi | ICMP Ping | ICMP Ping + o template do fabricante: `Cisco IOS by SNMP`, `Huawei VRP by SNMP`, `FortiGate by SNMP`, `Mikrotik by SNMP`, `TP-LINK by SNMP` ou `Aruba CX 8300s by SNMP` (só a linha CX 8300); Intelbras, outras Aruba e o resto usam `Network Generic Device by SNMP` |
 | Enlaces de rádio | ICMP Ping | ICMP Ping + `Ubiquiti AirOS by SNMP` ou genérico SNMP |
 | Servidores, Controladores de domínio | ICMP Ping | ICMP Ping + `Windows by Zabbix agent` ou `Linux by Zabbix agent` |
 | Estações de usuário | ICMP Ping | ICMP Ping + `Windows by Zabbix agent` (quando Windows) |
 | Equipamentos de campo, Segurança física, Outros | ICMP Ping | ICMP Ping |
 
-O catálogo completo, com os painéis de cada família, aparece na própria tela de Monitoramento.
+Os nomes são os técnicos dos templates que vêm no Zabbix 7.0 LTS, conferidos no repositório oficial (`zabbix/zabbix`, branch `release/7.0`, pasta `templates/`). O catálogo completo, com os painéis de cada família, aparece na própria tela de Monitoramento.
 
 **Por arquivo:** baixe o JSON do Zabbix 7.0 (Coleta de dados → Hosts → Importar) e cada painel do Grafana (Dashboards → Importar). Reexportar mantém os mesmos ids: importar de novo atualiza em vez de duplicar.
 
