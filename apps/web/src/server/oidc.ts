@@ -8,7 +8,8 @@ import { publicOrigin } from './identity';
 /**
  * Login por um provedor OpenID Connect genérico (Google Workspace, Okta, Keycloak, Auth0...), ao lado do Entra ID.
  * Configuração por ambiente: MALHA_OIDC_ISSUER, MALHA_OIDC_CLIENT_ID, MALHA_OIDC_CLIENT_SECRET,
- * MALHA_OIDC_NAME (rótulo do botão) e MALHA_OIDC_ORG_ID (grupo atendido por este provedor).
+ * MALHA_OIDC_NAME (rótulo do botão), MALHA_OIDC_ORG_ID (grupo atendido por este provedor) e, opcionalmente,
+ * MALHA_OIDC_CLIENT_AUTH=post para enviar o segredo no corpo; o padrão é HTTP Basic, o método padrão do OIDC.
  */
 
 const LOGIN_COOKIE = '__Host-malha_oidc_generic';
@@ -21,7 +22,8 @@ export function oidcProvider() {
   const clientSecret = process.env.MALHA_OIDC_CLIENT_SECRET;
   const orgId = process.env.MALHA_OIDC_ORG_ID?.toLowerCase();
   if (!issuer || !clientId || !clientSecret || !orgId) return null;
-  return { issuer, clientId, clientSecret, orgId, name: process.env.MALHA_OIDC_NAME?.trim() || 'provedor da empresa' };
+  const clientAuth = process.env.MALHA_OIDC_CLIENT_AUTH === 'post' ? 'post' as const : 'basic' as const;
+  return { issuer, clientId, clientSecret, orgId, clientAuth, name: process.env.MALHA_OIDC_NAME?.trim() || 'provedor da empresa' };
 }
 
 function settings() {
@@ -35,11 +37,25 @@ function settings() {
   return { ...provider, issuer, signSecret, origin, redirect: new URL('/api/auth/oidc/callback', origin).href };
 }
 
+/** Dependências externas do fluxo. Em produção vêm do Next e do ambiente; os testes injetam um provedor local. */
+export interface CookieJar {
+  get(name: string): { value: string } | undefined;
+  set(name: string, value: string, options: { path: string; secure: boolean; httpOnly: boolean; sameSite: 'lax'; maxAge: number }): void;
+}
+export interface OidcDeps { cookies?: CookieJar; fetch?: oidc.CustomFetch; database?: Database }
+const jar = async (deps?: OidcDeps) => deps?.cookies ?? (await cookies() as unknown as CookieJar);
+
 let discovered: { key: string; value: Promise<oidc.Configuration> } | undefined;
-function config(params: ReturnType<typeof settings>) {
-  const key = `${params.issuer.href}|${params.clientId}`;
+function config(params: ReturnType<typeof settings>, fetcher?: oidc.CustomFetch) {
+  const auth = params.clientAuth === 'post' ? oidc.ClientSecretPost(params.clientSecret) : oidc.ClientSecretBasic(params.clientSecret);
+  if (fetcher) {
+    // Provedor injetado (testes): sem cache e com o mesmo fetch para descoberta, token e chaves.
+    return oidc.discovery(params.issuer, params.clientId, params.clientSecret, auth, { [oidc.customFetch]: fetcher })
+      .then((configuration) => { configuration[oidc.customFetch] = fetcher; return configuration; });
+  }
+  const key = `${params.issuer.href}|${params.clientId}|${params.clientAuth}`;
   if (discovered?.key !== key) {
-    const value = oidc.discovery(params.issuer, params.clientId, params.clientSecret, oidc.ClientSecretPost(params.clientSecret))
+    const value = oidc.discovery(params.issuer, params.clientId, params.clientSecret, auth)
       .catch((error: unknown) => { discovered = undefined; throw error; });
     discovered = { key, value };
   }
@@ -48,14 +64,14 @@ function config(params: ReturnType<typeof settings>) {
 
 const sign = (value: string, secret: string) => createHmac('sha256', secret).update(value).digest('base64url');
 
-export async function startOidcLogin() {
+export async function startOidcLogin(deps?: OidcDeps) {
   const params = settings();
-  const configuration = await config(params);
+  const configuration = await config(params, deps?.fetch);
   const verifier = oidc.randomPKCECodeVerifier();
   const state = oidc.randomState();
   const nonce = oidc.randomNonce();
   const payload = Buffer.from(JSON.stringify({ verifier, state, nonce, exp: Date.now() + 300_000 })).toString('base64url');
-  (await cookies()).set(LOGIN_COOKIE, `${payload}.${sign(payload, params.signSecret)}`, { ...baseCookie, maxAge: 300 });
+  (await jar(deps)).set(LOGIN_COOKIE, `${payload}.${sign(payload, params.signSecret)}`, { ...baseCookie, maxAge: 300 });
   const location = oidc.buildAuthorizationUrl(configuration, {
     redirect_uri: params.redirect, scope: 'openid email profile', code_challenge_method: 'S256',
     code_challenge: await oidc.calculatePKCECodeChallenge(verifier), state, nonce,
@@ -91,9 +107,9 @@ export async function linkOidcIdentity(db: Database, orgId: string, identity: { 
   });
 }
 
-export async function finishOidcLogin(request: Request) {
+export async function finishOidcLogin(request: Request, deps?: OidcDeps) {
   const params = settings();
-  const store = await cookies();
+  const store = await jar(deps);
   const [payload, signature] = store.get(LOGIN_COOKIE)?.value.split('.') ?? [];
   store.set(LOGIN_COOKIE, '', { ...baseCookie, maxAge: 0 });
   const expected = payload && sign(payload, params.signSecret);
@@ -104,13 +120,13 @@ export async function finishOidcLogin(request: Request) {
   if (pending.exp < Date.now()) throw new HttpError(401, 'A tentativa de entrada expirou.');
   const callbackUrl = new URL(params.redirect);
   callbackUrl.search = new URL(request.url).search;
-  const configuration = await config(params);
+  const configuration = await config(params, deps?.fetch);
   const token = await oidc.authorizationCodeGrant(configuration, callbackUrl, {
     pkceCodeVerifier: pending.verifier, expectedState: pending.state, expectedNonce: pending.nonce, idTokenExpected: true,
   }).catch(() => { throw new HttpError(401, 'O provedor não confirmou a entrada.'); });
   const claims = token.claims();
   if (!claims || typeof claims.sub !== 'string' || typeof claims.iss !== 'string') throw new HttpError(401, 'Resposta do provedor sem identidade.');
-  const db = await database();
+  const db = deps?.database ?? await database();
   const { oid } = await linkOidcIdentity(db, params.orgId, { issuer: claims.iss, subject: claims.sub, email: claims.email, emailVerified: claims.email_verified });
   const session = randomBytes(32).toString('base64url');
   const inserted = await db.query(`INSERT INTO sessions (token_hash, org_id, entra_oid, expires_at)

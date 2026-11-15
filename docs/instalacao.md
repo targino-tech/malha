@@ -92,7 +92,19 @@ export MALHA_OIDC_CLIENT_ID='...'
 export MALHA_OIDC_CLIENT_SECRET='...'
 export MALHA_OIDC_ORG_ID='<uuid do grupo>'
 export MALHA_OIDC_NAME='Google'                           # rótulo do botão "Entrar com ..."
+# export MALHA_OIDC_CLIENT_AUTH=post                      # só se o provedor exigir o segredo no corpo
 ```
+
+O segredo do cliente vai por HTTP Basic (`client_secret_basic`, o padrão do OpenID Connect). Use `MALHA_OIDC_CLIENT_AUTH=post` se o aplicativo no provedor estiver configurado para `client_secret_post`.
+
+| Provedor | Emissor (`MALHA_OIDC_ISSUER`) | No provedor |
+| --- | --- | --- |
+| Google Workspace | `https://accounts.google.com` | Google Cloud Console → APIs e serviços → Credenciais → ID do cliente OAuth do tipo **Aplicativo da Web**, com o URI de redirecionamento acima. A tela de consentimento pode ser **Interna** para aceitar só contas do domínio. O Google envia `email_verified`. |
+| Okta | `https://<empresa>.okta.com/oauth2/default` (servidor de autorização padrão) ou `https://<empresa>.okta.com` | Applications → Create App Integration → **OIDC · Web Application**, grant **Authorization Code**, URI de redirecionamento acima e atribuição aos grupos que podem entrar. Client authentication **Client secret** (Basic). |
+| Keycloak | `https://<host>/realms/<realm>` | Clients → Create client → **OpenID Connect**, **Client authentication: On**, **Standard flow**, Valid redirect URIs com o endereço acima. Marque **Email verified** nos usuários (ou use a verificação de e-mail do realm): sem isso o primeiro login é recusado. |
+| Microsoft Entra ID | Use a integração própria (`ENTRA_*`), não o OIDC genérico. | |
+
+Requisitos do provedor: descoberta em `/.well-known/openid-configuration`, fluxo de código com PKCE S256, ID token assinado e claims `sub`, `email` e `email_verified`. O fluxo inteiro (descoberta, PKCE, state, nonce, assinatura e convite) é testado contra um provedor local que segue a especificação, em [`tests/oidc-flow.test.ts`](../tests/oidc-flow.test.ts); a validação com cada provedor real segue aberta na comunidade.
 
 O acesso continua por convite: em Administração, crie o membro com o **e-mail do convite** (o identificador no diretório pode ficar em branco). No primeiro login, o Malha só aceita a conta se o provedor confirmar o e-mail como verificado; a partir daí a conta fica ligada pelo identificador estável do provedor (`iss` + `sub`), mesmo que o e-mail mude depois. O convite só pode ser usado uma vez, a ligação vai para a auditoria e desativar o membro bloqueia o login.
 
