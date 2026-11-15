@@ -382,3 +382,36 @@ test('o botão de teste envia na hora e limita testes seguidos', async () => {
   assert.equal(history.length, 5);
   assert.ok(history.every((row) => row.event === 'test' && row.status === 'sent'));
 });
+
+test('canal estreitado para outras fazendas não entrega pendências nem encerramentos da fazenda removida', async () => {
+  const f = await fixture();
+  let failing = true;
+  const { calls, fetcher } = telegram(() => failing ? { status: 500, body: { ok: false } } : { status: 200, body: { ok: true, result: {} } });
+  const shared = await createChannel(db, f.admin, { kind: 'telegram', name: 'Duas fazendas', botToken: TOKEN, chatId: '-700', farmIds: [f.farmId, f.otherFarmId] });
+  const sentChannel = await createChannel(db, f.admin, { kind: 'telegram', name: 'Duas fazendas (ok)', botToken: TOKEN, chatId: '-701', farmIds: [f.farmId, f.otherFarmId] });
+  const core = await asset(f, { name: 'Core sigiloso', critical: true, status: 'offline' });
+  await evaluateAll(db);
+  // Primeiro canal falha (fica pendente); o segundo recebe a abertura.
+  await run(f, `UPDATE notification_channels SET enabled = false WHERE org_id = $1 AND id = $2`, [f.orgId, sentChannel.id]);
+  await dispatchChannelNotifications(db, { transport: mailbox().transport, fetcher });
+  await run(f, `UPDATE notification_channels SET enabled = true WHERE org_id = $1 AND id = $2`, [f.orgId, sentChannel.id]);
+  failing = false;
+  await run(f, `UPDATE notification_deliveries SET status = 'pending', available_at = now() WHERE org_id = $1 AND channel_id = $2`, [f.orgId, sentChannel.id]);
+  await run(f, `UPDATE notification_deliveries SET available_at = now() + interval '1 hour' WHERE org_id = $1 AND channel_id = $2`, [f.orgId, shared.id]);
+  await dispatchChannelNotifications(db, { transport: mailbox().transport, fetcher });
+  assert.equal(calls.filter((call) => call.chatId === '-701' && /Core sigiloso/.test(call.text)).length, 1);
+
+  // O admin tira a Boa Vista dos dois canais; um TI restrito à vizinha passa a vê-los e troca o chat.
+  for (const id of [shared.id, sentChannel.id]) await updateChannel(db, f.admin, id, { farmIds: [f.otherFarmId] });
+  const restricted: Principal = { orgId: f.orgId, actor: 'oid-ti-vizinha', role: 'ti', farmIds: [f.otherFarmId], demo: false };
+  for (const id of [shared.id, sentChannel.id]) await updateChannel(db, restricted, id, { chatId: '@chat_do_ti' });
+  calls.length = 0;
+
+  await releasePending(f);
+  await dispatchChannelNotifications(db, { transport: mailbox().transport, fetcher });
+  assert.equal(calls.filter((call) => call.chatId === '@chat_do_ti').length, 0, 'pendência da fazenda removida não sai');
+  await run(f, `UPDATE assets SET status = 'online', last_observed_at = now() WHERE org_id = $1 AND id = $2`, [f.orgId, core]);
+  await evaluateAll(db);
+  await dispatchChannelNotifications(db, { transport: mailbox().transport, fetcher });
+  assert.equal(calls.filter((call) => call.chatId === '@chat_do_ti').length, 0, 'nada da Boa Vista vai para o canal que não a cobre mais');
+});

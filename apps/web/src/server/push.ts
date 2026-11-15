@@ -212,6 +212,7 @@ export async function routeOrganization(tx: Queryable, orgId: string) {
     JOIN notification_deliveries d ON d.org_id = o.org_id AND d.occurrence_id = o.id AND d.event = 'opened' AND d.status = 'sent'
     JOIN notification_channels c ON c.org_id = d.org_id AND c.id = d.channel_id AND c.enabled AND c.notify_resolved
     WHERE e.org_id = $1 AND e.kind = 'resolved' AND e.occurred_at > now() - interval '24 hours'
+      AND (c.farm_ids IS NULL OR o.farm_id = ANY(c.farm_ids))
     ON CONFLICT (org_id, idempotency_key) DO NOTHING RETURNING id`, [orgId]);
   return opened.length + resolved.length;
 }
@@ -219,7 +220,7 @@ export async function routeOrganization(tx: Queryable, orgId: string) {
 type Pending = MessageItem & {
   id: string; channel_id: string; farm_id: string; event: 'opened' | 'resolved'; attempts: number;
   kind: ChannelKind; enabled: boolean; telegram_chat_id: string | null; telegram_token: string | null; recipients: string[] | null;
-  rate_limit_per_minute: number; sent_last_minute: number; suppressed: boolean;
+  rate_limit_per_minute: number; sent_last_minute: number; suppressed: boolean; out_of_scope: boolean;
 };
 
 export type DispatchResult = { routed: number; sent: number; failed: number; suppressed: number; skipped: number; deferred: number };
@@ -228,6 +229,7 @@ async function deliverOrganization(tx: Queryable, orgId: string, deps: Deps, res
   // Mesmas regras de supressão do e-mail legado: ativo em manutenção ou fazenda com coletor sem contato aberto.
   const { rows } = await tx.query<Pending>(`SELECT d.id, d.channel_id, d.farm_id, d.event, d.attempts,
       c.kind, c.enabled, c.telegram_chat_id, c.telegram_token, c.recipients, c.rate_limit_per_minute,
+      (c.farm_ids IS NOT NULL AND NOT (d.farm_id = ANY(c.farm_ids))) AS out_of_scope,
       (SELECT count(DISTINCT s.batch_id)::int FROM notification_deliveries s WHERE s.org_id = d.org_id AND s.channel_id = d.channel_id
         AND s.sent_at > now() - interval '1 minute') AS sent_last_minute,
       f.name AS farm_name, f.timezone, o.rule, o.resource_kind, o.severity, o.title, o.opened_at, o.resolved_at, a.name AS asset_name,
@@ -244,7 +246,8 @@ async function deliverOrganization(tx: Queryable, orgId: string, deps: Deps, res
     LIMIT 200 FOR UPDATE OF d SKIP LOCKED`, [orgId]);
 
   const setStatus = (ids: string[], status: string) => tx.query(`UPDATE notification_deliveries SET status = $3 WHERE org_id = $1 AND id = ANY($2::uuid[])`, [orgId, ids, status]);
-  const skipped = rows.filter((row) => !row.enabled || (row.event === 'opened' && row.resolved_at));
+  // O filtro de fazendas é relido no envio: um canal estreitado (e talvez com outro chat) não recebe o que saiu do filtro.
+  const skipped = rows.filter((row) => !row.enabled || row.out_of_scope || (row.event === 'opened' && row.resolved_at));
   const suppressed = rows.filter((row) => !skipped.includes(row) && row.suppressed);
   if (skipped.length) await setStatus(skipped.map((row) => row.id), 'skipped');
   if (suppressed.length) await setStatus(suppressed.map((row) => row.id), 'suppressed');
