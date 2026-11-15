@@ -114,19 +114,27 @@ jobs:
             --config /rules/yaml/github-actions/security --jobs 2 \
             apps collector packages .github/workflows > "$report"
           jq -e '.runs | type == "array" and length > 0' "$report" >/dev/null
+          findings="$RUNNER_TEMP/semgrep-findings.json"
+          jq '[
+            .runs[] |
+            (reduce (.tool.driver.rules // [])[] as $rule
+              ({}; .[$rule.id] = $rule.defaultConfiguration.level)) as $ruleLevels |
+            .results[]? |
+            .level = (.level // $ruleLevels[.ruleId] // "warning")
+          ]' "$report" > "$findings"
           jq -r '
             def escape: gsub("%"; "%25") | gsub("\\r"; "%0D") | gsub("\\n"; "%0A");
             def prop: escape | gsub(","; "%2C") | gsub(":"; "%3A");
-            [.runs[].results[]?][:30][] |
+            .[:30][] |
             (.locations[0].physicalLocation // {}) as $loc |
             (if .level == "error" then "::error" else "::warning" end) +
             " file=" + ($loc.artifactLocation.uri // "" | prop) +
             ",line=" + ($loc.region.startLine // 1 | tostring) +
             ",title=Semgrep::" + (.ruleId | escape)
-          ' "$report"
-          count=$(jq '[.runs[].results[]?] | length' "$report")
+          ' "$findings"
+          count=$(jq 'length' "$findings")
           printf '### Análise estática\n\nAchados do Semgrep: %s. O relatório SARIF inclui os detalhes.\n' "$count" >> "$GITHUB_STEP_SUMMARY"
-          jq -e '[.runs[].results[]? | select(.level == "error")] | length == 0' "$report" >/dev/null
+          jq -e 'all(.[]; .level != "error")' "$findings" >/dev/null
       - name: Publicar relatório de código
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
