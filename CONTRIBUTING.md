@@ -35,7 +35,7 @@ pnpm install --frozen-lockfile
 MALHA_MODE=demo pnpm dev   # demo com dados fictícios em http://127.0.0.1:3000
 ```
 
-O modo demo usa PGlite em memória e não precisa de banco externo. Mais opções em **Rode o demo** no [README](README.md).
+O modo demo usa PGlite em memória e não precisa de banco externo. Mais opções no [guia de instalação](docs/instalacao.md).
 
 ## Fluxo de trabalho
 

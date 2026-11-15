@@ -61,8 +61,8 @@ Para SNMP, defina a macro `{$SNMP_COMMUNITY}` no grupo ou globalmente. Para Wind
 | Provedor | Como configurar |
 | --- | --- |
 | Microsoft Entra ID | `ENTRA_TENANT_ID`, `ENTRA_CLIENT_ID`, `ENTRA_CLIENT_SECRET`; o membro entra pelo Object ID |
-| Active Directory / LDAP | `pnpm db ldap …` (seção no [README](../README.md#login-por-active-directory-ou-ldap)); o membro entra pelo `objectGUID` ou `entryUUID` |
-| Google Workspace, Okta, Keycloak e outros OpenID Connect | `MALHA_OIDC_*` (seção no [README](../README.md#login-por-google-workspace-okta-keycloak-ou-outro-openid-connect)); o membro entra pelo e-mail do convite |
+| Active Directory / LDAP | `pnpm db ldap …` ([guia de instalação](instalacao.md#login-por-active-directory-ou-ldap)); o membro entra pelo `objectGUID` ou `entryUUID` |
+| Google Workspace, Okta, Keycloak e outros OpenID Connect | `MALHA_OIDC_*` ([guia de instalação](instalacao.md#login-por-google-workspace-okta-keycloak-ou-outro-openid-connect)); o membro entra pelo e-mail do convite |
 
 Em todos, o acesso é por convite em **Administração**, com papel (admin, TI, técnico de fazenda, diretoria, auditor) e restrição por fazenda. A sessão dura até 8 horas e é revalidada a cada requisição: desativar o membro corta o acesso na hora.
 

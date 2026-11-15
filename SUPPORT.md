@@ -12,7 +12,7 @@ O Malha é gratuito e mantido pela comunidade. Escolha o canal pelo tipo de pedi
 | Relatar uma vulnerabilidade | [Relato privado de segurança](https://github.com/targino-tech/malha/security/advisories/new), nunca em público |
 | Apoio para implantar nas suas fazendas | [Pedido de apoio](https://github.com/targino-tech/malha/issues/new?template=implantacao.yml) |
 
-Antes de perguntar, vale olhar o [README](README.md), a [arquitetura](docs/arquitetura.md), o [guia de integrações](docs/integracoes.md) e as issues já abertas.
+Antes de perguntar, vale olhar o [README](README.md), o [guia de instalação](docs/instalacao.md), a [arquitetura](docs/arquitetura.md), o [guia de integrações](docs/integracoes.md) e as issues já abertas.
 
 Ao pedir ajuda, informe a versão (SHA da `main` ou release do coletor), o modo (demo ou piloto) e os passos que levaram ao problema. **Remova IPs, nomes de fazendas, tokens e senhas** de logs e capturas de tela.
 
