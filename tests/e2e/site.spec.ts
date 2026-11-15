@@ -14,7 +14,7 @@ test('a apresentação do Malha funciona em celular com movimento reduzido', asy
   const menu = page.getByRole('button', { name: 'Abrir menu' });
   await menu.focus();
   await page.keyboard.press('Enter');
-  await expect(page.getByRole('navigation', { name: 'Navegação do site' }).getByRole('link', { name: 'Planos' })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Navegação do site' }).getByRole('link', { name: 'Open source' })).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('button', { name: 'Abrir menu' })).toHaveAttribute('aria-expanded', 'false');
 
@@ -44,8 +44,11 @@ test('o globo do site pode ser pausado e o portal marca a ilustração', async (
 });
 
 test('o cadastro do site registra a solicitação uma única vez', async ({ page, request }) => {
-  await page.goto('/site/planos');
-  await page.getByRole('link', { name: 'Solicitar acesso ao plano Piloto' }).click();
+  const legacy = await page.goto('/site/planos');
+  expect(legacy?.url()).toMatch(/\/site\/open-source$/);
+  await expect(page.getByRole('heading', { level: 1, name: /Grátis/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Ver o código no GitHub' })).toHaveAttribute('href', 'https://github.com/targino-tech/malha');
+  await page.goto('/site/cadastro?plano=piloto');
   await expect(page).toHaveURL(/plano=piloto/);
   await expect(page.getByRole('radio', { name: /Piloto/ })).toBeChecked();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(await page.evaluate(() => innerWidth));
@@ -54,7 +57,7 @@ test('o cadastro do site registra a solicitação uma única vez', async ({ page
   await page.getByLabel('E-mail corporativo').fill('maria.silva@example.com');
   await page.getByLabel('Empresa ou grupo').fill('Grupo Exemplo');
   await page.getByLabel('Número de fazendas').fill('4');
-  await expect(page.getByText('Para 4 fazendas, o plano indicado é o Grupo.')).toBeVisible();
+  await expect(page.getByText('Para 4 fazendas, o porte indicado é Grupo.')).toBeVisible();
   await page.getByRole('button', { name: 'Trocar para Grupo' }).click();
   await expect(page.getByRole('radio', { name: /Grupo/ })).toBeChecked();
   await page.getByRole('button', { name: 'Enviar solicitação' }).click();

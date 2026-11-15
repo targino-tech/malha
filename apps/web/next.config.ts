@@ -9,6 +9,9 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: resolve(import.meta.dirname, '../..'),
   ...(process.env.MALHA_STANDALONE === '1' ? { output: 'standalone' as const } : {}),
   serverExternalPackages: ['@electric-sql/pglite', 'pg'],
+  async redirects() {
+    return [{ source: '/site/planos', destination: '/site/open-source', permanent: true }];
+  },
   async headers() {
     return [
       {

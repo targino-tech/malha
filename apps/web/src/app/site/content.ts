@@ -44,13 +44,12 @@ export const questions = [
     answer: 'Sim. Use um arquivo CSV em UTF-8 com etiqueta, nome e categoria. O Malha permite visualizar os registros e corrigir inconsistências antes de confirmar a importação.',
   },
   {
-    title: 'Como funciona a contratação?',
-    answer: 'Você envia o cadastro pelo site, a equipe agenda uma conversa técnica e envia a proposta. Depois, configuramos o diretório do seu grupo, as fazendas e um código de ativação de uso único para cada coletor.',
+    title: 'Quanto custa?',
+    answer: 'Nada. O Malha é software livre sob a licença AGPL-3.0: você pode hospedar, estudar e modificar o código sem pagar licença. Se quiser apoio da equipe na implantação, envie o cadastro.',
   },
 ];
 
-// Termos comerciais: rascunho. Ajuste faixas e serviços antes de divulgar.
-// O painel é o mesmo em todos os planos; os planos diferem no porte e no acompanhamento da implantação.
+// Porte da operação, usado no cadastro de apoio à implantação. O software é o mesmo e gratuito para todos.
 export const plans: Array<{ id: PlanId; name: string; tagline: string; audience: string; min: number; max: number; recommended?: boolean; items: string[] }> = [
   {
     id: 'piloto',
@@ -105,8 +104,17 @@ export const included = [
 ];
 
 export const onboarding = [
-  { title: 'Cadastro', text: 'Conte quantas fazendas e qual plano interessa. Leva um minuto.' },
-  { title: 'Conversa técnica', text: 'Revisamos a console UniFi de cada unidade e enviamos a proposta.' },
+  { title: 'Cadastro', text: 'Conte quantas fazendas o grupo tem e como a TI acompanha a rede hoje. Leva um minuto.' },
+  { title: 'Conversa técnica', text: 'Revisamos a console UniFi de cada unidade e combinamos a implantação.' },
   { title: 'Configuração', text: 'Conectamos o diretório do grupo e geramos um código de ativação de uso único para cada coletor.' },
   { title: 'Acesso ao painel', text: 'Sua equipe entra pelo portal com a conta corporativa e acompanha as fazendas.' },
+];
+
+export const REPOSITORY_URL = 'https://github.com/targino-tech/malha';
+
+// Como usar o Malha: o código é o mesmo em todos os caminhos.
+export const openSource = [
+  { title: 'Código aberto', text: 'Licença AGPL-3.0. Use, estude, modifique e redistribua. Melhorias em versões oferecidas como serviço voltam para a comunidade.' },
+  { title: 'Hospede onde quiser', text: 'Rode o demo com dados fictícios em minutos ou leve para produção com PostgreSQL e login Microsoft Entra ID.' },
+  { title: 'Apoio na implantação', text: 'Precisa de ajuda para homologar a console UniFi e ativar os coletores? Envie o cadastro e a equipe responde.' },
 ];

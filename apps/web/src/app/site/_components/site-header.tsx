@@ -11,7 +11,7 @@ const links = [
   { href: '/site#produto', label: 'Produto' },
   { href: '/site#campo', label: 'Como funciona' },
   { href: '/site#painel', label: 'Painel' },
-  { href: '/site/planos', label: 'Planos' },
+  { href: '/site/open-source', label: 'Open source' },
 ];
 
 export function SiteHeader() {

@@ -6,8 +6,8 @@ import styles from '../site.module.css';
 import { SignupForm } from './signup-form';
 
 export const metadata: Metadata = {
-  title: 'Cadastro | Malha',
-  description: 'Solicite o Malha para as fazendas do seu grupo.',
+  title: 'Apoio na implantação | Malha',
+  description: 'Peça apoio da equipe para implantar o Malha, software livre e gratuito, nas fazendas do seu grupo.',
   robots: { index: true, follow: true },
 };
 
@@ -18,7 +18,7 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
     <section className={`${styles.frame} ${styles.signup}`} aria-labelledby="signup-title">
       <Reveal priority className={styles.signupIntro}>
         <h1 id="signup-title">Vamos conectar<br /><span>as suas fazendas.</span></h1>
-        <p className={styles.heroDescription}>Envie os dados abaixo. A equipe responde por e-mail para agendar a conversa técnica.</p>
+        <p className={styles.heroDescription}>Envie os dados abaixo. O Malha é gratuito; aqui você pede apoio da equipe para implantá-lo. A resposta chega por e-mail.</p>
         <ol className={styles.signupSteps}>
           {onboarding.map((step, index) => (
             <li key={step.title}><span>{String(index + 1).padStart(2, '0')}</span><div><strong>{step.title}</strong><p>{step.text}</p></div></li>

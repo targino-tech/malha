@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { REPOSITORY_URL } from '../content';
 import styles from '../site.module.css';
 import { Brand } from './brand';
 
@@ -18,9 +19,10 @@ export function SiteFooter() {
             <Link href="/site#seguranca">Segurança</Link>
           </div>
           <div>
-            <p>Contratar</p>
-            <Link href="/site/planos">Planos</Link>
-            <Link href="/site/cadastro">Cadastro</Link>
+            <p>Open source</p>
+            <a href={REPOSITORY_URL} target="_blank" rel="noreferrer">Código-fonte</a>
+            <a href={`${REPOSITORY_URL}/blob/main/LICENSE`} target="_blank" rel="noreferrer">Licença AGPL-3.0</a>
+            <Link href="/site/cadastro">Apoio na implantação</Link>
             <Link href="/site/privacidade">Privacidade</Link>
           </div>
           <div>
@@ -30,7 +32,7 @@ export function SiteFooter() {
         </nav>
       </div>
       <div className={`${styles.frame} ${styles.footerBase}`}>
-        <span>© {new Date().getFullYear()} Malha</span>
+        <span>© {new Date().getFullYear()} Malha · Software livre sob a <a href={`${REPOSITORY_URL}/blob/main/LICENSE`} target="_blank" rel="noreferrer">AGPL-3.0</a></span>
         <span className={styles.mono}>-12.55, -55.71 · Mato Grosso</span>
       </div>
     </footer>

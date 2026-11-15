@@ -218,8 +218,14 @@ O deploy automático fica desligado até a conta AWS existir: defina a variável
 | Servidor MCP somente leitura | Triagem assistida com o escopo de cada usuário | Qualidade de dados medida no piloto |
 | Entrada e saída de pessoas | Admissão e desligamento ligados a SAP/TOTVS e Entra | Sistema de RH do cliente |
 | Autocura com aprovação | Reiniciar porta PoE ou forçar failover com janela e retorno | Telemetria estável e ensaio em bancada |
-| Cobrança online e provisionamento automático | Do cadastro do site ao grupo pronto sem a equipe | Modelo comercial validado |
+| Provisionamento automático | Do cadastro do site ao grupo pronto sem a equipe | Fluxo de aprovação definido |
 
 ## Segurança
 
 Resultados de código, dependências, segredos e malware ficam no [workflow de segurança](https://github.com/targino-tech/malha/actions/workflows/security.yml). Consulte a [política de segurança](SECURITY.md) para relatar uma vulnerabilidade por um canal privado.
+
+## Licença e contribuição
+
+O Malha é software livre e gratuito, distribuído sob a [GNU Affero General Public License v3.0 ou posterior](LICENSE). Você pode usar, estudar, modificar e redistribuir o código. Se oferecer uma versão modificada como serviço pela rede, a AGPL exige disponibilizar o código-fonte dessa versão aos usuários dela.
+
+Contribuições são bem-vindas. Veja [como contribuir](CONTRIBUTING.md).

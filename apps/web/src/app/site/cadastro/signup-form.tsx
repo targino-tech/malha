@@ -107,7 +107,7 @@ export function SignupForm({ plans, initialPlan }: { plans: PlanOption[]; initia
       <div className={styles.formDone} ref={doneRef} tabIndex={-1} role="status">
         <span className={styles.formDoneIcon}><Check size={22} aria-hidden="true" /></span>
         <h2>Solicitação recebida</h2>
-        <p>A equipe do Malha vai responder em <strong>{state.email}</strong> para agendar a conversa técnica sobre o plano {selected.name}.</p>
+        <p>A equipe do Malha vai responder em <strong>{state.email}</strong> para agendar a conversa técnica sobre a implantação ({selected.name}, {selected.audience.toLowerCase()}).</p>
         <p>Na conversa, tenha em mãos o modelo da console UniFi de cada fazenda e o diretório Microsoft do grupo.</p>
         <Link href="/site" className={styles.secondaryButton}>Voltar ao site <ArrowRight size={16} aria-hidden="true" /></Link>
       </div>
@@ -121,7 +121,7 @@ export function SignupForm({ plans, initialPlan }: { plans: PlanOption[]; initia
   return (
     <form ref={formRef} className={styles.form} onSubmit={submit} noValidate>
       <fieldset className={styles.planPicker}>
-        <legend>Plano de interesse</legend>
+        <legend>Porte da operação</legend>
         <div>
           {plans.map((option) => (
             <label key={option.id} data-checked={plan === option.id}>
@@ -163,7 +163,7 @@ export function SignupForm({ plans, initialPlan }: { plans: PlanOption[]; initia
       {mismatch && (
         <p id="farms-hint" className={styles.formHint} aria-live="polite">
           <Info size={16} aria-hidden="true" />
-          <span>Para {farmCount} {farmCount === 1 ? 'fazenda' : 'fazendas'}, o plano indicado é o {mismatch.name}.{' '}
+          <span>Para {farmCount} {farmCount === 1 ? 'fazenda' : 'fazendas'}, o porte indicado é {mismatch.name}.{' '}
             <button type="button" onClick={() => setPlan(mismatch.id)}>Trocar para {mismatch.name}</button></span>
         </p>
       )}
@@ -178,7 +178,7 @@ export function SignupForm({ plans, initialPlan }: { plans: PlanOption[]; initia
       <div className={styles.consentWrap}>
         <label className={styles.consent} data-invalid={Boolean(errors.consent) || undefined}>
           <input type="checkbox" name="consent" aria-invalid={Boolean(errors.consent)} aria-describedby={describe('consent')} onChange={() => clearError('consent')} />
-          <span>Autorizo o uso destes dados somente para o contato sobre a contratação do Malha.</span>
+          <span>Autorizo o uso destes dados somente para o contato sobre a implantação do Malha.</span>
         </label>
         <Link href="/site/privacidade" className={styles.consentLink}>Como usamos estes dados</Link>
         {fieldError('consent')}

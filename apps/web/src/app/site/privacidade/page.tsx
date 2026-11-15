@@ -15,7 +15,7 @@ const sections = [
   },
   {
     title: 'Para que usamos',
-    text: 'Somente para responder à sua solicitação, agendar a conversa técnica e preparar a proposta. Não enviamos newsletter nem vendemos ou repassamos os dados.',
+    text: 'Somente para responder à sua solicitação e agendar a conversa técnica sobre a implantação. Não enviamos newsletter nem vendemos ou repassamos os dados.',
   },
   {
     title: 'Proteção contra abuso',
@@ -23,7 +23,7 @@ const sections = [
   },
   {
     title: 'Quem acessa',
-    text: 'A equipe do Malha responsável pela contratação. As solicitações ficam separadas dos dados das fazendas dos clientes.',
+    text: 'A equipe do Malha responsável pelas implantações. As solicitações ficam separadas dos dados das fazendas dos clientes.',
   },
   {
     title: 'Seus direitos',

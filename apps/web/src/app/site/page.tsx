@@ -5,7 +5,7 @@ import { DashboardPreview } from './_components/dashboard-preview';
 import { FieldStory } from './_components/field-story';
 import { CinematicHero } from './_components/hero';
 import { Reveal, SceneTitle, ScrollScale, TiltIn } from './_components/reveal';
-import { capabilities, facts, plans, questions, security } from './content';
+import { REPOSITORY_URL, capabilities, facts, openSource, questions, security } from './content';
 import styles from './site.module.css';
 
 const title = 'Malha | Inventário de rede e ativos para fazendas';
@@ -86,24 +86,23 @@ export default function SitePage() {
         </div>
       </section>
 
-      <section id="planos" className={`${styles.frame} ${styles.section}`} aria-labelledby="plans-title">
-        <SectionHeading id="plans-title" title="Comece com um piloto." text="O painel é o mesmo em todos os planos. Escolha pelo número de fazendas e pelo acompanhamento que a sua TI precisa." />
+      <section id="open-source" className={`${styles.frame} ${styles.section}`} aria-labelledby="oss-title">
+        <SectionHeading id="oss-title" title="Grátis e open source." text="O Malha é software livre sob a licença AGPL-3.0. Sem plano pago e sem recurso bloqueado." />
         <ul className={styles.planTeaser}>
-          {plans.map((plan) => (
-            <li key={plan.id}>
+          {openSource.map((item, index) => (
+            <li key={item.title}>
               <Reveal className={styles.planMini}>
-                <div data-recommended={plan.recommended || undefined}>
-                  {plan.recommended && <p className={styles.planTag}>Recomendado para grupos</p>}
-                  <h3>{plan.name}</h3>
-                  <p>{plan.audience}</p>
-                  <Link href={`/site/cadastro?plano=${plan.id}`} aria-label={`Solicitar acesso ao plano ${plan.name}`}>Solicitar acesso <ArrowUpRight size={16} aria-hidden="true" /></Link>
+                <div data-recommended={index === 0 || undefined}>
+                  <h3>{item.title}</h3>
+                  <p>{item.text}</p>
                 </div>
               </Reveal>
             </li>
           ))}
         </ul>
-        <Reveal>
-          <Link className={styles.inlineLink} href="/site/planos">Comparar planos e etapas de contratação <ArrowRight size={16} aria-hidden="true" /></Link>
+        <Reveal className={styles.heroActions}>
+          <a className={styles.primaryButton} href={REPOSITORY_URL} target="_blank" rel="noreferrer">Ver o código no GitHub <ArrowUpRight size={18} aria-hidden="true" /></a>
+          <Link className={styles.secondaryButton} href="/site/open-source">Como usar <ArrowRight size={16} aria-hidden="true" /></Link>
         </Reveal>
       </section>
 
