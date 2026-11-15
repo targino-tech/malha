@@ -53,7 +53,7 @@ export default function SitePage() {
           </div>
           <Reveal priority delay={0.2} className={styles.globeWrap}>
             <AsciiGlobe className={styles.globe} />
-            <p className={styles.globeCaption}><span>Ilustração</span> Rotas de exemplo a partir de MT</p>
+            <p className={styles.globeCaption}><span>Ilustração</span> Rotas e fazendas de exemplo</p>
           </Reveal>
         </div>
         <div className={styles.ticker}>
