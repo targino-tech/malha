@@ -18,6 +18,9 @@ const grants = {
   'collectors.enroll': ['admin'],
   'farms.manage': ['admin'],
   'members.manage': ['admin'],
+  'baseline.manage': ['admin'],
+  'exports.run': ['admin', 'ti', 'auditor'],
+  'audit.read': ['admin', 'auditor'],
 } satisfies Record<string, Role[]>;
 
 export type Permission = keyof typeof grants;

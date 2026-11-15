@@ -1,10 +1,55 @@
 'use client';
 
 import { useState } from 'react';
-import { BellRing, CheckCheck, CircleAlert, CircleCheck, TriangleAlert } from 'lucide-react';
+import { BellRing, CheckCheck, CircleAlert, CircleCheck, ClipboardPen, TriangleAlert } from 'lucide-react';
 import type { DashboardFarm } from '../../server/dashboard';
 import type { DashboardOccurrence } from '../../server/occurrences';
-import { EmptyState, formatDate, StatusBadge } from './presentation';
+import { Modal } from './modal';
+import { EmptyState, formatDate, fromLocalInput, requestJson, StatusBadge, toLocalInput } from './presentation';
+
+function ServiceForm({ occurrence, timezone, online, onSaved, onClose }: {
+  occurrence: DashboardOccurrence; timezone: string; online: boolean; onSaved: () => void; onClose: () => void;
+}) {
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [now] = useState(() => new Date().toISOString());
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    setBusy(true);
+    setError('');
+    try {
+      await requestJson('/api/services', { method: 'POST', json: {
+        occurrenceId: occurrence.id,
+        attendedAt: fromLocalInput(String(form.get('attendedAt')), timezone),
+        diagnosisMinutes: Number(form.get('diagnosisMinutes')),
+        tripAvoided: form.get('tripAvoided') === 'on',
+        notes: String(form.get('notes') ?? ''),
+      } });
+      onSaved();
+    } catch (problem) {
+      setError(problem instanceof Error ? problem.message : 'Não foi possível registrar o atendimento.');
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <Modal title="Registrar atendimento" labelId="service-title" onClose={onClose}>
+      <form className="asset-form" onSubmit={submit}>
+        <p className="cell-detail">{occurrence.title}</p>
+        <label className="form-field">Data e hora do atendimento<input name="attendedAt" type="datetime-local" required defaultValue={toLocalInput(now, timezone)} /></label>
+        <label className="form-field">Tempo de diagnóstico (min)<input name="diagnosisMinutes" type="number" min={0} max={10080} required inputMode="numeric" /></label>
+        <label className="check-field"><input name="tripAvoided" type="checkbox" /> Viagem à fazenda evitada</label>
+        <label className="form-field">Observações<textarea name="notes" maxLength={1000} rows={3} /></label>
+        {error && <p className="message danger" role="alert">{error}</p>}
+        <div className="dialog-actions">
+          <button className="button secondary" type="button" onClick={onClose}>Cancelar</button>
+          <button className="button primary" type="submit" disabled={!online || busy}>{busy ? 'Salvando…' : 'Registrar'}</button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
 
 const ruleLabels: Record<DashboardOccurrence['rule'], string> = {
   collector_silent: 'Coletor sem contato',
@@ -33,6 +78,8 @@ export function Occurrences({ occurrences, farms, canAcknowledge, online, onChan
   const [filter, setFilter] = useState<'open' | 'all'>('open');
   const [pending, setPending] = useState<string>();
   const [error, setError] = useState<string>();
+  const [servicing, setServicing] = useState<DashboardOccurrence>();
+  const [notice, setNotice] = useState('');
   const farmNames = new Map(farms.map((farm) => [farm.id, farm.name]));
   const scoped = occurrences.filter((occurrence) => farmNames.has(occurrence.farmId));
   const visible = scoped.filter((occurrence) => filter === 'all' || !occurrence.resolvedAt);
@@ -67,6 +114,7 @@ export function Occurrences({ occurrences, farms, canAcknowledge, online, onChan
         </label>
       </div>
       {error && <p className="message danger occurrence-error" role="alert">{error}</p>}
+      {notice && <p className="message success occurrence-error" role="status">{notice}</p>}
       {visible.length === 0 ? (
         <EmptyState title={filter === 'open' ? 'Nenhuma ocorrência aberta' : 'Nenhuma ocorrência no período'}>
           As regras são avaliadas a cada minuto.
@@ -93,10 +141,20 @@ export function Occurrences({ occurrences, farms, canAcknowledge, online, onChan
                   </button>
                 )}
                 {occurrence.acknowledgedAt && !occurrence.resolvedAt && <small>Reconhecida {formatDate(occurrence.acknowledgedAt)}</small>}
+                {canAcknowledge && (
+                  <button className="button secondary" type="button" disabled={!online} onClick={() => { setNotice(''); setServicing(occurrence); }}
+                    aria-label={`Registrar atendimento: ${occurrence.title}`}>
+                    <ClipboardPen size={16} aria-hidden="true" /> Atendimento
+                  </button>
+                )}
               </div>
             </li>
           ))}
         </ul>
+      )}
+      {servicing && (
+        <ServiceForm occurrence={servicing} timezone={farms.find((farm) => farm.id === servicing.farmId)?.timezone ?? 'America/Cuiaba'} online={online}
+          onClose={() => setServicing(undefined)} onSaved={() => { setServicing(undefined); setNotice('Atendimento registrado.'); }} />
       )}
     </section>
   );

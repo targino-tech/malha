@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { Archive, ArchiveRestore, ArrowDown, ArrowLeft, ArrowRight, Box, Pencil, Plus, Search, Wrench, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Archive, ArchiveRestore, ArrowDown, ArrowLeft, ArrowRight, Box, Download, Pencil, Plus, Search, Wrench } from 'lucide-react';
 import type { InventoryAsset } from '../../server/assets';
 import type { DashboardFarm, TechnicalLocation } from '../../server/dashboard';
+import type { TimelineEntry } from '../../server/reconciliation';
+import { Modal } from './modal';
 import { deviceStatus, EmptyState, formatDate, fromLocalInput, requestJson, sourceLabels, StatusBadge, timezoneLabel, toLocalInput } from './presentation';
 
 type Page = { items: InventoryAsset[]; total: number; nextCursor: string | null };
@@ -13,25 +15,39 @@ type InventoryProps = {
   locations: TechnicalLocation[];
   farmId: string;
   canEdit: boolean;
+  canExport: boolean;
   online: boolean;
   onChanged: () => void;
 };
 
-function Modal({ title, labelId, onClose, children }: { title: string; labelId: string; onClose: () => void; children: React.ReactNode }) {
-  const dialog = useRef<HTMLDialogElement>(null);
+function Timeline({ assetId }: { assetId: string }) {
+  const [entries, setEntries] = useState<TimelineEntry[]>();
+  const [error, setError] = useState('');
   useEffect(() => {
-    const element = dialog.current;
-    element?.showModal();
-    return () => element?.close();
-  }, []);
+    let active = true;
+    requestJson<TimelineEntry[]>(`/api/assets/${assetId}/history`).then(
+      (next) => { if (active) setEntries(next); },
+      (problem: unknown) => { if (active) setError(problem instanceof Error ? problem.message : 'Falha ao carregar o histórico.'); },
+    );
+    return () => { active = false; };
+  }, [assetId]);
   return (
-    <dialog ref={dialog} className="asset-dialog" aria-labelledby={labelId} onCancel={(event) => { event.preventDefault(); onClose(); }}>
-      <div className="panel-heading">
-        <div><h2 id={labelId}>{title}</h2></div>
-        <button className="button icon-button" type="button" onClick={onClose} aria-label="Fechar"><X size={20} aria-hidden="true" /></button>
-      </div>
-      {children}
-    </dialog>
+    <section className="timeline" aria-labelledby="timeline-title">
+      <h3 id="timeline-title">Histórico</h3>
+      {error && <p className="message warning" role="status">{error}</p>}
+      {!entries && !error && <p className="cell-detail" role="status">Carregando histórico…</p>}
+      {entries && !entries.length && <p className="cell-detail">Sem eventos registrados nos últimos 30 dias.</p>}
+      {entries && entries.length > 0 && (
+        <ol>
+          {entries.map((entry, index) => (
+            <li key={`${entry.at}-${index}`} className={`timeline-${entry.kind}`}>
+              <time dateTime={entry.at}>{formatDate(entry.at)}</time>
+              <span><strong>{entry.label}</strong>{entry.detail && <span className="cell-detail">{entry.detail}</span>}</span>
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
   );
 }
 
@@ -65,6 +81,7 @@ function AssetDetails({ asset, farm, canEdit, online, onEdit, onArchive, onClose
           <div><dt>Última observação</dt><dd>{formatDate(asset.lastObservedAt)}</dd></div>
           {inMaintenance && <div><dt>Manutenção até</dt><dd>{formatDate(asset.maintenanceUntil)}</dd></div>}
         </dl>
+        <Timeline key={`${asset.id}-${asset.archivedAt ?? ''}-${asset.owner ?? ''}`} assetId={asset.id} />
         {error && <p className="message danger" role="alert">{error}</p>}
         {canEdit && (
           <div className="dialog-actions">
@@ -168,7 +185,7 @@ function AssetForm({ asset, farms, locations, defaultFarm, online, onSaved, onCl
   );
 }
 
-export function Inventory({ farms, locations, farmId, canEdit, online, onChanged }: InventoryProps) {
+export function Inventory({ farms, locations, farmId, canEdit, canExport, online, onChanged }: InventoryProps) {
   const [query, setQuery] = useState('');
   const [debounced, setDebounced] = useState('');
   const [source, setSource] = useState('all');
@@ -233,7 +250,10 @@ export function Inventory({ farms, locations, farmId, canEdit, online, onChanged
     <section className="panel" aria-labelledby="inventory-title" aria-busy={loading}>
       <div className="panel-heading">
         <div><h2 id="inventory-title">Equipamentos</h2><p>Localize um ativo por nome, categoria, etiqueta, IP, MAC ou responsável.</p></div>
-        {canEdit && farms.length > 0 && <button className="button primary" type="button" disabled={!online} onClick={() => setEditing('new')}><Plus size={17} aria-hidden="true" /> Novo ativo</button>}
+        <div className="inline-actions">
+          {canExport && <a className="button secondary" href={`/api/exports/assets${farmId !== 'all' ? `?farmId=${farmId}` : ''}`} download><Download size={16} aria-hidden="true" /> Exportar CSV</a>}
+          {canEdit && farms.length > 0 && <button className="button primary" type="button" disabled={!online} onClick={() => setEditing('new')}><Plus size={17} aria-hidden="true" /> Novo ativo</button>}
+        </div>
       </div>
       <div className="inventory-filters">
         <label className="search-field"><Search size={18} aria-hidden="true" /><input type="search" placeholder="Buscar equipamento" aria-label="Buscar equipamento" value={query} onChange={(event) => setQuery(event.target.value)} /></label>

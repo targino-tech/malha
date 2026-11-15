@@ -9,6 +9,17 @@ function status(raw: string | null) {
   return value === 'ONLINE' ? 'online' : value === 'OFFLINE' ? 'offline' : 'unknown';
 }
 
+/** Registra a observação de cada ativo conhecido na captura. Reenvios atrasados alimentam só o histórico. */
+async function recordObservations(tx: Queryable, prefix: string[], captureId: string, observedAt: string, devices: Device[]) {
+  if (!devices.length) return;
+  const rows = JSON.stringify(devices.map((device) => ({ id: device.id, status: status(device.state), ip: device.ip, firmware: device.firmware })));
+  await tx.query(`INSERT INTO asset_observations (org_id, farm_id, asset_id, capture_id, collector_id, observed_at, status, ip, firmware)
+    SELECT $1, $2, a.id, $4, $3, $5, d.status, d.ip, d.firmware
+    FROM jsonb_to_recordset($6::jsonb) AS d(id text, status text, ip text, firmware text)
+    JOIN assets a ON a.org_id = $1 AND a.farm_id = $2 AND a.external_id = d.id
+    ON CONFLICT DO NOTHING`, [...prefix, captureId, observedAt, rows]);
+}
+
 async function applyCapture(tx: Queryable, job: Job) {
   const prefix = [job.org_id, job.farm_id, job.collector_id];
   const { rows: [active] } = await tx.query(`SELECT 1 FROM collector_keys
@@ -20,12 +31,15 @@ async function applyCapture(tx: Queryable, job: Job) {
   const { rows: [capture] } = await tx.query<{ seq: string | number; observed_at: Date; parts: number }>(`SELECT seq, observed_at, parts FROM captures
     WHERE org_id = $1 AND farm_id = $2 AND collector_id = $3 AND id = $4`, [...prefix, job.capture_id]);
   if (!capture || !health) throw new Error('Captura ou coletor ausente.');
-  if (Number(capture.seq) <= Number(health.last_sequence)) return;
   const { rows: parts } = await tx.query<{ devices: Device[]; part: number }>(`SELECT devices, part FROM capture_batches
     WHERE org_id = $1 AND farm_id = $2 AND collector_id = $3 AND capture_id = $4 ORDER BY part`, [...prefix, job.capture_id]);
   if (parts.length !== capture.parts || parts.some((part, i) => part.part !== i + 1)) throw new Error('Captura incompleta.');
   const devices = parts.flatMap((part) => part.devices);
   if (new Set(devices.map((device) => device.id)).size !== devices.length) throw new Error('Há dispositivos duplicados na captura.');
+  if (Number(capture.seq) <= Number(health.last_sequence)) {
+    await recordObservations(tx, prefix, job.capture_id, new Date(capture.observed_at).toISOString(), devices);
+    return;
+  }
   const macCounts = new Map<string, number>();
   for (const device of devices) if (device.mac) macCounts.set(device.mac, (macCounts.get(device.mac) ?? 0) + 1);
   const observedAt = new Date(capture.observed_at).toISOString();
@@ -45,6 +59,7 @@ async function applyCapture(tx: Queryable, job: Job) {
         offline_observations = CASE WHEN i.status = 'offline' THEN 1 ELSE 0 END,
         offline_since = CASE WHEN i.status = 'offline' THEN $5::timestamptz END, missing_captures = 0
       FROM incoming i WHERE a.org_id = $1 AND a.farm_id = $2 AND a.mac = i.link_mac AND a.external_id IS NULL
+        AND NOT (i.id = ANY(a.rejected_external_ids))
         AND 1 = (SELECT count(*) FROM assets b WHERE b.org_id = $1 AND b.farm_id = $2 AND b.mac = i.link_mac)
         AND NOT EXISTS (SELECT 1 FROM assets b WHERE b.org_id = $1 AND b.farm_id = $2 AND b.external_id = i.id)
       RETURNING a.external_id
@@ -74,6 +89,7 @@ async function applyCapture(tx: Queryable, job: Job) {
   await tx.query(`UPDATE assets SET status = 'unknown', offline_observations = 0, offline_since = NULL,
       missing_captures = missing_captures + 1 WHERE org_id = $1 AND farm_id = $2
     AND last_collector_id = $3 AND last_observed_at <> $4 AND external_id IS NOT NULL`, [...prefix, observedAt]);
+  await recordObservations(tx, prefix, job.capture_id, observedAt, devices);
   await tx.query(`UPDATE collector_health SET last_capture_at = $4, last_sequence = $5
     WHERE org_id = $1 AND farm_id = $2 AND collector_id = $3`, [...prefix, observedAt, newSequence]);
   await tx.query(`UPDATE captures SET applied_at = now() WHERE org_id = $1 AND farm_id = $2 AND collector_id = $3 AND id = $4`, [...prefix, job.capture_id]);

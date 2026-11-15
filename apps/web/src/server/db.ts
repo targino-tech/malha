@@ -104,6 +104,7 @@ export async function migrate(db: Database) {
     readFileSync(/* turbopackIgnore: true */ resolve('packages/db/002_collector_limits.sql'), 'utf8'),
     readFileSync(/* turbopackIgnore: true */ resolve('packages/db/003_occurrences.sql'), 'utf8'),
     readFileSync(/* turbopackIgnore: true */ resolve('packages/db/004_access_inventory.sql'), 'utf8'),
+    readFileSync(/* turbopackIgnore: true */ resolve('packages/db/005_history_value.sql'), 'utf8'),
   ];
   await db.transaction(async (tx) => {
     await tx.exec('SELECT pg_advisory_xact_lock(58147261)');

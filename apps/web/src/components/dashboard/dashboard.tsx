@@ -1,10 +1,13 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BellRing, Box, ChevronDown, Plug, Settings, CloudUpload, FlaskConical, LayoutDashboard, LogOut, MapPin, Network, RefreshCw, WifiOff } from 'lucide-react';
+import { BellRing, Box, ChartColumn, ChevronDown, GitMerge, Plug, ScrollText, Settings, CloudUpload, FlaskConical, LayoutDashboard, LogOut, MapPin, Network, RefreshCw, WifiOff } from 'lucide-react';
 import { MotionConfig, motion, useReducedMotion } from 'motion/react';
 import type { DashboardData } from '../../server/dashboard';
 import { Administration } from './administration';
+import { Audit } from './audit';
+import { Indicators } from './indicators';
+import { Reconciliation } from './reconciliation';
 import { ImportFlow } from './import-flow';
 import { Integrations } from './integrations';
 import { Inventory } from './inventory';
@@ -15,10 +18,13 @@ import { formatDate } from './presentation';
 const views = {
   overview: { label: 'Visão geral', title: 'Visão geral das fazendas', description: 'Acompanhe a comunicação com as unidades e a saúde dos ativos de rede.', icon: LayoutDashboard },
   occurrences: { label: 'Ocorrências', title: 'Ocorrências', description: 'Investigue e reconheça os alertas de comunicação, coleta e ativos.', icon: BellRing },
+  indicators: { label: 'Indicadores', title: 'Indicadores de valor', description: 'Cobertura, inventário conferido, tempos de resposta e economia medida no piloto.', icon: ChartColumn },
   inventory: { label: 'Inventário', title: 'Inventário de ativos', description: 'Identifique equipamentos, origem do cadastro e estado da última observação.', icon: Box },
+  reconciliation: { label: 'Conciliação', title: 'Conciliação do inventário', description: 'Confirme descobertas da coleta, vínculos automáticos e o cadastro de referência.', icon: GitMerge },
   imports: { label: 'Importações', title: 'Importações de inventário', description: 'Inclua ativos de campo a partir da planilha da fazenda.', icon: CloudUpload },
   integrations: { label: 'Integrações', title: 'Integrações', description: 'Ative o coletor de cada fazenda e confirme a primeira coleta UniFi.', icon: Plug },
   admin: { label: 'Administração', title: 'Administração do grupo', description: 'Cadastre fazendas e defina quem acessa o Malha e com qual papel.', icon: Settings },
+  audit: { label: 'Auditoria', title: 'Auditoria', description: 'Quem fez o quê, quando e em qual escopo.', icon: ScrollText },
 };
 
 type View = keyof typeof views;
@@ -34,7 +40,7 @@ function ViewContent({ children, current }: { children: React.ReactNode; current
 
 export function Dashboard({ initialData }: { initialData: DashboardData }) {
   const [data, setData] = useState(initialData);
-  const [view, setView] = useState<View>('overview');
+  const [view, setView] = useState<View>(initialData.role === 'diretoria' || initialData.role === 'auditor' ? 'indicators' : 'overview');
   const [farmId, setFarmId] = useState('all');
   const [online, setOnline] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -86,7 +92,8 @@ export function Dashboard({ initialData }: { initialData: DashboardData }) {
   }, [refresh]);
 
   function allowed(id: View) {
-    if (id === 'imports') return data.can['inventory.write'];
+    if (id === 'imports' || id === 'reconciliation') return data.can['inventory.write'];
+    if (id === 'audit') return data.can['audit.read'];
     if (id === 'integrations') return data.can['integrations.read'];
     if (id === 'admin') return data.can['members.manage'];
     return true;
@@ -124,7 +131,7 @@ export function Dashboard({ initialData }: { initialData: DashboardData }) {
             <div className="page-heading">
               <div className="page-title"><h1>{heading.title}</h1><p>{heading.description}</p></div>
               <div className="page-actions">
-                {view !== 'imports' && view !== 'admin' && (
+                {view !== 'imports' && view !== 'admin' && view !== 'audit' && (
                   <label className="farm-select">
                     <MapPin size={17} aria-hidden="true" />
                     <select value={currentFarm} onChange={(event) => setFarmId(event.target.value)} aria-label="Filtrar por fazenda">
@@ -143,7 +150,14 @@ export function Dashboard({ initialData }: { initialData: DashboardData }) {
             <ViewContent current={view}>
               {view === 'overview' && <Overview farms={farms} openOccurrences={data.occurrences.filter((item) => !item.resolvedAt && farms.some((farm) => farm.id === item.farmId))} generatedAt={data.generatedAt} onOpenFarm={(id) => { setFarmId(id); setView('inventory'); }} onOpenInventory={() => setView('inventory')} onOpenOccurrences={() => setView('occurrences')} />}
               {view === 'occurrences' && <Occurrences occurrences={data.occurrences} farms={farms} canAcknowledge={data.can['occurrences.acknowledge']} online={online} onChanged={() => { void refresh(true); }} />}
-              {view === 'inventory' && <Inventory key={currentFarm} farms={data.farms} locations={data.locations} farmId={currentFarm} canEdit={data.can['inventory.write']} online={online} onChanged={() => { void refresh(true); }} />}
+              {view === 'inventory' && <Inventory key={currentFarm} farms={data.farms} locations={data.locations} farmId={currentFarm} canEdit={data.can['inventory.write']} canExport={data.can['exports.run']} online={online} onChanged={() => { void refresh(true); }} />}
+              {view === 'indicators' && <Indicators farms={farms} farmId={currentFarm} canExport={data.can['exports.run']} canBaseline={data.can['baseline.manage']} online={online} />}
+              {view === 'reconciliation' && (data.can['inventory.write']
+                ? <Reconciliation key={currentFarm} farms={farms} canEdit={data.can['inventory.write']} online={online} onChanged={() => { void refresh(true); }} />
+                : <p className="message warning" role="status">A permissão para conciliar o inventário foi alterada.</p>)}
+              {view === 'audit' && (data.can['audit.read']
+                ? <Audit farmNames={new Map(data.farms.map((farm) => [farm.id, farm.name]))} />
+                : <p className="message warning" role="status">A permissão de auditoria foi alterada.</p>)}
               {view === 'integrations' && (data.can['integrations.read']
                 ? <Integrations farms={farms} canEnroll={data.can['collectors.enroll']} online={online} onChanged={() => { void refresh(true); }} />
                 : <p className="message warning" role="status">A permissão para ver integrações foi alterada.</p>)}

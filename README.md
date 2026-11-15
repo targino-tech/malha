@@ -29,7 +29,10 @@ A página de apresentação fica em [/site](http://127.0.0.1:3000/site). Usa Mot
 3. Em **Inventário**, filtre a fazenda, encontre `CAMPO-002` e abra os detalhes do ativo.
 4. Em **Ocorrências**, confira o coletor sem contato da Fazenda Santa Luzia e o switch offline da Fazenda Vale Verde e reconheça uma delas.
 5. Em **Administração**, cadastre uma fazenda e um membro. Em **Integrações**, gere o código de ativação do coletor da nova fazenda.
-6. Em **Inventário**, use **Novo ativo** para cadastrar um equipamento manual com local técnico, responsável e janela de manutenção. Arquive e restaure pelo detalhe do ativo.
+6. Em **Inventário**, use **Novo ativo** para cadastrar um equipamento manual com local técnico, responsável e janela de manutenção. Arquive e restaure pelo detalhe do ativo, que também mostra o histórico.
+7. Em **Conciliação**, confira um item do cadastro e confirme ou vincule uma descoberta UniFi.
+8. Em **Indicadores**, defina a linha de base. Em **Ocorrências**, registre um atendimento e volte aos indicadores para ver horas e economia estimadas.
+9. Em **Auditoria**, confira as ações registradas. Inventário, evidências e auditoria exportam CSV com fórmulas neutralizadas.
 
 O CSV aceita UTF-8, até 5 MiB e 10 mil linhas. Use as colunas `etiqueta`, `nome` e `categoria`. As colunas `criticidade`, `mac` e `ip` são opcionais. Baixe o modelo na tela de importação.
 

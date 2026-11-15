@@ -31,3 +31,8 @@ GRANT SELECT, INSERT, DELETE ON membership_farms TO malha_runtime;
 GRANT SELECT, INSERT ON technical_locations TO malha_runtime;
 GRANT INSERT, DELETE ON enrollment_codes TO malha_runtime;
 GRANT UPDATE (revoked_at) ON collector_keys TO malha_runtime;
+-- Histórico, conciliação, atendimentos e indicadores (Fase 3).
+GRANT SELECT, INSERT, UPDATE ON service_records, baselines TO malha_runtime;
+GRANT SELECT, INSERT, UPDATE, DELETE ON asset_observations TO malha_runtime;
+GRANT DELETE ON assets, capture_batches TO malha_runtime;
+GRANT SELECT ON audit_log TO malha_runtime;
