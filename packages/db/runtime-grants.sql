@@ -25,7 +25,7 @@ GRANT SELECT, INSERT ON occurrence_events TO malha_runtime;
 GRANT SELECT ON alert_recipients TO malha_runtime;
 -- Administração pela interface (Fase 2).
 GRANT INSERT ON farms TO malha_runtime;
-GRANT UPDATE (location, timezone) ON farms TO malha_runtime;
+GRANT UPDATE (location, timezone, latitude, longitude) ON farms TO malha_runtime;
 GRANT INSERT, UPDATE (role, active, display_name) ON memberships TO malha_runtime;
 GRANT SELECT, INSERT, DELETE ON membership_farms TO malha_runtime;
 GRANT SELECT, INSERT ON technical_locations TO malha_runtime;

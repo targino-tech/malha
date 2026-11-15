@@ -19,7 +19,16 @@ const farmSchema = z.object({
   name: plain(120),
   location: plain(120),
   timezone: z.string().refine((value) => timezones.has(value), 'Fuso horário inválido.').default('America/Cuiaba'),
-});
+  // Coordenadas da sede, opcionais: as duas juntas ou nenhuma. Vírgula decimal é aceita.
+  latitude: z.preprocess(coordinate, z.number().min(-90).max(90).nullable()).default(null),
+  longitude: z.preprocess(coordinate, z.number().min(-180).max(180).nullable()).default(null),
+}).refine((value) => (value.latitude === null) === (value.longitude === null), 'Informe latitude e longitude juntas.');
+
+function coordinate(value: unknown) {
+  if (value === undefined || value === null || value === '') return null;
+  const number = typeof value === 'number' ? value : Number(String(value).trim().replace(',', '.'));
+  return Number.isFinite(number) ? number : value;
+}
 
 function parse<T>(schema: z.ZodType<T>, body: unknown, message: string): T {
   const parsed = schema.safeParse(body);
@@ -35,8 +44,8 @@ export async function createFarm(database: Database, user: Principal, body: unkn
   return database.transaction(async (tx) => {
     await setOrg(tx, user.orgId);
     const id = randomUUID();
-    await tx.query('INSERT INTO farms (org_id, id, name, location, timezone) VALUES ($1, $2, $3, $4, $5)',
-      [user.orgId, id, data.name, data.location, data.timezone]);
+    await tx.query('INSERT INTO farms (org_id, id, name, location, timezone, latitude, longitude) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+      [user.orgId, id, data.name, data.location, data.timezone, data.latitude, data.longitude]);
     await audit(tx, user.orgId, user.actor, 'farm.create', { farmId: id });
     return { id };
   });
@@ -48,8 +57,8 @@ export async function updateFarm(database: Database, user: Principal, farmId: st
   const data = parse(farmSchema, body, 'Informe nome, localização e fuso horário válidos.');
   return database.transaction(async (tx) => {
     await setOrg(tx, user.orgId);
-    const { rows } = await tx.query('UPDATE farms SET name = $3, location = $4, timezone = $5 WHERE org_id = $1 AND id = $2 RETURNING id',
-      [user.orgId, farmId, data.name, data.location, data.timezone]);
+    const { rows } = await tx.query('UPDATE farms SET name = $3, location = $4, timezone = $5, latitude = $6, longitude = $7 WHERE org_id = $1 AND id = $2 RETURNING id',
+      [user.orgId, farmId, data.name, data.location, data.timezone, data.latitude, data.longitude]);
     if (!rows.length) throw new HttpError(404, 'Fazenda indisponível.');
     await audit(tx, user.orgId, user.actor, 'farm.update', { farmId });
     return { id: farmId };

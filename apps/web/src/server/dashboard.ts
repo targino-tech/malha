@@ -13,6 +13,8 @@ export type DashboardFarm = {
   name: string;
   location: string;
   timezone: string;
+  latitude: number | null;
+  longitude: number | null;
   collectorStatus: 'online' | 'offline' | 'missing';
   lastHeartbeatAt: string | null;
   lastCaptureAt: string | null;
@@ -57,9 +59,9 @@ export async function getDashboard(): Promise<DashboardData> {
     const scope = [user.orgId, user.farmIds];
     const { rows: [{ now }] } = await tx.query<{ now: Date }>('SELECT now() AS now');
     const { rows: farmRows } = await tx.query<{
-      id: string; name: string; location: string; timezone: string; collector_id: string | null; online: boolean | null;
+      id: string; name: string; location: string; timezone: string; latitude: number | null; longitude: number | null; collector_id: string | null; online: boolean | null;
       last_heartbeat_at: Date | null; last_capture_at: Date | null;
-    }>(`SELECT f.id, f.name, f.location, f.timezone, h.last_heartbeat_at, h.last_capture_at, k.collector_id,
+    }>(`SELECT f.id, f.name, f.location, f.timezone, f.latitude, f.longitude, h.last_heartbeat_at, h.last_capture_at, k.collector_id,
          h.last_heartbeat_at >= now() - make_interval(secs => ${HEARTBEAT_TIMEOUT_SECONDS}) AS online
        FROM farms f LEFT JOIN collector_keys k ON k.org_id = f.org_id AND k.farm_id = f.id AND k.revoked_at IS NULL
        LEFT JOIN collector_health h ON h.org_id = f.org_id AND h.farm_id = f.id AND h.collector_id = k.collector_id
@@ -78,6 +80,7 @@ export async function getDashboard(): Promise<DashboardData> {
       const total = byFarm.get(row.id);
       return {
         id: row.id, name: row.name, location: row.location, timezone: row.timezone,
+        latitude: row.latitude === null ? null : Number(row.latitude), longitude: row.longitude === null ? null : Number(row.longitude),
         collectorStatus: !row.collector_id ? 'missing' : row.online ? 'online' : 'offline',
         lastHeartbeatAt: iso(row.last_heartbeat_at), lastCaptureAt: iso(row.last_capture_at),
         assetCount: Number(total?.assets ?? 0), unifiCount: Number(total?.unifi ?? 0), criticalCount: Number(total?.critical ?? 0),

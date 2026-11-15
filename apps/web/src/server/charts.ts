@@ -1,5 +1,6 @@
 import { ASSET_FROM, ASSET_STATUS } from './assets';
 import { requireFarm } from './authz';
+import { classify, FAMILIES, OTHER_FAMILY, type FamilyId, type VendorId } from './catalog';
 import { setOrg, type Database } from './db';
 import { HttpError, uuidPattern } from './http';
 import type { Principal } from './identity';
@@ -13,6 +14,7 @@ export type Charts = {
   occurrencesByDay: Array<{ day: string; critical: number; warning: number }>;
   availability: Array<{ farmId: string; name: string; silentMinutes: number; ratio: number }>;
   categories: Array<{ category: string; total: number }>;
+  families: Array<{ family: FamilyId; label: string; vendors: Array<{ vendor: VendorId; total: number }> } & Record<AssetState, number>>;
 };
 
 const TIMEZONE = 'America/Cuiaba';
@@ -83,6 +85,27 @@ export async function charts(database: Database, user: Principal, params: URLSea
       GROUP BY 1, 2 ORDER BY f.name`, [...scope, days]);
     const periodSeconds = days * 86_400;
 
+    // Famílias do parque: o estado de cada ativo agregado pela classificação do catálogo.
+    const { rows: assets } = await tx.query<{ category: string; name: string; model: string | null; state: AssetState }>(`
+      SELECT a.category, a.name, a.model,
+        CASE WHEN a.last_observed_at IS NULL THEN 'manual' ELSE ${ASSET_STATUS} END AS state
+      FROM ${ASSET_FROM}
+      WHERE a.org_id = $1 AND ($2::uuid[] IS NULL OR a.farm_id = ANY($2::uuid[])) AND a.archived_at IS NULL`, scope);
+    const families = new Map<FamilyId, Charts['families'][number]>();
+    for (const item of [...FAMILIES, OTHER_FAMILY]) {
+      families.set(item.id, { family: item.id, label: item.label, vendors: [], online: 0, offline: 0, unknown: 0, manual: 0 });
+    }
+    for (const asset of assets) {
+      const { family, vendor } = classify(asset);
+      const entry = families.get(family)!;
+      const state = asset.state === 'online' || asset.state === 'offline' || asset.state === 'manual' ? asset.state : 'unknown';
+      entry[state] += 1;
+      if (vendor) {
+        const found = entry.vendors.find((item) => item.vendor === vendor);
+        if (found) found.total += 1; else entry.vendors.push({ vendor, total: 1 });
+      }
+    }
+
     const { rows: categories } = await tx.query<{ category: string; total: string }>(`
       SELECT a.category, count(*) AS total FROM assets a
       WHERE a.org_id = $1 AND ($2::uuid[] IS NULL OR a.farm_id = ANY($2::uuid[])) AND a.archived_at IS NULL
@@ -100,6 +123,7 @@ export async function charts(database: Database, user: Principal, params: URLSea
         return { farmId: row.farm_id, name: row.name, silentMinutes: Math.round(silent / 60), ratio: 1 - silent / periodSeconds };
       }),
       categories: rest ? [...top, { category: 'Outras', total: rest }] : top,
+      families: [...families.values()],
     };
   });
 }

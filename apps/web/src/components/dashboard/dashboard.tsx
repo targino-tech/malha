@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BellRing, Box, ChartColumn, ChartPie, ChevronDown, GitMerge, Plug, ScrollText, Settings, CloudUpload, FlaskConical, LayoutDashboard, LogOut, MapPin, Network, RefreshCw, WifiOff } from 'lucide-react';
+import { BellRing, Box, ChartColumn, ChartPie, ChevronDown, GitMerge, Plug, ScrollText, Settings, CloudUpload, FlaskConical, LayoutDashboard, LogOut, MapPin, RefreshCw, WifiOff } from 'lucide-react';
 import { MotionConfig, motion, useReducedMotion } from 'motion/react';
 import type { DashboardData } from '../../server/dashboard';
 import { Administration } from './administration';
@@ -15,6 +15,7 @@ import { Inventory } from './inventory';
 import { Occurrences } from './occurrences';
 import { Overview } from './overview';
 import { formatDate } from './presentation';
+import { BrandMark } from '../../app/site/_components/brand';
 
 const views = {
   overview: { label: 'Visão geral', title: 'Visão geral das fazendas', description: 'Acompanhe a comunicação com as unidades e a saúde dos ativos de rede.', icon: LayoutDashboard },
@@ -110,8 +111,8 @@ export function Dashboard({ initialData }: { initialData: DashboardData }) {
         <a className="skip-link" href="#main">Pular para o conteúdo</a>
         <aside className="sidebar">
           <button className="brand" type="button" onClick={() => { setView('overview'); setFarmId('all'); }} aria-label="Malha, visão geral">
-            <span className="brand-icon"><Network size={23} aria-hidden="true" /></span>
-            <span><strong>malha<span className="brand-dot">.</span></strong><small>Operações de campo</small></span>
+            <span className="brand-icon"><BrandMark size={40} animated /></span>
+            <span><strong>malha<span className="brand-dot" /></strong><small>Parque tecnológico do campo</small></span>
           </button>
           <nav className="navigation" aria-label="Navegação do painel">
             {(Object.entries(views) as Array<[View, (typeof views)[View]]>).filter(([id]) => allowed(id)).map(([id, item]) => (
@@ -150,7 +151,7 @@ export function Dashboard({ initialData }: { initialData: DashboardData }) {
               <p className="message warning" role="status"><WifiOff size={18} aria-hidden="true" />{!online ? 'Seu navegador está sem conexão.' : 'Falha ao atualizar o painel.'} Exibindo a última consulta.</p>
             )}
             <ViewContent current={view}>
-              {view === 'overview' && <Overview farms={farms} openOccurrences={data.occurrences.filter((item) => !item.resolvedAt && farms.some((farm) => farm.id === item.farmId))} generatedAt={data.generatedAt} onOpenFarm={(id) => { setFarmId(id); setView('inventory'); }} onOpenInventory={() => setView('inventory')} onOpenOccurrences={() => setView('occurrences')} />}
+              {view === 'overview' && <Overview farms={farms} farmId={currentFarm} openOccurrences={data.occurrences.filter((item) => !item.resolvedAt && farms.some((farm) => farm.id === item.farmId))} generatedAt={data.generatedAt} onOpenFarm={(id) => { setFarmId(id); setView('inventory'); }} onOpenInventory={() => setView('inventory')} onOpenOccurrences={() => setView('occurrences')} />}
               {view === 'occurrences' && <Occurrences occurrences={data.occurrences} farms={farms} canAcknowledge={data.can['occurrences.acknowledge']} online={online} onChanged={() => { void refresh(true); }} />}
               {view === 'inventory' && <Inventory key={currentFarm} farms={data.farms} locations={data.locations} farmId={currentFarm} canEdit={data.can['inventory.write']} canExport={data.can['exports.run']} online={online} onChanged={() => { void refresh(true); }} />}
               {view === 'charts' && <ChartsView farms={farms} farmId={currentFarm} online={online} />}

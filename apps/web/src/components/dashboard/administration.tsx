@@ -16,7 +16,7 @@ function FarmForm({ farm, online, onSaved, onCancel }: { farm?: DashboardFarm; o
     event.preventDefault();
     const form = event.currentTarget;
     const data = new FormData(form);
-    const body = { name: data.get('name'), location: data.get('location'), timezone: data.get('timezone') };
+    const body = { name: data.get('name'), location: data.get('location'), timezone: data.get('timezone'), latitude: data.get('latitude'), longitude: data.get('longitude') };
     setBusy(true);
     setError('');
     try {
@@ -34,6 +34,8 @@ function FarmForm({ farm, online, onSaved, onCancel }: { farm?: DashboardFarm; o
     <form className="inline-form" onSubmit={submit} aria-label={farm ? `Editar ${farm.name}` : 'Nova fazenda'}>
       <label className="form-field" htmlFor={`${prefix}-name`}>Nome da fazenda<input id={`${prefix}-name`} name="name" defaultValue={farm?.name} required maxLength={120} /></label>
       <label className="form-field" htmlFor={`${prefix}-location`}>Município · UF<input id={`${prefix}-location`} name="location" defaultValue={farm?.location} required maxLength={120} placeholder="Sorriso · MT" /></label>
+      <label className="form-field" htmlFor={`${prefix}-latitude`}>Latitude <small>(opcional)</small><input id={`${prefix}-latitude`} name="latitude" inputMode="decimal" defaultValue={farm?.latitude ?? ''} placeholder="-12,55" /></label>
+      <label className="form-field" htmlFor={`${prefix}-longitude`}>Longitude <small>(opcional)</small><input id={`${prefix}-longitude`} name="longitude" inputMode="decimal" defaultValue={farm?.longitude ?? ''} placeholder="-55,71" /></label>
       <label className="form-field" htmlFor={`${prefix}-timezone`}>Fuso horário
         <select id={`${prefix}-timezone`} name="timezone" defaultValue={farm?.timezone ?? 'America/Cuiaba'}>
           {[...new Set([...(farm ? [farm.timezone] : []), ...TIMEZONES])].map((zone) => <option key={zone} value={zone}>{timezoneLabel(zone)}</option>)}
