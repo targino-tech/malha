@@ -23,3 +23,5 @@ GRANT INSERT ON audit_log TO malha_runtime;
 GRANT SELECT, INSERT, UPDATE ON occurrences, notifications TO malha_runtime;
 GRANT SELECT, INSERT ON occurrence_events TO malha_runtime;
 GRANT SELECT ON alert_recipients TO malha_runtime;
+-- O site público grava solicitações e conta envios recentes para o limite por cliente.
+GRANT SELECT, INSERT ON site_requests TO malha_runtime;
