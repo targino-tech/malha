@@ -472,3 +472,4 @@ th[scope='row'] { background: none; color: var(--text); font-weight: 600; }
 .model-picker strong { font-size: .9rem; }
 .model-picker span { color: var(--muted); font-size: .78rem; line-height: 1.45; }
 @media (max-width: 38rem) { .model-picker { grid-template-columns: 1fr; padding-inline: 1rem; } }
+.admin-list > li { display: grid; gap: .75rem; }

@@ -52,7 +52,7 @@ O Malha mostra à matriz de um grupo agrícola, em um só painel, **quais fazend
 | **Painéis** | Estado dos ativos por fazenda, ocorrências por dia e severidade, tempo sem contato por coletor e ativos por categoria, com tabela alternativa, teclado e filtro de período |
 | **Valor** | Atendimentos, linha de base aprovada pelo cliente, cobertura, inventário conferido, detecção (mediana e P90), reconhecimento, horas e economia, tendência semanal |
 | **Acesso** | Login Entra ID ou Active Directory/LDAP; admin, TI, técnico de fazenda, diretoria e auditor, com restrição por fazenda; administração de fazendas, membros e coletores pela interface |
-| **Monitoramento** | Zabbix 7.0 e painéis Grafana montados do inventário por família de ativos, com Modelo Malha ou Modelo base |
+| **Monitoramento** | Zabbix 7.0 e painéis Grafana montados do inventário por família de ativos, com Modelo Malha ou Modelo base; download dos arquivos ou aplicação direta pela API com token cifrado |
 | **Parque** | Visão do parque tecnológico com mapa ASCII das fazendas, saúde por estado e famílias de ativos por fabricante |
 | **Evidências** | Trilha de auditoria, exportação CSV de inventário, ocorrências e auditoria com fórmulas neutralizadas |
 | **Site e portal** | Landing cinematográfica com globo ASCII, página open source, pedido de apoio na implantação com limite e honeypot, portal de entrada do cliente |

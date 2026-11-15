@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Download, LayoutTemplate, ServerCog } from 'lucide-react';
+import { CloudUpload, Download, LayoutTemplate, Link2, ServerCog, Trash2 } from 'lucide-react';
 import type { MonitoringPlan, Model } from '../../server/monitoring';
 import type { FamilyId } from '../../server/catalog';
 import { EmptyState, requestJson, wholeNumber } from './presentation';
@@ -13,7 +13,7 @@ const MODELS: Array<{ id: Model; title: string; text: string }> = [
   { id: 'base', title: 'Modelo base', text: 'Só disponibilidade, latência e perda por ICMP. Funciona em qualquer Zabbix, sem SNMP nem agente.' },
 ];
 
-export function Monitoring({ farmId, online }: { farmId: string; online: boolean }) {
+export function Monitoring({ farmId, online, canApply }: { farmId: string; online: boolean; canApply: boolean }) {
   const [model, setModel] = useState<Model>('malha');
   const [plan, setPlan] = useState<Plan | null>(null);
   const [error, setError] = useState('');
@@ -72,6 +72,8 @@ export function Monitoring({ farmId, online }: { farmId: string; online: boolean
             )}
           </section>
 
+          {canApply && <ApplyPanel query={query} online={online} />}
+
           <section className="panel" aria-labelledby="monitoring-catalog-title">
             <div className="panel-heading"><div><h2 id="monitoring-catalog-title">Catálogo de modelos</h2><p>O que cada família recebe. Templates oficiais do Zabbix 7.0 LTS.</p></div></div>
             <div className="table-container" role="region" tabIndex={0} aria-label="Catálogo de modelos">
@@ -96,5 +98,116 @@ export function Monitoring({ farmId, online }: { farmId: string; online: boolean
         </>
       )}
     </div>
+  );
+}
+
+type Connection = { kind: 'zabbix' | 'grafana'; url: string; updatedAt: string; lastResult: Record<string, unknown> | null };
+const LABELS = { zabbix: 'Zabbix', grafana: 'Grafana' } as const;
+const HINTS = {
+  zabbix: 'URL do frontend (ex.: https://zabbix.grupo.local) e um token de API (Usuários → Tokens de API) com permissão para criar hosts.',
+  grafana: 'URL do Grafana e um token de conta de serviço com papel Editor. O plugin Zabbix e a fonte de dados precisam existir.',
+};
+
+function describe(kind: Connection['kind'], result: Record<string, unknown>) {
+  if (kind === 'zabbix') {
+    const missing = Array.isArray(result.missingTemplates) ? result.missingTemplates as string[] : [];
+    return `${result.hosts} hosts enviados${missing.length ? `; templates ausentes no servidor (ficaram só com ICMP): ${missing.join(', ')}` : ''}.`;
+  }
+  return `${result.dashboards} painéis publicados na pasta Malha, usando a fonte ${String(result.datasource)}.`;
+}
+
+function ApplyPanel({ query, online }: { query: string; online: boolean }) {
+  const [connections, setConnections] = useState<Connection[]>([]);
+  const [message, setMessage] = useState<{ tone: 'success' | 'danger'; text: string } | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [reload, setReload] = useState(0);
+
+  useEffect(() => {
+    if (!online) return;
+    const controller = new AbortController();
+    requestJson<Connection[]>('/api/monitoring/connections', { signal: controller.signal }).then(setConnections).catch(() => undefined);
+    return () => controller.abort();
+  }, [online, reload]);
+
+  async function save(event: React.FormEvent<HTMLFormElement>, kind: Connection['kind']) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    setBusy(`save-${kind}`);
+    setMessage(null);
+    try {
+      await requestJson('/api/monitoring/connections', { method: 'PUT', json: { kind, url: data.get('url'), token: data.get('token') } });
+      form.reset();
+      setMessage({ tone: 'success', text: `Conexão com o ${LABELS[kind]} salva. O token fica cifrado e não volta para a tela.` });
+      setReload((value) => value + 1);
+    } catch (error) {
+      setMessage({ tone: 'danger', text: error instanceof Error ? error.message : 'Não foi possível salvar.' });
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function apply(kind: Connection['kind']) {
+    setBusy(`apply-${kind}`);
+    setMessage(null);
+    try {
+      const result = await requestJson<Record<string, unknown>>(`/api/monitoring/apply?${query}&target=${kind}`, { method: 'POST' });
+      setMessage({ tone: 'success', text: `${LABELS[kind]}: ${describe(kind, result)}` });
+      setReload((value) => value + 1);
+    } catch (error) {
+      setMessage({ tone: 'danger', text: error instanceof Error ? error.message : 'Não foi possível aplicar.' });
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function remove(kind: Connection['kind']) {
+    setBusy(`remove-${kind}`);
+    try {
+      await requestJson(`/api/monitoring/connections?kind=${kind}`, { method: 'DELETE' });
+      setReload((value) => value + 1);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <section className="panel" aria-labelledby="monitoring-apply-title">
+      <div className="panel-heading"><div><h2 id="monitoring-apply-title"><CloudUpload size={18} aria-hidden="true" /> Aplicar pela API</h2>
+        <p>O Malha cria e atualiza hosts no Zabbix e publica os painéis no Grafana. O servidor do Malha precisa alcançar esses endereços.</p></div></div>
+      {message && <p className={`message ${message.tone} occurrence-error`} role="status">{message.text}</p>}
+      <ul className="admin-list">
+        {(['zabbix', 'grafana'] as const).map((kind) => {
+          const saved = connections.find((item) => item.kind === kind);
+          return (
+            <li key={kind}>
+              <div className="admin-row">
+                <div>
+                  <strong><Link2 size={15} aria-hidden="true" /> {LABELS[kind]}</strong>
+                  <span>{saved ? `${saved.url} · salvo em ${new Date(saved.updatedAt).toLocaleString('pt-BR')}` : 'Sem conexão cadastrada.'}</span>
+                  {saved?.lastResult && <span>Última aplicação: {describe(kind, saved.lastResult)}</span>}
+                </div>
+                {saved && (
+                  <div className="inline-actions">
+                    <button type="button" className="button primary" disabled={!online || busy !== null} onClick={() => apply(kind)}>
+                      <CloudUpload size={16} aria-hidden="true" /> {busy === `apply-${kind}` ? 'Aplicando…' : `Aplicar no ${LABELS[kind]}`}
+                    </button>
+                    <button type="button" className="button secondary icon-button" aria-label={`Remover conexão com o ${LABELS[kind]}`} disabled={busy !== null} onClick={() => remove(kind)}>
+                      <Trash2 size={16} aria-hidden="true" />
+                    </button>
+                  </div>
+                )}
+              </div>
+              <form className="inline-form" onSubmit={(event) => save(event, kind)} aria-label={`Conexão com o ${LABELS[kind]}`}>
+                <label className="form-field">URL<input name="url" type="url" required placeholder={`https://${kind}.grupo.local`} defaultValue={saved?.url} /></label>
+                <label className="form-field">Token<input name="token" type="password" required autoComplete="off" minLength={8} placeholder={saved ? 'Novo token para substituir' : 'Token de API'} /></label>
+                <button type="submit" className="button secondary" disabled={!online || busy !== null}>{saved ? 'Atualizar conexão' : 'Salvar conexão'}</button>
+              </form>
+              <p className="cell-detail">{HINTS[kind]}</p>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }

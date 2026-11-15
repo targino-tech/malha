@@ -158,7 +158,7 @@ export function Dashboard({ initialData }: { initialData: DashboardData }) {
               {view === 'occurrences' && <Occurrences occurrences={data.occurrences} farms={farms} canAcknowledge={data.can['occurrences.acknowledge']} online={online} onChanged={() => { void refresh(true); }} />}
               {view === 'inventory' && <Inventory key={currentFarm} farms={data.farms} locations={data.locations} farmId={currentFarm} canEdit={data.can['inventory.write']} canExport={data.can['exports.run']} online={online} onChanged={() => { void refresh(true); }} />}
               {view === 'charts' && <ChartsView farms={farms} farmId={currentFarm} online={online} />}
-              {view === 'monitoring' && data.can['monitoring.export'] && <Monitoring farmId={currentFarm} online={online} />}
+              {view === 'monitoring' && data.can['monitoring.export'] && <Monitoring farmId={currentFarm} online={online} canApply={data.can['monitoring.apply']} />}
               {view === 'indicators' && <Indicators farms={farms} farmId={currentFarm} canExport={data.can['exports.run']} canBaseline={data.can['baseline.manage']} online={online} />}
               {view === 'reconciliation' && (data.can['inventory.write']
                 ? <Reconciliation key={currentFarm} farms={farms} canEdit={data.can['inventory.write']} online={online} onChanged={() => { void refresh(true); }} />

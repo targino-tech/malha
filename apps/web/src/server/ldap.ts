@@ -50,21 +50,22 @@ export function directoryUuid(value: unknown): string | null {
 }
 
 // Senha da conta de serviço guardada cifrada (AES-256-GCM) com chave derivada de MALHA_AUTH_SECRET.
-function key(secret: string) {
-  return Buffer.from(hkdfSync('sha256', secret, 'malha', 'ldap-bind-secret', 32));
+// Cada finalidade deriva a própria chave: um token de monitoramento não abre com a chave do LDAP.
+function key(secret: string, purpose: string) {
+  return Buffer.from(hkdfSync('sha256', secret, 'malha', purpose, 32));
 }
 
-export function sealSecret(plain: string, secret: string) {
+export function sealSecret(plain: string, secret: string, purpose = 'ldap-bind-secret') {
   const iv = randomBytes(12);
-  const cipher = createCipheriv('aes-256-gcm', key(secret), iv);
+  const cipher = createCipheriv('aes-256-gcm', key(secret, purpose), iv);
   const data = Buffer.concat([cipher.update(plain, 'utf8'), cipher.final()]);
   return ['v1', iv.toString('base64url'), cipher.getAuthTag().toString('base64url'), data.toString('base64url')].join('.');
 }
 
-export function openSecret(sealed: string, secret: string) {
+export function openSecret(sealed: string, secret: string, purpose = 'ldap-bind-secret') {
   const [version, iv, tag, data] = sealed.split('.');
   if (version !== 'v1' || !iv || !tag || !data) throw new Error('Segredo do diretório em formato desconhecido.');
-  const decipher = createDecipheriv('aes-256-gcm', key(secret), Buffer.from(iv, 'base64url'));
+  const decipher = createDecipheriv('aes-256-gcm', key(secret, purpose), Buffer.from(iv, 'base64url'));
   decipher.setAuthTag(Buffer.from(tag, 'base64url'));
   return Buffer.concat([decipher.update(Buffer.from(data, 'base64url')), decipher.final()]).toString('utf8');
 }
