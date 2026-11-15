@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { database, mode } from '@/server/db';
 import { HttpError } from '@/server/http';
+import { publicOrigin, requireSameOrigin } from '@/server/identity';
 import { authenticateLdap } from '@/server/ldap';
 
 export const dynamic = 'force-dynamic';
@@ -11,13 +12,11 @@ const SESSION_COOKIE = '__Host-malha_session';
 // O formulário de /entrar envia por POST; respostas são redirecionamentos para manter o fluxo sem JavaScript.
 export async function POST(request: Request) {
   if (mode() === 'demo') return new Response(null, { status: 303, headers: { Location: '/' } });
-  const origin = process.env.MALHA_PUBLIC_ORIGIN ?? '';
+  let origin: string;
+  try { origin = publicOrigin(); } catch { return new Response('Configure MALHA_PUBLIC_ORIGIN.', { status: 503 }); }
   const back = (code: string) => new Response(null, { status: 303, headers: { Location: `${origin}/entrar?erro=${code}`, 'Cache-Control': 'no-store' } });
   try {
-    // Mesma regra de origem das rotas de escrita, sem depender da configuração do Entra ID.
-    if (!origin || request.headers.get('Sec-Fetch-Site') === 'cross-site' || request.headers.get('Origin') !== origin) {
-      throw new HttpError(403, 'Origem da requisição inválida.');
-    }
+    requireSameOrigin(request);
     const secret = process.env.MALHA_AUTH_SECRET;
     if (!secret || Buffer.byteLength(secret) < 32) throw new HttpError(503, 'Login por diretório indisponível.');
     const form = await request.formData();

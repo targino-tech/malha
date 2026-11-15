@@ -33,20 +33,30 @@ export async function principal(): Promise<Principal> {
   return { orgId: user.org_id, actor: user.entra_oid, role: user.role, farmIds: resolveFarmScope(user.role, user.farm_ids), demo: false };
 }
 
+/**
+ * Origem HTTPS pública do Malha. Vale para qualquer forma de login (Entra ID, AD/LDAP), por isso
+ * não depende da configuração do Entra: um grupo que entra só pelo AD também precisa dela.
+ */
+export function publicOrigin() {
+  const origin = process.env.MALHA_PUBLIC_ORIGIN;
+  if (!origin) throw new HttpError(503, 'Configure MALHA_PUBLIC_ORIGIN com a origem HTTPS do Malha.');
+  let url: URL;
+  try { url = new URL(origin); } catch { throw new HttpError(503, 'Configure a origem HTTPS exata do aplicativo Malha.'); }
+  if (url.protocol !== 'https:' || url.origin !== origin) throw new HttpError(503, 'Configure a origem HTTPS exata do aplicativo Malha.');
+  return origin;
+}
+
 function settings() {
   const tenant = process.env.ENTRA_TENANT_ID?.toLowerCase();
   const clientId = process.env.ENTRA_CLIENT_ID;
   const clientSecret = process.env.ENTRA_CLIENT_SECRET;
   const signSecret = process.env.MALHA_AUTH_SECRET;
-  const origin = process.env.MALHA_PUBLIC_ORIGIN;
   if (!tenant || !uuidPattern.test(tenant) || !clientId || !uuidPattern.test(clientId)
-    || !clientSecret || !signSecret || Buffer.byteLength(signSecret) < 32 || !origin) {
+    || !clientSecret || !signSecret || Buffer.byteLength(signSecret) < 32) {
     throw new HttpError(503, 'A conexão ao Microsoft Entra ID precisa ser configurada.');
   }
+  const origin = publicOrigin();
   const url = new URL(origin);
-  if (url.protocol !== 'https:' || url.origin !== origin) {
-    throw new HttpError(503, 'Configure a origem HTTPS exata do aplicativo Malha.');
-  }
   return { tenant, clientId, clientSecret, signSecret, origin, redirect: new URL('/api/auth/callback', url).href };
 }
 
@@ -115,7 +125,7 @@ export async function finishLogin(request: Request) {
 
 export function requireSameOrigin(request: Request) {
   if (request.headers.get('Sec-Fetch-Site') === 'cross-site') throw new HttpError(403, 'Origem da requisição inválida.');
-  if (mode() === 'pilot' && request.headers.get('Origin') !== settings().origin) {
+  if (mode() === 'pilot' && request.headers.get('Origin') !== publicOrigin()) {
     throw new HttpError(403, 'Origem da requisição inválida.');
   }
 }
@@ -127,5 +137,5 @@ export async function logout(request: Request) {
   const session = store.get(SESSION_COOKIE)?.value;
   if (session) await (await database()).query('DELETE FROM sessions WHERE token_hash = $1', [hash(session)]);
   store.set(SESSION_COOKIE, '', { ...baseCookie, maxAge: 0 });
-  return Response.redirect(`${settings().origin}/entrar`, 303);
+  return Response.redirect(`${publicOrigin()}/entrar`, 303);
 }
