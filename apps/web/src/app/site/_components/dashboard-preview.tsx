@@ -61,8 +61,10 @@ export function DashboardPreview() {
           })}
         </div>
         <div id="malha-preview-detail" className={styles.previewDetail} aria-live="polite" aria-atomic="true">
-          <h3>{topic.title}</h3>
-          <p>{topic.description}</p>
+          <div key={selected} className={styles.previewDetailBody}>
+            <h3>{topic.title}</h3>
+            <p>{topic.description}</p>
+          </div>
         </div>
       </div>
     </figure>

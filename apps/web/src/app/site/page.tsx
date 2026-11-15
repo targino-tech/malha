@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowDown, ArrowRight, ArrowUpRight, Check, ChevronDown } from 'lucide-react';
-import { AsciiGlobe } from './_components/ascii-globe';
+import { ArrowRight, ArrowUpRight, Check, ChevronDown } from 'lucide-react';
 import { DashboardPreview } from './_components/dashboard-preview';
 import { FieldStory } from './_components/field-story';
-import { Reveal, RevealWords } from './_components/reveal';
+import { CinematicHero } from './_components/hero';
+import { Reveal, SceneTitle, ScrollScale, TiltIn } from './_components/reveal';
 import { capabilities, facts, plans, questions, security } from './content';
 import styles from './site.module.css';
 
@@ -19,12 +19,7 @@ export const metadata: Metadata = {
 };
 
 function SectionHeading({ title, text, id }: { title: string; text?: string; id: string }) {
-  return (
-    <Reveal className={styles.sectionHeading}>
-      <h2 id={id}>{title}</h2>
-      {text && <p>{text}</p>}
-    </Reveal>
-  );
+  return <SceneTitle className={styles.sectionHeading} id={id} title={title} text={text} />;
 }
 
 function Rows() {
@@ -34,36 +29,7 @@ function Rows() {
 export default function SitePage() {
   return (
     <>
-      <section className={styles.hero} aria-labelledby="site-title">
-        <div className={styles.heroGrid} aria-hidden="true" />
-        <div className={`${styles.frame} ${styles.heroInner}`}>
-          <div className={styles.heroContent}>
-            <h1 id="site-title">
-              <RevealWords text="A rede do campo," accent="à vista da matriz." />
-            </h1>
-            <Reveal priority delay={0.35}>
-              <p className={styles.heroDescription}>
-                Coletores, switches e antenas de todas as fazendas do grupo em um só painel. Se uma unidade perde contato, a matriz sabe em 3 minutos.
-              </p>
-              <div className={styles.heroActions}>
-                <Link href="/site/cadastro" className={styles.primaryButton}>Solicitar acesso <ArrowUpRight size={18} aria-hidden="true" /></Link>
-                <a className={styles.secondaryButton} href="#campo">Ver como funciona <ArrowDown size={17} aria-hidden="true" /></a>
-              </div>
-            </Reveal>
-          </div>
-          <Reveal priority delay={0.2} className={styles.globeWrap}>
-            <AsciiGlobe className={styles.globe} />
-            <p className={styles.globeCaption}><span>Ilustração</span> Rotas e fazendas de exemplo</p>
-          </Reveal>
-        </div>
-        <div className={styles.ticker}>
-          <ul className={`${styles.frame} ${styles.tickerTrack}`} aria-label="Dados técnicos do Malha">
-            {facts.map(([label, value]) => (
-              <li key={label}><span>{label}</span> <strong>{value}</strong></li>
-            ))}
-          </ul>
-        </div>
-      </section>
+      <CinematicHero facts={facts} />
 
       <section id="produto" className={`${styles.frame} ${styles.section}`} aria-labelledby="produto-title">
         <div className={styles.split}>
@@ -92,9 +58,9 @@ export default function SitePage() {
 
       <section id="painel" className={`${styles.frame} ${styles.section}`} aria-labelledby="panel-title">
         <SectionHeading id="panel-title" title="Da matriz à fazenda." text="Acompanhe o contato dos coletores, a última coleta por fazenda e quais ativos críticos foram observados offline." />
-        <Reveal>
+        <TiltIn>
           <DashboardPreview />
-        </Reveal>
+        </TiltIn>
       </section>
 
       <Rows />
@@ -154,13 +120,13 @@ export default function SitePage() {
 
       <section className={styles.cta} aria-labelledby="cta-title">
         <div className={`${styles.frame} ${styles.ctaInner}`}>
-          <Reveal>
+          <ScrollScale>
             <h2 id="cta-title">Leve o Malha<br /><span>para as suas fazendas.</span></h2>
             <div className={styles.heroActions}>
               <Link href="/site/cadastro" className={styles.primaryButton}>Solicitar acesso <ArrowUpRight size={18} aria-hidden="true" /></Link>
               <Link href="/entrar" className={styles.secondaryButton}>Já sou cliente</Link>
             </div>
-          </Reveal>
+          </ScrollScale>
         </div>
       </section>
     </>

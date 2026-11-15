@@ -115,7 +115,7 @@ function unproject(x: number, y: number, view: View) {
 }
 
 // Raster de Mato Grosso a 0,05° para consulta rápida por célula.
-const MT_BOX = { west: -62, east: -50, south: -18.5, north: -7, step: 0.05 };
+const MT_BOX = { west: -62, east: -50, south: -18.5, north: -7, step: 0.08 };
 function rasterizeMt() {
   const cols = Math.round((MT_BOX.east - MT_BOX.west) / MT_BOX.step);
   const rows = Math.round((MT_BOX.north - MT_BOX.south) / MT_BOX.step);
@@ -169,7 +169,11 @@ export function AsciiGlobe({ className }: { className?: string }) {
     const context = canvas?.getContext('2d');
     if (!canvas || !context) return;
     const mask = landMask();
-    const inMt = rasterizeMt();
+    // O raster sai do carregamento inicial: fica pronto no primeiro momento ocioso, bem antes do zoom.
+    let inMt: (lat: number, lon: number) => boolean = () => false;
+    const schedule = window.requestIdleCallback ?? ((callback: () => void) => window.setTimeout(callback, 200));
+    const cancelSchedule = window.cancelIdleCallback ?? window.clearTimeout;
+    const rasterTask = schedule(() => { inMt = rasterizeMt(); if (reduced) draw(0); });
     const vectors = new Map<Place | Farm | typeof MATRIZ, number[]>();
     for (const place of [HUB, ...PLACES, ...FARMS, MATRIZ]) vectors.set(place, toVector(place.lat, place.lon));
 
@@ -477,6 +481,7 @@ export function AsciiGlobe({ className }: { className?: string }) {
     canvas.addEventListener('pointercancel', onUp);
 
     return () => {
+      cancelSchedule(rasterTask);
       cancelAnimationFrame(frame);
       resizeObserver.disconnect();
       intersection.disconnect();

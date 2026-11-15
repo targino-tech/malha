@@ -38,7 +38,7 @@ export function SiteHeader() {
   return (
     <header className={styles.header} data-scrolled={scrolled || open}>
       <div className={styles.headerInner}>
-        <Brand />
+        <Brand animated />
         <nav ref={navRef} aria-label="Navegação do site" className={styles.nav} id="site-menu" data-open={open}>
           {links.map((link) => (
             <Link key={link.href} href={link.href} aria-current={pathname === link.href ? 'page' : undefined} onClick={() => setOpen(false)}>

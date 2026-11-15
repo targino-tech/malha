@@ -295,8 +295,9 @@ function Step({ index, progress, step }: { index: number; progress: MotionValue<
   ][index];
   const opacity = useTransform(progress, edges, fade);
   const y = useTransform(progress, edges, shift);
+  const filter = useTransform(opacity, [0, 1], ['blur(10px)', 'blur(0px)']);
   return (
-    <motion.article className={styles.storyStep} style={{ opacity, y }}>
+    <motion.article className={styles.storyStep} style={{ opacity, y, filter }}>
       <p className={styles.storyLabel}>{step.label}</p>
       <h3>{step.title}</h3>
       <p>{step.text}</p>
@@ -313,6 +314,9 @@ export function FieldStory() {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end end'] });
   const bar = useTransform(scrollYProgress, [0, 1], ['0%', '100%']);
+  // Câmera: começa próxima do campo e recua devagar até o plano aberto da colheita.
+  const dolly = useTransform(scrollYProgress, [0, 1], [1.14, 1]);
+  const pan = useTransform(scrollYProgress, [0, 1], ['-2%', '0%']);
   const [active, setActive] = useState(0);
   useMotionValueEvent(scrollYProgress, 'change', (value) => setActive(value < 0.36 ? 0 : value < 0.7 ? 1 : 2));
 
@@ -344,7 +348,10 @@ export function FieldStory() {
   return (
     <div ref={ref} className={styles.storyTrack}>
       <div className={styles.storySticky}>
-        <FieldCanvas progress={scrollYProgress} reduced={false} />
+        <motion.div className={styles.storyCamera} style={{ scale: dolly, x: pan }}>
+          <FieldCanvas progress={scrollYProgress} reduced={false} />
+        </motion.div>
+        <div className={styles.storyBars} aria-hidden="true" />
         <div className={styles.storyShade} />
         <div className={styles.storyCopy}>
           {steps.map((step, index) => <Step key={step.label} index={index} progress={scrollYProgress} step={step} />)}

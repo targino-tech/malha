@@ -1,6 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Símbolo do Malha">
-  <rect width="64" height="64" rx="14" fill="#d3ec94"/>
-  <path d="M12 45 24 19h4l5 13 9-13h5l5 26h-6l-4-17-8 13h-4l-5-13-7 17z" fill="#15251b"/>
-  <path d="M12 51h40M17 55h30" fill="none" stroke="#527044" stroke-linecap="round" stroke-width="1.4"/>
-  <circle cx="46" cy="19" r="3" fill="#15251b"/>
+  <path d="M11 53C11 27.5 27.5 11 53 11c0 25.5-16.5 42-42 42Z" fill="#b6f37a"/>
+  <path d="M11 53C11 27.5 27.5 11 53 11L11 53Z" fill="#9fdc63"/>
+  <g stroke="#060a07" stroke-width="2.4" stroke-linecap="round" fill="none">
+    <path d="M17 47 45 19"/>
+    <path d="M24.5 39.5 22 30M32 32l9.5 2.5M38.5 25.5 36 17"/>
+  </g>
+  <g fill="#060a07"><circle cx="22" cy="30" r="2.9"/><circle cx="41.5" cy="34.5" r="2.9"/><circle cx="36" cy="17" r="2.4"/></g>
+  <circle cx="11" cy="53" r="4.6" fill="#d9b866" stroke="#060a07" stroke-width="1.6"/>
 </svg>

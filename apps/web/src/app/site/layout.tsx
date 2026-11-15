@@ -10,6 +10,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
       <SiteHeader />
       <main id="conteudo" tabIndex={-1}>{children}</main>
       <SiteFooter />
+      <div className={styles.grain} aria-hidden="true" />
     </div>
   );
 }
