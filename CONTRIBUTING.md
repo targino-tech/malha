@@ -44,6 +44,8 @@ O modo demo usa PGlite em memória e não precisa de banco externo. Mais opçõe
 3. Rode as verificações abaixo.
 4. Abra o pull request para a `main` preenchendo o modelo. Pull requests em rascunho são bem-vindos para pedir opinião cedo.
 
+`staging` e `production` são só de entrega: a manutenção promove a `main` para elas por PR. Contribuições sempre vão para a `main`.
+
 ### Verificações locais
 
 ```sh

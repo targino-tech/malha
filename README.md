@@ -206,6 +206,18 @@ O CI roda tudo isso com PostgreSQL 17 real, constrói e sobe a imagem Docker e v
 </details>
 
 
+### Branches e entrega
+
+| Branch | Papel | Como muda |
+| --- | --- | --- |
+| `main` | Código integrado e sempre verde; publica o site no GitHub Pages | PR com CI e revisão aprovados |
+| `staging` | O que está em homologação | PR da `main`; o push constrói as imagens e implanta em homologação |
+| `production` | O que está em produção | PR da `staging` com aprovação; o push promove a mesma imagem já validada |
+| `feat/*`, `fix/*`, `docs/*` | Uma mudança por vez, no fork de quem contribui | Saem da `main` e voltam por PR |
+| `dependabot/*` | Atualizações automáticas | Revisadas e mergeadas na `main` |
+
+O deploy na AWS fica desligado até a conta existir: defina a variável de repositório `DEPLOY_ENABLED=true` e os GitHub Environments `staging` e `production` conforme [`infra/README.md`](infra/README.md). Até lá, um push em `staging` ou `production` não implanta nada.
+
 <img src="docs/media/secao-integracoes.svg" alt="06 · Integrações" width="100%">
 
 | Integração | O que faz | Como |
