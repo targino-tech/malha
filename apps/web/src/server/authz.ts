@@ -20,6 +20,7 @@ const grants = {
   'members.manage': ['admin'],
   'baseline.manage': ['admin'],
   'exports.run': ['admin', 'ti', 'auditor'],
+  'monitoring.export': ['admin', 'ti'],
   'audit.read': ['admin', 'auditor'],
 } satisfies Record<string, Role[]>;
 

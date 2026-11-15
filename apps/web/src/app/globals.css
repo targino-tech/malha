@@ -463,3 +463,12 @@ th[scope='row'] { background: none; color: var(--text); font-weight: 600; }
   .farm-map-stage { aspect-ratio: 1; min-height: 0; }
   .park-feed li { padding-inline: 1rem; }
 }
+
+.model-picker { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; margin: 0; padding: 0 1.25rem 1.25rem; border: 0; min-width: 0; }
+.model-picker label { position: relative; display: grid; gap: .3rem; padding: 1rem; border: 1px solid var(--line-strong); border-radius: .625rem; background: var(--surface-2); cursor: pointer; }
+.model-picker label[data-checked='true'] { border-color: var(--forest); background: var(--forest-light); }
+.model-picker label:has(:focus-visible) { outline: .1875rem solid var(--focus); outline-offset: .1875rem; }
+.model-picker input { position: absolute; opacity: 0; pointer-events: none; }
+.model-picker strong { font-size: .9rem; }
+.model-picker span { color: var(--muted); font-size: .78rem; line-height: 1.45; }
+@media (max-width: 38rem) { .model-picker { grid-template-columns: 1fr; padding-inline: 1rem; } }

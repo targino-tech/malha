@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BellRing, Box, ChartColumn, ChartPie, ChevronDown, GitMerge, Plug, ScrollText, Settings, CloudUpload, FlaskConical, LayoutDashboard, LogOut, MapPin, RefreshCw, WifiOff } from 'lucide-react';
+import { Activity, BellRing, Box, ChartColumn, ChartPie, ChevronDown, GitMerge, Plug, ScrollText, Settings, CloudUpload, FlaskConical, LayoutDashboard, LogOut, MapPin, RefreshCw, WifiOff } from 'lucide-react';
 import { MotionConfig, motion, useReducedMotion } from 'motion/react';
 import type { DashboardData } from '../../server/dashboard';
 import { Administration } from './administration';
@@ -11,6 +11,7 @@ import { Indicators } from './indicators';
 import { Reconciliation } from './reconciliation';
 import { ImportFlow } from './import-flow';
 import { Integrations } from './integrations';
+import { Monitoring } from './monitoring';
 import { Inventory } from './inventory';
 import { Occurrences } from './occurrences';
 import { Overview } from './overview';
@@ -26,6 +27,7 @@ const views = {
   reconciliation: { label: 'Conciliação', title: 'Conciliação do inventário', description: 'Confirme descobertas da coleta, vínculos automáticos e o cadastro de referência.', icon: GitMerge },
   imports: { label: 'Importações', title: 'Importações de inventário', description: 'Inclua ativos de campo a partir da planilha da fazenda.', icon: CloudUpload },
   integrations: { label: 'Integrações', title: 'Integrações', description: 'Ative o coletor de cada fazenda e confirme a primeira coleta UniFi.', icon: Plug },
+  monitoring: { label: 'Monitoramento', title: 'Monitoramento externo', description: 'Monte o Zabbix e os painéis do Grafana a partir do inventário, por família de ativos.', icon: Activity },
   admin: { label: 'Administração', title: 'Administração do grupo', description: 'Cadastre fazendas e defina quem acessa o Malha e com qual papel.', icon: Settings },
   audit: { label: 'Auditoria', title: 'Auditoria', description: 'Quem fez o quê, quando e em qual escopo.', icon: ScrollText },
 };
@@ -99,6 +101,7 @@ export function Dashboard({ initialData }: { initialData: DashboardData }) {
     if (id === 'audit') return data.can['audit.read'];
     if (id === 'integrations') return data.can['integrations.read'];
     if (id === 'admin') return data.can['members.manage'];
+    if (id === 'monitoring') return data.can['monitoring.export'];
     return true;
   }
   const heading = views[view];
@@ -155,6 +158,7 @@ export function Dashboard({ initialData }: { initialData: DashboardData }) {
               {view === 'occurrences' && <Occurrences occurrences={data.occurrences} farms={farms} canAcknowledge={data.can['occurrences.acknowledge']} online={online} onChanged={() => { void refresh(true); }} />}
               {view === 'inventory' && <Inventory key={currentFarm} farms={data.farms} locations={data.locations} farmId={currentFarm} canEdit={data.can['inventory.write']} canExport={data.can['exports.run']} online={online} onChanged={() => { void refresh(true); }} />}
               {view === 'charts' && <ChartsView farms={farms} farmId={currentFarm} online={online} />}
+              {view === 'monitoring' && data.can['monitoring.export'] && <Monitoring farmId={currentFarm} online={online} />}
               {view === 'indicators' && <Indicators farms={farms} farmId={currentFarm} canExport={data.can['exports.run']} canBaseline={data.can['baseline.manage']} online={online} />}
               {view === 'reconciliation' && (data.can['inventory.write']
                 ? <Reconciliation key={currentFarm} farms={farms} canEdit={data.can['inventory.write']} online={online} onChanged={() => { void refresh(true); }} />
