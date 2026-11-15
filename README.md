@@ -27,6 +27,7 @@ A página de apresentação fica em [/site](http://127.0.0.1:3000/site). Usa Mot
 1. Em **Importações**, selecione uma fazenda e envie o [CSV de exemplo](examples/inventario.csv).
 2. Clique em **Validar arquivo**, confira a prévia e confirme a importação.
 3. Em **Inventário**, filtre a fazenda, encontre `CAMPO-002` e abra os detalhes do ativo.
+4. Em **Ocorrências**, confira o coletor sem contato da Fazenda Santa Luzia e o switch offline da Fazenda Vale Verde e reconheça uma delas.
 
 O CSV aceita UTF-8, até 5 MiB e 10 mil linhas. Use as colunas `etiqueta`, `nome` e `categoria`. As colunas `criticidade`, `mac` e `ip` são opcionais. Baixe o modelo na tela de importação.
 
@@ -67,7 +68,7 @@ pnpm db enroll <org-id> <farm-id>
 pnpm build
 ```
 
-Execute `pnpm worker` junto com o serviço web. Para um proxy HTTPS no mesmo host, `pnpm start` escuta no loopback. O piloto depende de TLS no proxy e de `MALHA_PUBLIC_ORIGIN` igual à origem HTTPS acessada no navegador. Armazene o código de ativação como segredo e use `pnpm db revoke <org-id> <farm-id>` para revogar o coletor.
+Execute `pnpm worker` junto com o serviço web. O worker aplica as capturas, avalia as regras de ocorrência a cada minuto e envia e-mail das ocorrências críticas. Configure `MALHA_SMTP_URL` e `MALHA_ALERT_FROM` (o endpoint SMTP do Amazon SES serve) e cadastre os destinatários com `pnpm db recipient <org-id> <email>`. Use `pnpm db recipient-remove <org-id> <email>` para desativar um destinatário. Para um proxy HTTPS no mesmo host, `pnpm start` escuta no loopback. O piloto depende de TLS no proxy e de `MALHA_PUBLIC_ORIGIN` igual à origem HTTPS acessada no navegador. Armazene o código de ativação como segredo e use `pnpm db revoke <org-id> <farm-id>` para revogar o coletor.
 
 ## Estrutura e verificações
 

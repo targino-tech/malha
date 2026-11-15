@@ -53,6 +53,22 @@ async function revoke(db: Database, orgId: string, farmId: string) {
   });
 }
 
+function email(value: string | undefined) {
+  const normalized = value?.trim().toLowerCase();
+  if (!normalized || normalized.length > 254 || !/^[^s@]+@[^s@]+.[^s@]+$/.test(normalized)) throw new Error('Forneça um e-mail válido.');
+  return normalized;
+}
+
+async function recipient(db: Database, orgId: string, address: string, active: boolean) {
+  await db.transaction(async (tx) => {
+    await setOrg(tx, orgId);
+    await tx.query(`INSERT INTO alert_recipients (org_id, email, active) VALUES ($1, $2, $3)
+      ON CONFLICT (org_id, email) DO UPDATE SET active = excluded.active`, [orgId, address, active]);
+    await tx.query('INSERT INTO audit_log (id, org_id, actor, action, scope) VALUES ($1, $2, $3, $4, $5::jsonb)',
+      [randomUUID(), orgId, 'cli', active ? 'alerts.recipient.add' : 'alerts.recipient.remove', '{}']);
+  });
+}
+
 async function main() {
   const [command, one, two, three] = process.argv.slice(2);
   const db = connectPostgres(process.env.DATABASE_ADMIN_URL ?? process.env.DATABASE_URL);
@@ -69,8 +85,11 @@ async function main() {
       console.log(await enroll(db, uuid(one, 'o grupo'), uuid(two, 'a fazenda')));
     } else if (command === 'revoke') {
       console.log(await revoke(db, uuid(one, 'o grupo'), uuid(two, 'a fazenda')));
+    } else if (command === 'recipient' || command === 'recipient-remove') {
+      await recipient(db, uuid(one, 'o grupo'), email(two), command === 'recipient');
+      console.log(command === 'recipient' ? 'Destinatário de alertas ativo.' : 'Destinatário de alertas desativado.');
     } else {
-      throw new Error('Use migrate, configure <tenant> <oid> [nome], farm <grupo> <nome> <local>, enroll <grupo> <fazenda> ou revoke <grupo> <fazenda>.');
+      throw new Error('Use migrate, recipient <grupo> <email>, recipient-remove <grupo> <email>, configure <tenant> <oid> [nome], farm <grupo> <nome> <local>, enroll <grupo> <fazenda> ou revoke <grupo> <fazenda>.');
     }
   } finally {
     await db.close();

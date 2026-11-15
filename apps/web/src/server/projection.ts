@@ -42,14 +42,16 @@ async function applyCapture(tx: Queryable, job: Job) {
       UPDATE assets a SET external_id = i.id, ip = COALESCE(i.ip, a.ip), mac = COALESCE(i.mac, a.mac),
         model = i.model, firmware = i.firmware, last_observed_at = $5, last_collector_id = $3,
         status = CASE WHEN i.status = 'offline' THEN 'unknown' ELSE i.status END,
-        offline_observations = CASE WHEN i.status = 'offline' THEN 1 ELSE 0 END
+        offline_observations = CASE WHEN i.status = 'offline' THEN 1 ELSE 0 END,
+        offline_since = CASE WHEN i.status = 'offline' THEN $5::timestamptz END, missing_captures = 0
       FROM incoming i WHERE a.org_id = $1 AND a.farm_id = $2 AND a.mac = i.link_mac AND a.external_id IS NULL
         AND 1 = (SELECT count(*) FROM assets b WHERE b.org_id = $1 AND b.farm_id = $2 AND b.mac = i.link_mac)
         AND NOT EXISTS (SELECT 1 FROM assets b WHERE b.org_id = $1 AND b.farm_id = $2 AND b.external_id = i.id)
       RETURNING a.external_id
-    ) INSERT INTO assets (org_id, farm_id, id, name, category, mac, ip, source, external_id, model, firmware, last_observed_at, last_collector_id, status, offline_observations)
+    ) INSERT INTO assets (org_id, farm_id, id, name, category, mac, ip, source, external_id, model, firmware, last_observed_at, last_collector_id, status, offline_observations, offline_since)
       SELECT $1, $2, asset_id, COALESCE(name, model, 'Dispositivo UniFi'), COALESCE(model, 'Dispositivo de rede'), mac, ip, 'unifi', id, model, firmware, $5, $3,
-        CASE WHEN status = 'offline' THEN 'unknown' ELSE status END, CASE WHEN status = 'offline' THEN 1 ELSE 0 END
+        CASE WHEN status = 'offline' THEN 'unknown' ELSE status END, CASE WHEN status = 'offline' THEN 1 ELSE 0 END,
+        CASE WHEN status = 'offline' THEN $5::timestamptz END
       FROM incoming WHERE NOT EXISTS (SELECT 1 FROM linked WHERE linked.external_id = incoming.id)
       ON CONFLICT (org_id, farm_id, external_id) DO UPDATE SET
         name = CASE WHEN assets.source = 'unifi' THEN excluded.name ELSE assets.name END,
@@ -60,10 +62,17 @@ async function applyCapture(tx: Queryable, job: Job) {
           THEN 'offline' ELSE excluded.status END,
         offline_observations = CASE WHEN excluded.offline_observations = 1 AND $6::boolean AND assets.last_collector_id = $3
           AND assets.last_observed_at >= $5::timestamptz - interval '15 minutes'
-          THEN LEAST(2, assets.offline_observations + 1) ELSE excluded.offline_observations END`,
+          THEN LEAST(2, assets.offline_observations + 1) ELSE excluded.offline_observations END,
+        offline_since = CASE WHEN excluded.offline_since IS NULL THEN NULL
+          WHEN assets.offline_observations >= 1 AND $6::boolean AND assets.last_collector_id = $3
+            AND assets.last_observed_at >= $5::timestamptz - interval '15 minutes'
+          THEN COALESCE(assets.offline_since, excluded.offline_since) ELSE excluded.offline_since END,
+        missing_captures = 0`,
   [...prefix, incoming, observedAt, consecutive]);
 
-  await tx.query(`UPDATE assets SET status = 'unknown', offline_observations = 0 WHERE org_id = $1 AND farm_id = $2
+  // Ativos antes observados que faltam nesta captura completa ficam indeterminados e acumulam ausências.
+  await tx.query(`UPDATE assets SET status = 'unknown', offline_observations = 0, offline_since = NULL,
+      missing_captures = missing_captures + 1 WHERE org_id = $1 AND farm_id = $2
     AND last_collector_id = $3 AND last_observed_at <> $4 AND external_id IS NOT NULL`, [...prefix, observedAt]);
   await tx.query(`UPDATE collector_health SET last_capture_at = $4, last_sequence = $5
     WHERE org_id = $1 AND farm_id = $2 AND collector_id = $3`, [...prefix, observedAt, newSequence]);

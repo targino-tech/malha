@@ -1,16 +1,21 @@
-import { ArrowRight, Building2, CircleAlert, Database, MapPin, Radio } from 'lucide-react';
+import { ArrowRight, BellRing, Building2, CircleAlert, Database, MapPin, Radio } from 'lucide-react';
 import type { DashboardAsset, DashboardFarm } from '../../server/dashboard';
+import type { DashboardOccurrence } from '../../server/occurrences';
 import { collectorStatus, EmptyState, formatDate, hasFreshCapture, StatusBadge, wholeNumber } from './presentation';
 
 type OverviewProps = {
   farms: DashboardFarm[];
   assets: DashboardAsset[];
   generatedAt: string;
+  openOccurrences: DashboardOccurrence[];
+  onOpenOccurrences: () => void;
   onOpenFarm: (id: string) => void;
   onOpenInventory: () => void;
 };
 
-export function Overview({ farms, assets, generatedAt, onOpenFarm, onOpenInventory }: OverviewProps) {
+export function Overview({ farms, assets, generatedAt, openOccurrences, onOpenOccurrences, onOpenFarm, onOpenInventory }: OverviewProps) {
+  const unacknowledged = openOccurrences.filter((occurrence) => !occurrence.acknowledgedAt);
+  const criticalOpen = unacknowledged.filter((occurrence) => occurrence.severity === 'critical').length;
   const recentFarms = farms.filter((farm) => farm.collectorStatus === 'online');
   const staleFarms = farms.filter((farm) => farm.collectorStatus === 'offline');
   const inventoryOnly = farms.filter((farm) => farm.collectorStatus === 'missing');
@@ -37,6 +42,18 @@ export function Overview({ farms, assets, generatedAt, onOpenFarm, onOpenInvento
           </li>
         ))}
       </ul>
+
+      {openOccurrences.length > 0 && (
+        <section className={`panel occurrence-banner ${criticalOpen ? 'critical' : ''}`} aria-labelledby="occurrence-banner-title">
+          <div className="panel-heading">
+            <div>
+              <h2 id="occurrence-banner-title"><BellRing size={18} aria-hidden="true" /> {openOccurrences.length} {openOccurrences.length === 1 ? 'ocorrência aberta' : 'ocorrências abertas'}</h2>
+              <p>{unacknowledged.length ? `${unacknowledged.length} sem reconhecimento${criticalOpen ? `, ${criticalOpen} ${criticalOpen === 1 ? 'crítica' : 'críticas'}` : ''}.` : 'Todas reconhecidas pela equipe.'}</p>
+            </div>
+            <button className="button secondary" type="button" onClick={onOpenOccurrences}>Ver ocorrências <ArrowRight size={17} aria-hidden="true" /></button>
+          </div>
+        </section>
+      )}
 
       <section className="panel" aria-labelledby="farms-title">
         <div className="panel-heading">

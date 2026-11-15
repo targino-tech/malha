@@ -1,15 +1,31 @@
 import { setTimeout as wait } from 'node:timers/promises';
+import { evaluateAll } from '../web/src/server/alerts';
 import { connectPostgres } from '../web/src/server/db';
+import { sendPendingNotifications, transportFromEnv } from '../web/src/server/notifications';
 import { processInventoryJob } from '../web/src/server/projection';
+
+const EVALUATION_INTERVAL_MS = 60_000;
 
 async function run() {
   if (process.env.MALHA_MODE !== 'pilot') throw new Error('Execute o worker com MALHA_MODE=pilot.');
   const db = connectPostgres(process.env.DATABASE_URL);
+  const transport = transportFromEnv();
   const signal = new AbortController();
   process.once('SIGTERM', () => signal.abort());
   process.once('SIGINT', () => signal.abort());
+  let nextEvaluation = 0;
   try {
     while (!signal.signal.aborted) {
+      // A avaliação roda a cada minuto mesmo sem mensagens na fila, para detectar ausência de heartbeat.
+      if (Date.now() >= nextEvaluation) {
+        nextEvaluation = Date.now() + EVALUATION_INTERVAL_MS;
+        try {
+          await evaluateAll(db);
+          await sendPendingNotifications(db, transport);
+        } catch (error) {
+          console.error('Falha ao avaliar ocorrências', error instanceof Error ? error.name : 'indefinida');
+        }
+      }
       try {
         if (await processInventoryJob(db)) continue;
       } catch (error) {

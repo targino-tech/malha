@@ -1,16 +1,18 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Box, ChevronDown, CloudUpload, FlaskConical, LayoutDashboard, LogOut, MapPin, Network, RefreshCw, WifiOff } from 'lucide-react';
+import { BellRing, Box, ChevronDown, CloudUpload, FlaskConical, LayoutDashboard, LogOut, MapPin, Network, RefreshCw, WifiOff } from 'lucide-react';
 import { MotionConfig, motion, useReducedMotion } from 'motion/react';
 import type { DashboardData } from '../../server/dashboard';
 import { ImportFlow } from './import-flow';
 import { Inventory } from './inventory';
+import { Occurrences } from './occurrences';
 import { Overview } from './overview';
 import { formatDate } from './presentation';
 
 const views = {
   overview: { label: 'Visão geral', title: 'Visão geral das fazendas', description: 'Acompanhe a comunicação com as unidades e a saúde dos ativos de rede.', icon: LayoutDashboard },
+  occurrences: { label: 'Ocorrências', title: 'Ocorrências', description: 'Investigue e reconheça os alertas de comunicação, coleta e ativos.', icon: BellRing },
   inventory: { label: 'Inventário', title: 'Inventário de ativos', description: 'Identifique equipamentos, origem do cadastro e estado da última observação.', icon: Box },
   imports: { label: 'Importações', title: 'Importações de inventário', description: 'Inclua ativos de campo a partir da planilha da fazenda.', icon: CloudUpload },
 };
@@ -97,6 +99,7 @@ export function Dashboard({ initialData }: { initialData: DashboardData }) {
             {(Object.entries(views) as Array<[View, (typeof views)[View]]>).filter(([id]) => id !== 'imports' || data.canImport).map(([id, item]) => (
               <button className="nav-link" type="button" key={id} aria-current={view === id ? 'page' : undefined} onClick={() => setView(id)}>
                 <item.icon size={19} aria-hidden="true" /><span>{item.label}</span>
+                {id === 'occurrences' && data.counts.openOccurrences > 0 && <span className="nav-count" aria-label={`${data.counts.openOccurrences} abertas`}>{data.counts.openOccurrences}</span>}
               </button>
             ))}
           </nav>
@@ -129,7 +132,8 @@ export function Dashboard({ initialData }: { initialData: DashboardData }) {
               <p className="message warning" role="status"><WifiOff size={18} aria-hidden="true" />{!online ? 'Seu navegador está sem conexão.' : 'Falha ao atualizar o painel.'} Exibindo a última consulta.</p>
             )}
             <ViewContent current={view}>
-              {view === 'overview' && <Overview farms={farms} assets={assets} generatedAt={data.generatedAt} onOpenFarm={(id) => { setFarmId(id); setView('inventory'); }} onOpenInventory={() => setView('inventory')} />}
+              {view === 'overview' && <Overview farms={farms} assets={assets} openOccurrences={data.occurrences.filter((item) => !item.resolvedAt && farms.some((farm) => farm.id === item.farmId))} generatedAt={data.generatedAt} onOpenFarm={(id) => { setFarmId(id); setView('inventory'); }} onOpenInventory={() => setView('inventory')} onOpenOccurrences={() => setView('occurrences')} />}
+              {view === 'occurrences' && <Occurrences occurrences={data.occurrences} farms={farms} canAcknowledge={data.canAcknowledge} online={online} onChanged={() => { void refresh(true); }} />}
               {view === 'inventory' && <Inventory key={currentFarm} farms={farms} assets={assets} />}
               {view === 'imports' && (data.canImport ? (
                 <ImportFlow farms={data.farms} selectedFarm={currentFarm} online={online} onImported={() => { void refresh(true); }} />

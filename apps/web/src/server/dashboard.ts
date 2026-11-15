@@ -1,5 +1,10 @@
+import { evaluateOrganization } from './alerts';
 import { principal } from './identity';
-import { database, setOrg } from './db';
+import { database, setOrg, type Queryable } from './db';
+import { CAPTURE_STALE_SECONDS, HEARTBEAT_TIMEOUT_SECONDS } from './health';
+import { listOccurrences, type DashboardOccurrence } from './occurrences';
+
+const DEMO_ONLINE_COLLECTOR = '00000000-0000-4000-8000-000000000301';
 
 export type DashboardFarm = {
   id: string;
@@ -11,6 +16,7 @@ export type DashboardFarm = {
   assetCount: number;
   criticalCount: number;
   offlineCount: number;
+  openOccurrences: number;
 };
 
 export type DashboardAsset = {
@@ -30,11 +36,21 @@ export type DashboardAsset = {
 export type DashboardData = {
   demo: boolean;
   canImport: boolean;
+  canAcknowledge: boolean;
   generatedAt: string;
   farms: DashboardFarm[];
   assets: DashboardAsset[];
-  counts: { farms: number; collectorsOnline: number; assets: number; offlineCritical: number };
+  occurrences: DashboardOccurrence[];
+  counts: { farms: number; collectorsOnline: number; assets: number; offlineCritical: number; openOccurrences: number };
 };
+
+// O demo não executa o worker: mantém o coletor simulado em contato e avalia as regras a cada consulta.
+async function simulateDemo(tx: Queryable, orgId: string) {
+  await tx.query(`UPDATE collector_health SET last_heartbeat_at = now(), last_capture_at = now()
+    WHERE org_id = $1 AND collector_id = $2`, [orgId, DEMO_ONLINE_COLLECTOR]);
+  await tx.query('UPDATE assets SET last_observed_at = now() WHERE org_id = $1 AND last_collector_id = $2', [orgId, DEMO_ONLINE_COLLECTOR]);
+  await evaluateOrganization(tx, orgId);
+}
 
 export async function getDashboard(): Promise<DashboardData> {
   const user = await principal();
@@ -42,6 +58,7 @@ export async function getDashboard(): Promise<DashboardData> {
   const timestamp = new Date();
   return db.transaction(async (tx) => {
     await setOrg(tx, user.orgId);
+    if (user.demo) await simulateDemo(tx, user.orgId);
     const { rows: farmRows } = await tx.query<{
       id: string; name: string; location: string; collector_id: string | null;
       last_heartbeat_at: Date | null; last_capture_at: Date | null;
@@ -56,12 +73,12 @@ export async function getDashboard(): Promise<DashboardData> {
       // The two synthetic collectors keep their demonstration states across visits.
       const simulatedOnline = user.demo && row.collector_id?.endsWith('000301');
       const collectorStatus = !row.collector_id ? 'missing' : simulatedOnline
-        || (heartbeat && timestamp.getTime() - heartbeat.getTime() < 180_000) ? 'online' : 'offline';
+        || (heartbeat && timestamp.getTime() - heartbeat.getTime() < HEARTBEAT_TIMEOUT_SECONDS * 1000) ? 'online' : 'offline';
       const farm: DashboardFarm = {
         id: row.id, name: row.name, location: row.location, collectorStatus,
         lastHeartbeatAt: simulatedOnline ? timestamp.toISOString() : heartbeat?.toISOString() ?? null,
         lastCaptureAt: simulatedOnline ? timestamp.toISOString() : capture?.toISOString() ?? null,
-        assetCount: 0, criticalCount: 0, offlineCount: 0,
+        assetCount: 0, criticalCount: 0, offlineCount: 0, openOccurrences: 0,
       };
       return [row.id, { farm, collectorId: row.collector_id, simulatedOnline }];
     }));
@@ -79,7 +96,7 @@ export async function getDashboard(): Promise<DashboardData> {
       const { farm } = details;
       const lastObservedAt = details.simulatedOnline && row.last_observed_at
         ? timestamp.toISOString() : row.last_observed_at ? new Date(row.last_observed_at).toISOString() : null;
-      const expiresAt = (lastObservedAt ? Date.parse(lastObservedAt) : 0) + 15 * 60_000;
+      const expiresAt = (lastObservedAt ? Date.parse(lastObservedAt) : 0) + CAPTURE_STALE_SECONDS * 1000;
       const status = lastObservedAt && timestamp.getTime() <= expiresAt && farm.collectorStatus === 'online'
         && row.last_collector_id === details.collectorId ? row.status : 'unknown';
       farm.assetCount++;
@@ -94,9 +111,15 @@ export async function getDashboard(): Promise<DashboardData> {
       };
     });
 
+    const occurrences = await listOccurrences(tx, user.orgId);
+    for (const occurrence of occurrences) {
+      const details = farms.get(occurrence.farmId);
+      if (details && !occurrence.resolvedAt) details.farm.openOccurrences++;
+    }
     const farmList = [...farms.values()].map(({ farm }) => farm);
-    return { demo: user.demo, canImport: user.role !== 'diretoria', generatedAt: timestamp.toISOString(), farms: farmList, assets,
-      counts: { farms: farmList.length, collectorsOnline: farmList.filter((farm) => farm.collectorStatus === 'online').length,
-        assets: assets.length, offlineCritical } };
+    const canOperate = user.role !== 'diretoria';
+    return { demo: user.demo, canImport: canOperate, canAcknowledge: canOperate, generatedAt: timestamp.toISOString(), farms: farmList, assets,
+      occurrences, counts: { farms: farmList.length, collectorsOnline: farmList.filter((farm) => farm.collectorStatus === 'online').length,
+        assets: assets.length, offlineCritical, openOccurrences: occurrences.filter((occurrence) => !occurrence.resolvedAt).length } };
   });
 }

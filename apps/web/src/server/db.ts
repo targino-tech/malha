@@ -56,11 +56,8 @@ function postgresConnection(connectionString: string): Database {
   };
 }
 
-async function demoConnection(): Promise<Database> {
-  const directory = process.env.MALHA_DEMO_DB ?? resolve(process.cwd(), '.malha/demo');
-  if (directory !== 'memory://') mkdirSync(dirname(resolve(/* turbopackIgnore: true */ directory)), { recursive: true });
-  const client = await PGlite.create(directory);
-  const db: Database = {
+export function pgliteDatabase(client: PGlite): Database {
+  return {
     query: (sql, params) => client.query(sql, params),
     exec: async (sql) => { await client.exec(sql); },
     transaction: (operation) => client.transaction(async (tx) => operation({
@@ -69,6 +66,12 @@ async function demoConnection(): Promise<Database> {
     })),
     close: () => client.close(),
   };
+}
+
+async function demoConnection(): Promise<Database> {
+  const directory = process.env.MALHA_DEMO_DB ?? resolve(process.cwd(), '.malha/demo');
+  if (directory !== 'memory://') mkdirSync(dirname(resolve(/* turbopackIgnore: true */ directory)), { recursive: true });
+  const db = pgliteDatabase(await PGlite.create(directory));
   await migrate(db);
   await seedDemo(db);
   return db;
@@ -99,6 +102,7 @@ export async function migrate(db: Database) {
   const migrations = [
     readFileSync(/* turbopackIgnore: true */ resolve('packages/db/001_inventory.sql'), 'utf8'),
     readFileSync(/* turbopackIgnore: true */ resolve('packages/db/002_collector_limits.sql'), 'utf8'),
+    readFileSync(/* turbopackIgnore: true */ resolve('packages/db/003_occurrences.sql'), 'utf8'),
   ];
   await db.transaction(async (tx) => {
     await tx.exec('SELECT pg_advisory_xact_lock(58147261)');

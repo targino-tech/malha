@@ -20,3 +20,6 @@ GRANT SELECT, INSERT, DELETE ON collector_nonces TO malha_runtime;
 GRANT SELECT, INSERT, UPDATE ON collector_request_limits, collector_health, assets, imports, captures, inventory_outbox TO malha_runtime;
 GRANT SELECT, INSERT ON capture_batches TO malha_runtime;
 GRANT INSERT ON audit_log TO malha_runtime;
+GRANT SELECT, INSERT, UPDATE ON occurrences, notifications TO malha_runtime;
+GRANT SELECT, INSERT ON occurrence_events TO malha_runtime;
+GRANT SELECT ON alert_recipients TO malha_runtime;
