@@ -1,11 +1,12 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BellRing, Box, ChartColumn, ChevronDown, GitMerge, Plug, ScrollText, Settings, CloudUpload, FlaskConical, LayoutDashboard, LogOut, MapPin, Network, RefreshCw, WifiOff } from 'lucide-react';
+import { BellRing, Box, ChartColumn, ChartPie, ChevronDown, GitMerge, Plug, ScrollText, Settings, CloudUpload, FlaskConical, LayoutDashboard, LogOut, MapPin, Network, RefreshCw, WifiOff } from 'lucide-react';
 import { MotionConfig, motion, useReducedMotion } from 'motion/react';
 import type { DashboardData } from '../../server/dashboard';
 import { Administration } from './administration';
 import { Audit } from './audit';
+import { ChartsView } from './charts';
 import { Indicators } from './indicators';
 import { Reconciliation } from './reconciliation';
 import { ImportFlow } from './import-flow';
@@ -17,6 +18,7 @@ import { formatDate } from './presentation';
 
 const views = {
   overview: { label: 'Visão geral', title: 'Visão geral das fazendas', description: 'Acompanhe a comunicação com as unidades e a saúde dos ativos de rede.', icon: LayoutDashboard },
+  charts: { label: 'Painéis', title: 'Painéis da operação', description: 'Estado dos ativos, ocorrências por dia, disponibilidade dos coletores e inventário por categoria.', icon: ChartPie },
   occurrences: { label: 'Ocorrências', title: 'Ocorrências', description: 'Investigue e reconheça os alertas de comunicação, coleta e ativos.', icon: BellRing },
   indicators: { label: 'Indicadores', title: 'Indicadores de valor', description: 'Cobertura, inventário conferido, tempos de resposta e economia medida no piloto.', icon: ChartColumn },
   inventory: { label: 'Inventário', title: 'Inventário de ativos', description: 'Identifique equipamentos, origem do cadastro e estado da última observação.', icon: Box },
@@ -151,6 +153,7 @@ export function Dashboard({ initialData }: { initialData: DashboardData }) {
               {view === 'overview' && <Overview farms={farms} openOccurrences={data.occurrences.filter((item) => !item.resolvedAt && farms.some((farm) => farm.id === item.farmId))} generatedAt={data.generatedAt} onOpenFarm={(id) => { setFarmId(id); setView('inventory'); }} onOpenInventory={() => setView('inventory')} onOpenOccurrences={() => setView('occurrences')} />}
               {view === 'occurrences' && <Occurrences occurrences={data.occurrences} farms={farms} canAcknowledge={data.can['occurrences.acknowledge']} online={online} onChanged={() => { void refresh(true); }} />}
               {view === 'inventory' && <Inventory key={currentFarm} farms={data.farms} locations={data.locations} farmId={currentFarm} canEdit={data.can['inventory.write']} canExport={data.can['exports.run']} online={online} onChanged={() => { void refresh(true); }} />}
+              {view === 'charts' && <ChartsView farms={farms} farmId={currentFarm} online={online} />}
               {view === 'indicators' && <Indicators farms={farms} farmId={currentFarm} canExport={data.can['exports.run']} canBaseline={data.can['baseline.manage']} online={online} />}
               {view === 'reconciliation' && (data.can['inventory.write']
                 ? <Reconciliation key={currentFarm} farms={farms} canEdit={data.can['inventory.write']} online={online} onChanged={() => { void refresh(true); }} />

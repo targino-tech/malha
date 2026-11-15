@@ -49,10 +49,11 @@ O Malha mostra à matriz de um grupo agrícola, em um só painel, **quais fazend
 | **Alertas** | E-mail só para críticos, agrupado por fazenda, sem duplicatas, suspenso em manutenção |
 | **Inventário** | CSV com prévia e erros por linha, cadastro manual, local técnico, responsável, janela de manutenção, arquivamento, busca e paginação no servidor |
 | **Conciliação** | Descobertas UniFi, vínculos automáticos por MAC para confirmar ou desfazer, cadastro de referência para conferir, histórico transferido na fusão |
+| **Painéis** | Estado dos ativos por fazenda, ocorrências por dia e severidade, tempo sem contato por coletor e ativos por categoria, com tabela alternativa, teclado e filtro de período |
 | **Valor** | Atendimentos, linha de base aprovada pelo cliente, cobertura, inventário conferido, detecção (mediana e P90), reconhecimento, horas e economia, tendência semanal |
 | **Acesso** | Admin, TI, técnico de fazenda, diretoria e auditor, com restrição por fazenda; administração de fazendas, membros e coletores pela interface |
 | **Evidências** | Trilha de auditoria, exportação CSV de inventário, ocorrências e auditoria com fórmulas neutralizadas |
-| **Site e portal** | Landing com globo ASCII, planos, cadastro de interessados com limite e honeypot, portal de entrada do cliente |
+| **Site e portal** | Landing cinematográfica com globo ASCII, página open source, pedido de apoio na implantação com limite e honeypot, portal de entrada do cliente |
 | **Produção** | Imagens Docker, Terraform AWS, deploy por OIDC com migração dedicada e smoke test, release assinada do coletor com retorno automático |
 
 <img src="docs/media/secao-design.svg" alt="04 · Design e experiência" width="100%">
