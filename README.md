@@ -51,7 +51,7 @@ O Malha mostra à matriz de um grupo agrícola, em um só painel, **quais fazend
 | **Conciliação** | Descobertas UniFi, vínculos automáticos por MAC para confirmar ou desfazer, cadastro de referência para conferir, histórico transferido na fusão |
 | **Painéis** | Estado dos ativos por fazenda, ocorrências por dia e severidade, tempo sem contato por coletor e ativos por categoria, com tabela alternativa, teclado e filtro de período |
 | **Valor** | Atendimentos, linha de base aprovada pelo cliente, cobertura, inventário conferido, detecção (mediana e P90), reconhecimento, horas e economia, tendência semanal |
-| **Acesso** | Login Entra ID ou Active Directory/LDAP; admin, TI, técnico de fazenda, diretoria e auditor, com restrição por fazenda; administração de fazendas, membros e coletores pela interface |
+| **Acesso** | Login Entra ID, Active Directory/LDAP ou OpenID Connect (Google Workspace, Okta, Keycloak); admin, TI, técnico de fazenda, diretoria e auditor, com restrição por fazenda; administração de fazendas, membros e coletores pela interface |
 | **Monitoramento** | Zabbix 7.0 e painéis Grafana montados do inventário por família de ativos, com Modelo Malha ou Modelo base; download dos arquivos ou aplicação direta pela API com token cifrado |
 | **Parque** | Visão do parque tecnológico com mapa ASCII das fazendas, saúde por estado e famílias de ativos por fabricante |
 | **Evidências** | Trilha de auditoria, exportação CSV de inventário, ocorrências e auditoria com fórmulas neutralizadas |
@@ -238,6 +238,21 @@ pnpm db ldap <org-id> grupo.local ldaps://dc.grupo.local:636 'DC=grupo,DC=local'
 ```
 
 Só conexões cifradas são aceitas (`ldaps://`, ou `ldap://` com StartTLS automático). Para OpenLDAP, use `MALHA_LDAP_ID_ATTRIBUTE=entryUUID`; para uma CA própria, `MALHA_LDAP_CA_FILE`. Cada pessoa entra como membro em Administração pelo `objectGUID` (ou `entryUUID`). A senha da conta de serviço fica cifrada no banco, as tentativas são limitadas e o login vai para a auditoria.
+
+## Login por Google Workspace, Okta, Keycloak ou outro OpenID Connect
+
+Um provedor OIDC genérico pode atender um grupo, ao lado do Entra ID e do LDAP. No provedor, cadastre um aplicativo web com o redirecionamento `https://<seu-dominio>/api/auth/oidc/callback` e configure o serviço:
+
+```sh
+export MALHA_PUBLIC_ORIGIN='https://malha.grupo.com.br'
+export MALHA_OIDC_ISSUER='https://accounts.google.com'   # ou https://<tenant>.okta.com, https://<keycloak>/realms/<realm>
+export MALHA_OIDC_CLIENT_ID='...'
+export MALHA_OIDC_CLIENT_SECRET='...'
+export MALHA_OIDC_ORG_ID='<uuid do grupo>'
+export MALHA_OIDC_NAME='Google'                           # rótulo do botão "Entrar com ..."
+```
+
+O acesso continua por convite: em Administração, crie o membro com o **e-mail do convite** (o identificador no diretório pode ficar em branco). No primeiro login, o Malha só aceita a conta se o provedor confirmar o e-mail como verificado; a partir daí a conta fica ligada pelo identificador estável do provedor (`iss` + `sub`), mesmo que o e-mail mude depois. O convite só pode ser usado uma vez, a ligação vai para a auditoria e desativar o membro bloqueia o login.
 
 ## Site público no GitHub Pages
 

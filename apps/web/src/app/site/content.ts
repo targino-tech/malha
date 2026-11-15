@@ -24,7 +24,7 @@ export const facts = [
 
 export const security = [
   { title: 'Cada grupo vê só o que é seu', text: 'Rotas, consultas e painéis são filtrados pelo grupo e pela fazenda, com isolamento aplicado no próprio banco de dados.' },
-  { title: 'Login corporativo', text: 'Entre com o Microsoft Entra ID (com MFA) ou com a conta da rede no Active Directory/LDAP. Quem sai do diretório perde o acesso.' },
+  { title: 'Login corporativo', text: 'Entre com o Microsoft Entra ID, com a conta da rede no Active Directory/LDAP ou com Google Workspace, Okta e Keycloak por OpenID Connect. O acesso é por convite, e quem sai do diretório perde o acesso.' },
   { title: 'Coletor que não altera nada', text: 'A chave da integração UniFi é usada só para leitura. Todas as conexões partem da fazenda para o Malha.' },
   { title: 'Mensagens assinadas', text: 'Tudo o que o coletor envia sai assinado (Ed25519) e é verificado na chegada. Um reenvio nunca duplica dados.' },
 ];
@@ -102,7 +102,7 @@ export const included = [
   'Inventário por fazenda',
   'Importação de planilha com prévia',
   'Ocorrências e alerta crítico por e-mail',
-  'Login com Entra ID ou Active Directory/LDAP',
+  'Login com Entra ID, Active Directory/LDAP ou OpenID Connect',
   'Papéis de administração, TI e diretoria',
   'Painéis e mapa do parque tecnológico',
   'Zabbix e Grafana montados do inventário',

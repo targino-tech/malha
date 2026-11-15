@@ -60,8 +60,11 @@ function MemberForm({ member, farms, online, onSaved, onCancel }: {
     event.preventDefault();
     const form = event.currentTarget;
     const data = new FormData(form);
-    const oid = String(member?.oid ?? data.get('oid') ?? '').trim();
-    const body = { displayName: data.get('displayName'), role, farmIds: role === 'admin' ? [] : data.getAll('farmIds') };
+    const email = String(data.get('inviteEmail') ?? '').trim();
+    // Sem identificador de diretório, o convite por e-mail usa um id novo; o provedor liga a conta no primeiro login.
+    const oid = String(member?.oid ?? (data.get('oid') || (email ? crypto.randomUUID() : ''))).trim();
+    if (!oid) { setError('Informe o identificador no diretório ou o e-mail do convite.'); return; }
+    const body = { displayName: data.get('displayName'), inviteEmail: email || null, role, farmIds: role === 'admin' ? [] : data.getAll('farmIds') };
     setBusy(true);
     setError('');
     try {
@@ -79,11 +82,12 @@ function MemberForm({ member, farms, online, onSaved, onCancel }: {
     <form className="inline-form" onSubmit={submit} aria-label={member ? `Editar ${member.displayName ?? member.oid}` : 'Novo membro'}>
       {!member && (
         <label className="form-field" htmlFor={`${prefix}-oid`}>Identificador no diretório
-          <input id={`${prefix}-oid`} name="oid" required className="technical" pattern="[0-9a-fA-F-]{36}" placeholder="00000000-0000-0000-0000-000000000000" aria-describedby={`${prefix}-oid-hint`} />
-          <small id={`${prefix}-oid-hint`}>Object ID do Entra ID, ou objectGUID do Active Directory (Get-ADUser nome | Select ObjectGUID).</small>
+          <input id={`${prefix}-oid`} name="oid" className="technical" pattern="[0-9a-fA-F-]{36}" placeholder="00000000-0000-0000-0000-000000000000" aria-describedby={`${prefix}-oid-hint`} />
+          <small id={`${prefix}-oid-hint`}>Object ID do Entra ID, ou objectGUID do Active Directory (Get-ADUser nome | Select ObjectGUID). Para Google, Okta ou Keycloak, deixe em branco e use o e-mail.</small>
         </label>
       )}
       <label className="form-field" htmlFor={`${prefix}-name`}>Nome de exibição<input id={`${prefix}-name`} name="displayName" defaultValue={member?.displayName ?? ''} maxLength={120} /></label>
+      <label className="form-field" htmlFor={`${prefix}-email`}>E-mail do convite <small>(Google, Okta, Keycloak)</small><input id={`${prefix}-email`} name="inviteEmail" type="email" defaultValue={member?.inviteEmail ?? ''} maxLength={254} placeholder="nome@empresa.com.br" /></label>
       <label className="form-field" htmlFor={`${prefix}-role`}>Papel
         <select id={`${prefix}-role`} value={role} onChange={(event) => setRole(event.target.value as Role)}>
           {ROLES.map((item) => <option key={item} value={item}>{roleLabels[item]}</option>)}

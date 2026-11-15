@@ -171,7 +171,7 @@ test('admin gerencia fazendas, coletores e membros com salvaguardas', async () =
   await assert.rejects(saveMember(db, g.admin, techOid, { role: 'tecnico', farmIds: [randomUUID()] }), status(400));
   await saveMember(db, g.admin, techOid, { role: 'tecnico', displayName: 'Ana', farmIds: [g.farmB] });
   const members = await listMembers(db, g.admin);
-  assert.deepEqual(members.find((member) => member.oid === techOid), { oid: techOid, displayName: 'Ana', role: 'tecnico', active: true, farmIds: [g.farmB] });
+  assert.deepEqual(members.find((member) => member.oid === techOid), { oid: techOid, displayName: 'Ana', inviteEmail: null, role: 'tecnico', active: true, farmIds: [g.farmB] });
 
   await assert.rejects(saveMember(db, g.admin, g.admin.actor, { role: 'ti' }), status(409));
   await assert.rejects(deactivateMember(db, g.admin, g.admin.actor), status(409));

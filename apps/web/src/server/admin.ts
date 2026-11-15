@@ -148,21 +148,23 @@ export async function listIntegrations(database: Database, user: Principal): Pro
 
 // Membros
 
-export type Member = { oid: string; displayName: string | null; role: Role; active: boolean; farmIds: string[] };
+export type Member = { oid: string; displayName: string | null; inviteEmail: string | null; role: Role; active: boolean; farmIds: string[] };
 
 export async function listMembers(database: Database, user: Principal): Promise<Member[]> {
   requirePermission(user, 'members.manage');
-  const { rows } = await database.query<{ entra_oid: string; display_name: string | null; role: Role; active: boolean; farm_ids: string[] | null }>(`
-    SELECT m.entra_oid, m.display_name, m.role, m.active,
+  const { rows } = await database.query<{ entra_oid: string; display_name: string | null; invite_email: string | null; role: Role; active: boolean; farm_ids: string[] | null }>(`
+    SELECT m.entra_oid, m.display_name, m.invite_email, m.role, m.active,
       (SELECT array_agg(mf.farm_id ORDER BY mf.farm_id) FROM membership_farms mf WHERE mf.org_id = m.org_id AND mf.entra_oid = m.entra_oid) AS farm_ids
     FROM memberships m WHERE m.org_id = $1 ORDER BY m.active DESC, coalesce(m.display_name, m.entra_oid::text)`, [user.orgId]);
-  return rows.map((row) => ({ oid: row.entra_oid, displayName: row.display_name, role: row.role, active: row.active, farmIds: row.farm_ids ?? [] }));
+  return rows.map((row) => ({ oid: row.entra_oid, displayName: row.display_name, inviteEmail: row.invite_email, role: row.role, active: row.active, farmIds: row.farm_ids ?? [] }));
 }
 
 const memberSchema = z.object({
   displayName: z.string().trim().max(120).refine((value) => !/[\x00-\x1F\x7F]/.test(value)).nullish().transform((value) => value || null),
   role: z.enum(ROLES),
   farmIds: z.array(z.string().regex(uuidPattern)).max(500).default([]),
+  // Convite para provedores OIDC (Google Workspace, Okta, Keycloak): o e-mail liga a conta no primeiro login.
+  inviteEmail: z.preprocess((value) => (typeof value === 'string' ? value.trim().toLowerCase() || null : value ?? null), z.email().max(254).nullable()),
 });
 
 async function assertAnotherAdmin(tx: Queryable, orgId: string, oid: string) {
@@ -188,9 +190,12 @@ export async function saveMember(database: Database, user: Principal, oid: strin
     const { rows: [current] } = await tx.query<{ role: Role; active: boolean }>(
       'SELECT role, active FROM memberships WHERE org_id = $1 AND entra_oid = $2 FOR UPDATE', [user.orgId, normalizedOid]);
     if (current?.role === 'admin' && current.active && data.role !== 'admin') await assertAnotherAdmin(tx, user.orgId, normalizedOid);
-    await tx.query(`INSERT INTO memberships (org_id, entra_oid, role, display_name) VALUES ($1, $2, $3, $4)
-      ON CONFLICT (org_id, entra_oid) DO UPDATE SET role = excluded.role, display_name = excluded.display_name, active = true`,
-    [user.orgId, normalizedOid, data.role, data.displayName]);
+    await tx.query(`INSERT INTO memberships (org_id, entra_oid, role, display_name, invite_email) VALUES ($1, $2, $3, $4, $5)
+      ON CONFLICT (org_id, entra_oid) DO UPDATE SET role = excluded.role, display_name = excluded.display_name, invite_email = excluded.invite_email, active = true`,
+    [user.orgId, normalizedOid, data.role, data.displayName, data.inviteEmail]).catch((error: unknown) => {
+      if (error instanceof Error && /memberships_invite_email/.test(error.message)) throw new HttpError(409, 'Este e-mail já está convidado para outro membro.');
+      throw error;
+    });
     await tx.query('DELETE FROM membership_farms WHERE org_id = $1 AND entra_oid = $2', [user.orgId, normalizedOid]);
     if (data.role !== 'admin' && farmIds.length) {
       await tx.query(`INSERT INTO membership_farms (org_id, entra_oid, farm_id) SELECT $1, $2, unnest($3::uuid[])`,
