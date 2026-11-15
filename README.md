@@ -239,6 +239,10 @@ pnpm db ldap <org-id> grupo.local ldaps://dc.grupo.local:636 'DC=grupo,DC=local'
 
 Só conexões cifradas são aceitas (`ldaps://`, ou `ldap://` com StartTLS automático). Para OpenLDAP, use `MALHA_LDAP_ID_ATTRIBUTE=entryUUID`; para uma CA própria, `MALHA_LDAP_CA_FILE`. Cada pessoa entra como membro em Administração pelo `objectGUID` (ou `entryUUID`). A senha da conta de serviço fica cifrada no banco, as tentativas são limitadas e o login vai para a auditoria.
 
+## Site público no GitHub Pages
+
+A versão estática do site (sem painel e sem servidor) é publicada pelo workflow [`pages.yml`](.github/workflows/pages.yml) a cada mudança no site na `main`. Com o repositório público, ative em **Settings → Pages → Source: GitHub Actions**; o endereço fica `https://<dono>.github.io/malha/`. Para gerar localmente: `node scripts/build-static-site.mjs` (saída em `apps/site-static/out`). Nessa versão, "Entrar" e o cadastro apontam para o repositório: rodar o demo e pedir apoio por issue.
+
 ## Licença e contribuição
 
 O Malha é software livre e gratuito, distribuído sob a [GNU Affero General Public License v3.0 ou posterior](LICENSE). Você pode usar, estudar, modificar e redistribuir o código. Se oferecer uma versão modificada como serviço pela rede, a AGPL exige disponibilizar o código-fonte dessa versão aos usuários dela.

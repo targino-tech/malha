@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import styles from '../site.module.css';
 import { Brand } from './brand';
+import { PORTAL } from '../content';
 
 const links = [
   { href: '/site#produto', label: 'Produto' },
@@ -50,10 +51,10 @@ export function SiteHeader() {
               {link.label}
             </Link>
           ))}
-          <Link className={styles.navMobileOnly} href="/entrar" onClick={() => setOpen(false)}>Entrar</Link>
+          <Link className={styles.navMobileOnly} href={PORTAL.href} onClick={() => setOpen(false)}>{PORTAL.label}</Link>
         </nav>
         <div className={styles.headerActions}>
-          <Link className={styles.textLink} href="/entrar">Entrar</Link>
+          <Link className={styles.textLink} href={PORTAL.href}>{PORTAL.label}</Link>
           {pathname !== '/site/cadastro' && (
             <Link className={styles.primaryButton} href="/site/cadastro">
               Solicitar acesso <ArrowUpRight size={17} aria-hidden="true" />

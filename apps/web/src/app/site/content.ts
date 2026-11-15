@@ -8,6 +8,9 @@ export const capabilities = [
   { title: 'Ocorrências com contexto', text: 'Coletor sem contato, coleta desatualizada, ativo crítico offline e divergência de inventário, uma por recurso.' },
   { title: 'Alerta crítico por e-mail', text: 'Ocorrências críticas chegam agrupadas por fazenda, sem repetição, para os destinatários do seu grupo.' },
   { title: 'Resistente à queda de WAN', text: 'Sem internet, o coletor guarda os lotes localmente e retoma o envio na reconexão, sem duplicar capturas.' },
+  { title: 'Parque tecnológico no mapa', text: 'Visão do parque inteiro: saúde por estado, famílias de ativos por fabricante e o mapa das fazendas com o estado de cada coletor.' },
+  { title: 'Painéis da operação', text: 'Estado dos ativos por fazenda, ocorrências por dia, tempo sem contato dos coletores e inventário por categoria, com tabela alternativa.' },
+  { title: 'Zabbix e Grafana do zero', text: 'O Malha monta hosts, grupos e templates no Zabbix e um painel por família no Grafana, por arquivo ou direto pela API.' },
 ];
 
 export const facts = [
@@ -21,7 +24,7 @@ export const facts = [
 
 export const security = [
   { title: 'Cada grupo vê só o que é seu', text: 'Rotas, consultas e painéis são filtrados pelo grupo e pela fazenda, com isolamento aplicado no próprio banco de dados.' },
-  { title: 'Login corporativo com MFA', text: 'O acesso ao painel usa o Microsoft Entra ID do seu grupo. Quem sai do diretório perde o acesso.' },
+  { title: 'Login corporativo', text: 'Entre com o Microsoft Entra ID (com MFA) ou com a conta da rede no Active Directory/LDAP. Quem sai do diretório perde o acesso.' },
   { title: 'Coletor que não altera nada', text: 'A chave da integração UniFi é usada só para leitura. Todas as conexões partem da fazenda para o Malha.' },
   { title: 'Mensagens assinadas', text: 'Tudo o que o coletor envia sai assinado (Ed25519) e é verificado na chegada. Um reenvio nunca duplica dados.' },
 ];
@@ -99,8 +102,11 @@ export const included = [
   'Inventário por fazenda',
   'Importação de planilha com prévia',
   'Ocorrências e alerta crítico por e-mail',
-  'Login com Microsoft Entra ID e MFA',
+  'Login com Entra ID ou Active Directory/LDAP',
   'Papéis de administração, TI e diretoria',
+  'Painéis e mapa do parque tecnológico',
+  'Zabbix e Grafana montados do inventário',
+  'Exportações com fórmulas neutralizadas',
 ];
 
 export const onboarding = [
@@ -118,3 +124,9 @@ export const openSource = [
   { title: 'Hospede onde quiser', text: 'Rode o demo com dados fictícios em minutos ou leve para produção com PostgreSQL e login Microsoft Entra ID.' },
   { title: 'Apoio na implantação', text: 'Precisa de ajuda para homologar a console UniFi e ativar os coletores? Envie o cadastro e a equipe responde.' },
 ];
+
+// Versão estática (GitHub Pages): sem servidor, então portal e cadastro apontam para o repositório.
+export const STATIC_SITE = process.env.NEXT_PUBLIC_MALHA_STATIC === '1';
+export const DEMO_HREF = `${REPOSITORY_URL}#rode-o-demo`;
+export const SUPPORT_HREF = `${REPOSITORY_URL}/issues/new?title=${encodeURIComponent('Apoio na implantação')}&labels=implantacao`;
+export const PORTAL = STATIC_SITE ? { href: DEMO_HREF, label: 'Rodar o demo' } : { href: '/entrar', label: 'Entrar' };

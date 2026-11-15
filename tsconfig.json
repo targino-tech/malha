@@ -15,5 +15,5 @@
     "types": ["node"]
   },
   "include": ["apps/**/*.ts", "apps/**/*.tsx", "packages/**/*.ts", "tests/**/*.ts", "playwright.config.ts"],
-  "exclude": ["node_modules", "apps/web/.next/dev"]
+  "exclude": ["node_modules", "apps/web/.next/dev", "apps/site-static"]
 }

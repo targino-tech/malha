@@ -1,0 +1,57 @@
+name: Site no GitHub Pages
+
+# Publica a versão estática do site público (apps/web/src/app/site) em https://<dono>.github.io/malha/.
+# O build roda sempre; a publicação só acontece com o repositório público e o Pages ativado
+# em Settings → Pages → Source: GitHub Actions.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/web/src/app/site/**'
+      - 'apps/web/src/app/globals.css'
+      - 'apps/web/src/app/layout.tsx'
+      - 'apps/web/public/**'
+      - 'scripts/build-static-site.mjs'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Gerar site estático
+    runs-on: ubuntu-latest
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+      MALHA_PAGES_BASE: /${{ github.event.repository.name }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .node-version
+      - run: npm install --global pnpm@12.18.0
+      - run: pnpm install --frozen-lockfile
+      - run: node scripts/build-static-site.mjs
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
+        with:
+          path: apps/site-static/out
+
+  deploy:
+    name: Publicar
+    needs: build
+    if: github.event.repository.visibility == 'public'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}site/
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

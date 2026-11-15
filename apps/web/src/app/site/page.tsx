@@ -5,7 +5,7 @@ import { DashboardPreview } from './_components/dashboard-preview';
 import { FieldStory } from './_components/field-story';
 import { CinematicHero } from './_components/hero';
 import { Reveal, SceneTitle, ScrollScale, TiltIn } from './_components/reveal';
-import { REPOSITORY_URL, capabilities, facts, openSource, questions, security } from './content';
+import { PORTAL, REPOSITORY_URL, STATIC_SITE, capabilities, facts, openSource, questions, security } from './content';
 import styles from './site.module.css';
 
 const title = 'Malha | Inventário de rede e ativos para fazendas';
@@ -126,7 +126,7 @@ export default function SitePage() {
             <h2 id="cta-title">Leve o Malha<br /><span>para as suas fazendas.</span></h2>
             <div className={styles.heroActions}>
               <Link href="/site/cadastro" className={styles.primaryButton}>Solicitar acesso <ArrowUpRight size={18} aria-hidden="true" /></Link>
-              <Link href="/entrar" className={styles.secondaryButton}>Já sou cliente</Link>
+              <Link href={PORTAL.href} className={styles.secondaryButton}>{STATIC_SITE ? 'Rodar o demo' : 'Já sou cliente'}</Link>
             </div>
           </ScrollScale>
         </div>

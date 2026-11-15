@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { REPOSITORY_URL } from '../content';
+import { PORTAL, REPOSITORY_URL, STATIC_SITE } from '../content';
 import styles from '../site.module.css';
 import { Brand } from './brand';
 
@@ -27,7 +27,7 @@ export function SiteFooter() {
           </div>
           <div>
             <p>Clientes</p>
-            <Link href="/entrar">Portal do cliente</Link>
+            <Link href={PORTAL.href}>{STATIC_SITE ? 'Rodar o demo' : 'Portal do cliente'}</Link>
           </div>
         </nav>
       </div>
