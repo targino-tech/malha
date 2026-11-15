@@ -36,3 +36,5 @@ GRANT SELECT, INSERT, UPDATE ON service_records, baselines TO malha_runtime;
 GRANT SELECT, INSERT, UPDATE, DELETE ON asset_observations TO malha_runtime;
 GRANT DELETE ON assets, capture_batches TO malha_runtime;
 GRANT SELECT ON audit_log TO malha_runtime;
+-- O site público grava solicitações e conta envios recentes para o limite por cliente.
+GRANT SELECT, INSERT ON site_requests TO malha_runtime;

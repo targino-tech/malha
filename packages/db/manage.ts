@@ -58,6 +58,15 @@ async function recipient(db: Database, orgId: string, address: string, active: b
   });
 }
 
+async function requests(db: Database) {
+  const { rows } = await db.query<{ created_at: Date; plan: string; company: string; name: string; email: string; farms: number; status: string }>(
+    'SELECT created_at, plan, company, name, email, farms, status FROM site_requests ORDER BY created_at DESC LIMIT 50');
+  for (const row of rows) {
+    console.log([row.created_at.toISOString(), row.status, row.plan, row.farms, row.company, row.name, row.email].join('\t'));
+  }
+  if (!rows.length) console.log('Nenhuma solicitação recebida pelo site.');
+}
+
 async function main() {
   const [command, one, two, three] = process.argv.slice(2);
   const db = connectPostgres(process.env.DATABASE_ADMIN_URL ?? process.env.DATABASE_URL);
@@ -77,8 +86,10 @@ async function main() {
     } else if (command === 'recipient' || command === 'recipient-remove') {
       await recipient(db, uuid(one, 'o grupo'), email(two), command === 'recipient');
       console.log(command === 'recipient' ? 'Destinatário de alertas ativo.' : 'Destinatário de alertas desativado.');
+    } else if (command === 'requests') {
+      await requests(db);
     } else {
-      throw new Error('Use migrate, recipient <grupo> <email>, recipient-remove <grupo> <email>, configure <tenant> <oid> [nome], farm <grupo> <nome> <local>, enroll <grupo> <fazenda> ou revoke <grupo> <fazenda>.');
+      throw new Error('Use migrate, requests, recipient <grupo> <email>, recipient-remove <grupo> <email>, configure <tenant> <oid> [nome], farm <grupo> <nome> <local>, enroll <grupo> <fazenda> ou revoke <grupo> <fazenda>.');
     }
   } finally {
     await db.close();

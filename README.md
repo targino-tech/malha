@@ -22,7 +22,7 @@ MALHA_MODE=demo pnpm dev
 
 No PowerShell, use `$env:MALHA_MODE = 'demo'` antes de executar `pnpm dev`. Acesse [http://127.0.0.1:3000](http://127.0.0.1:3000).
 
-A página de apresentação fica em [/site](http://127.0.0.1:3000/site). Usa Motion para as transições e hospeda a própria tipografia Barlow Condensed, com os termos OFL em `apps/web/public/malha/BARLOW-OFL.txt`.
+A página de apresentação fica em [/site](http://127.0.0.1:3000/site), com planos em `/site/planos`, cadastro em `/site/cadastro` e o portal do cliente em `/entrar`. Liste as solicitações recebidas com `pnpm db requests`. Veja [a jornada do site](docs/website.md). Usa Motion para as transições e hospeda a própria tipografia Barlow Condensed, com os termos OFL em `apps/web/public/malha/BARLOW-OFL.txt`.
 
 1. Em **Importações**, selecione uma fazenda e envie o [CSV de exemplo](examples/inventario.csv).
 2. Clique em **Validar arquivo**, confira a prévia e confirme a importação.
