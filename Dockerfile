@@ -6,8 +6,10 @@ ARG NODE_IMAGE=node:24.22.3-bookworm-slim@sha256:dc26ae92c9fb15cf6b1d63e20f0944b
 FROM ${NODE_IMAGE} AS build
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1 CI=1
-RUN npm install --global pnpm@12.18.0 --registry=https://registry.npmjs.org/
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+# pnpm na versão e no hash do packageManager do package.json: o corepack confere a integridade do download.
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+RUN corepack enable pnpm && corepack install
 # node_modules plano: o build standalone do Next copia dependências sem links simbólicos do pnpm.
 RUN echo 'nodeLinker: hoisted' >> pnpm-workspace.yaml && pnpm install --frozen-lockfile
 COPY . .

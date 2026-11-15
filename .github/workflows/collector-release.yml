@@ -6,13 +6,16 @@ on:
     tags: ['collector-v*']
 
 permissions:
-  contents: write
-  id-token: write
+  contents: read
 
 jobs:
   release:
     name: Binários assinados
     runs-on: ubuntu-latest
+    # Publica a release (contents) e assina com a identidade OIDC deste workflow (id-token).
+    permissions:
+      contents: write
+      id-token: write
     timeout-minutes: 20
     defaults:
       run:

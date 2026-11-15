@@ -33,11 +33,11 @@ jobs:
         with:
           go-version-file: collector/go.mod
           cache: false
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
       - name: Auditar dependências JavaScript
         shell: bash
         run: |
           mkdir -p "$RUNNER_TEMP/security"
-          npm install --global pnpm@12.18.0 --registry=https://registry.npmjs.org/
           report="$RUNNER_TEMP/security/pnpm.json"
           status=0
           pnpm audit --registry=https://registry.npmjs.org/ --audit-level=moderate --json > "$report" || status=$?

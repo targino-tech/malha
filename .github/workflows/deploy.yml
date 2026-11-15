@@ -21,7 +21,6 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 concurrency:
   group: deploy-${{ inputs.environment || github.ref_name }}
@@ -30,6 +29,9 @@ concurrency:
 jobs:
   deploy:
     name: Implantar em ${{ inputs.environment || github.ref_name }}
+    permissions:
+      contents: read
+      id-token: write
     if: ${{ vars.DEPLOY_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment || github.ref_name }}

@@ -35,6 +35,6 @@ jobs:
         with:
           go-version-file: collector/go.mod
           cache-dependency-path: collector/go.sum
-      - run: npm install --global pnpm@12.18.0
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0, versão e hash vêm do packageManager
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium

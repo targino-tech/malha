@@ -11,6 +11,7 @@ on:
       - 'apps/web/src/app/layout.tsx'
       - 'apps/web/public/**'
       - 'scripts/build-static-site.mjs'
+      - 'docs/media/video/**'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
@@ -35,7 +36,7 @@ jobs:
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version-file: .node-version
-      - run: npm install --global pnpm@12.18.0
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0, versão e hash vêm do packageManager
       - run: pnpm install --frozen-lockfile
       - run: node scripts/build-static-site.mjs
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
