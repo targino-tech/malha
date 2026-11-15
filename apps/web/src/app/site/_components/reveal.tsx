@@ -107,10 +107,10 @@ export function TiltIn({ children, className }: { children: ReactNode; className
 export function ScrollScale({ children, className }: { children: ReactNode; className?: string }) {
   const reduced = useReducedMotion();
   const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'center center'] });
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'start 55%'] });
   const p = useSpring(scrollYProgress, { stiffness: 120, damping: 30 });
-  const scale = useTransform(p, [0, 1], reduced ? [1, 1] : [0.82, 1]);
-  const opacity = useTransform(p, [0, 1], reduced ? [1, 1] : [0.25, 1]);
+  const scale = useTransform(p, [0, 1], reduced ? [1, 1] : [0.88, 1]);
+  const opacity = useTransform(p, [0, 1], reduced ? [1, 1] : [0.6, 1]);
   const letterSpacing = useTransform(p, [0, 1], reduced ? ['-0.01em', '-0.01em'] : ['0.06em', '-0.01em']);
   return (
     <motion.div ref={ref} className={className} data-malha-reveal style={{ scale, opacity, letterSpacing }}>
