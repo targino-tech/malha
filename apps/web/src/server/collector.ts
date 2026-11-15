@@ -10,19 +10,50 @@ const keySchema = z.object({ kty: z.literal('OKP'), crv: z.literal('Ed25519'), x
 const enrollmentSchema = z.object({ code: z.string().min(20).max(120), publicKey: keySchema });
 const heartbeatSchema = z.object({ version: z.string().min(1).max(80), queueDepth: z.number().int().min(0).max(1_000_000), healthy: z.boolean() });
 const text = (max: number) => z.string().max(max).nullish().transform((value) => value?.trim() || null);
+const counter = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).nullish().transform((value) => value ?? null);
+const vlan = z.number().int().min(1).max(4094);
+const rate = z.number().int().min(0).max(400e9).nullish().transform((value) => value ?? null);
+// Campos de rede da versão 2. Todos opcionais: ausência significa "não lido nesta captura", nunca "zero".
+const portSchema = z.object({
+  idx: z.number().int().min(0).max(10_000), name: text(80), state: text(40), connector: text(40),
+  speedMbps: z.number().int().min(0).max(1_000_000).nullish(), maxSpeedMbps: z.number().int().min(0).max(1_000_000).nullish(),
+  poe: z.object({ standard: text(40), type: z.number().int().min(0).max(10).nullish(), enabled: z.boolean().nullish(), state: text(40),
+    powerMw: z.number().int().min(0).max(1_000_000).nullish() }).nullish(),
+  // Reservados para fontes que exponham VLAN e contadores por porta; o coletor UniFi atual não os envia.
+  nativeVlanId: vlan.nullish(), taggedVlanIds: z.array(vlan).max(4094).nullish(),
+  rxBytes: counter, txBytes: counter, rxPackets: counter, txPackets: counter,
+  rxErrors: counter, txErrors: counter, rxDropped: counter, txDropped: counter,
+});
+const networkSchema = z.object({
+  id: z.string().min(1).max(200), name: z.string().max(120).transform((value) => value.trim()),
+  vlanId: vlan.nullish(), enabled: z.boolean().nullish(), management: text(40),
+  subnet: z.string().max(50).regex(/^\d{1,3}(?:\.\d{1,3}){3}\/\d{1,2}$/).nullish(),
+});
 const deviceSchema = z.object({
   id: z.string().min(1).max(200), name: text(200), mac: text(50), ip: text(80), model: text(150), state: text(80), firmware: text(120),
+  features: z.array(z.string().min(1).max(40)).max(16).optional(),
+  uplinkDeviceId: z.string().min(1).max(200).optional(),
+  uplinkTxBps: rate.optional(), uplinkRxBps: rate.optional(),
+  ports: z.array(portSchema).max(128).optional()
+    .refine((ports) => !ports || new Set(ports.map((port) => port.idx)).size === ports.length),
 }).transform((device) => ({ ...device, mac: device.mac ? normalizedMac(device.mac) : null,
   ip: device.ip && isIP(device.ip) ? device.ip : null }));
 
 export type Device = z.infer<typeof deviceSchema>;
+export type Port = z.infer<typeof portSchema>;
+export type Network = z.infer<typeof networkSchema>;
 
 const batchSchema = z.object({
-  schemaVersion: z.literal(1), batchId: z.string().regex(uuidPattern), captureId: z.string().regex(uuidPattern),
+  // A versão 1 continua aceita; a 2 só acrescenta campos opcionais.
+  schemaVersion: z.union([z.literal(1), z.literal(2)]), batchId: z.string().regex(uuidPattern), captureId: z.string().regex(uuidPattern),
   sequence: z.number().int().min(1).max(Number.MAX_SAFE_INTEGER),
   observedAt: z.iso.datetime({ offset: true }), part: z.number().int().min(1).max(100), parts: z.number().int().min(1).max(100),
   devices: z.array(deviceSchema).max(200),
+  networks: z.array(networkSchema).max(1000).optional(),
 }).refine((batch) => batch.part <= batch.parts)
+  .refine((batch) => batch.schemaVersion === 2 || (batch.networks === undefined
+    && batch.devices.every((device) => device.ports === undefined && device.uplinkDeviceId === undefined && device.features === undefined)))
+  .refine((batch) => !batch.networks || new Set(batch.networks.map((network) => network.id)).size === batch.networks.length)
   .refine((batch) => new Set(batch.devices.map((device) => device.id)).size === batch.devices.length)
   .refine((batch) => Date.parse(batch.observedAt) <= Date.now() + 60_000);
 
@@ -108,7 +139,7 @@ export async function enrollCollector(request: Request) {
 }
 
 async function authenticated<T>(request: Request, path: string, maxBytes: number,
-  operation: (tx: Queryable, collector: Collector, body: unknown, digest: string, clockSkew: number) => Promise<T>) {
+  operation: (tx: Queryable, collector: Collector, body: unknown, digest: string, clockSkew: number, size: number) => Promise<T>) {
   if (request.headers.get('Content-Encoding') && request.headers.get('Content-Encoding') !== 'identity') {
     throw new HttpError(415, 'Use JSON sem compressão.');
   }
@@ -130,7 +161,7 @@ async function authenticated<T>(request: Request, path: string, maxBytes: number
     const accepted = await tx.query(`INSERT INTO collector_nonces (key_id, nonce, expires_at)
       VALUES ($1, $2, to_timestamp($3) + interval '1 minute') ON CONFLICT DO NOTHING RETURNING nonce`, [keyId, proof.proof.jti, proof.proof.exp]);
     if (!accepted.rows.length) throw new HttpError(409, 'A assinatura já foi utilizada. Gere um nonce novo.');
-    return operation(tx, collector, parseJson(bytes), digest, proof.proof.iat - Math.floor(Date.now() / 1000));
+    return operation(tx, collector, parseJson(bytes), digest, proof.proof.iat - Math.floor(Date.now() / 1000), bytes.length);
   });
 }
 
@@ -146,7 +177,7 @@ export function acceptHeartbeat(request: Request) {
 }
 
 export async function acceptBatch(request: Request) {
-  const receipt = await authenticated(request, '/v1/collectors/batches', 1024 * 1024, async (tx, collector, body, digest) => {
+  const receipt = await authenticated(request, '/v1/collectors/batches', 1024 * 1024, async (tx, collector, body, digest, _clockSkew, size) => {
     const parsed = batchSchema.safeParse(body);
     if (!parsed.success) throw new HttpError(400, 'Lote de coleta inválido.');
     const batch = parsed.data;
@@ -166,9 +197,10 @@ export async function acceptBatch(request: Request) {
     if (!capture || Number(capture.seq) !== batch.sequence || new Date(capture.observed_at).toISOString() !== observedAt || capture.parts !== batch.parts) {
       throw new HttpError(409, 'A captura já foi registrada com outra sequência ou metadados.');
     }
-    const inserted = await tx.query(`INSERT INTO capture_batches (org_id, farm_id, collector_id, capture_id, id, part, content_hash, devices)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb) ON CONFLICT DO NOTHING RETURNING id`,
-    [...prefix, batch.captureId, batch.batchId, batch.part, digest, JSON.stringify(batch.devices)]);
+    const inserted = await tx.query(`INSERT INTO capture_batches (org_id, farm_id, collector_id, capture_id, id, part, content_hash, devices, networks, payload_bytes)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10) ON CONFLICT DO NOTHING RETURNING id`,
+    [...prefix, batch.captureId, batch.batchId, batch.part, digest, JSON.stringify(batch.devices),
+      batch.networks ? JSON.stringify(batch.networks) : null, size]);
     if (!inserted.rows.length) throw new HttpError(409, 'A parte deste lote já foi recebida.');
     const { rows: [{ count }] } = await tx.query<{ count: string | number }>(`SELECT count(*) FROM capture_batches
       WHERE org_id = $1 AND farm_id = $2 AND collector_id = $3 AND capture_id = $4`, [...prefix, batch.captureId]);

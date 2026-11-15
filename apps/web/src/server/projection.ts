@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { errorName, log } from './log';
 import { setOrg, type Database, type Queryable } from './db';
-import type { Device } from './collector';
+import type { Device, Network } from './collector';
+import { applyNetwork } from './network/apply';
 
 type Job = { id: string; org_id: string; farm_id: string; collector_id: string; capture_id: string; attempts: number };
 
@@ -32,13 +33,15 @@ async function applyCapture(tx: Queryable, job: Job) {
   const { rows: [capture] } = await tx.query<{ seq: string | number; observed_at: Date; parts: number }>(`SELECT seq, observed_at, parts FROM captures
     WHERE org_id = $1 AND farm_id = $2 AND collector_id = $3 AND id = $4`, [...prefix, job.capture_id]);
   if (!capture || !health) throw new Error('Captura ou coletor ausente.');
-  const { rows: parts } = await tx.query<{ devices: Device[]; part: number }>(`SELECT devices, part FROM capture_batches
+  const { rows: parts } = await tx.query<{ devices: Device[]; part: number; networks: Network[] | null }>(`SELECT devices, part, networks FROM capture_batches
     WHERE org_id = $1 AND farm_id = $2 AND collector_id = $3 AND capture_id = $4 ORDER BY part`, [...prefix, job.capture_id]);
   if (parts.length !== capture.parts || parts.some((part, i) => part.part !== i + 1)) throw new Error('Captura incompleta.');
   const devices = parts.flatMap((part) => part.devices);
   if (new Set(devices.map((device) => device.id)).size !== devices.length) throw new Error('Há dispositivos duplicados na captura.');
+  const networksRead = parts.find((part) => part.networks)?.networks ?? null;
   if (Number(capture.seq) <= Number(health.last_sequence)) {
     await recordObservations(tx, prefix, job.capture_id, new Date(capture.observed_at).toISOString(), devices);
+    await applyNetwork(tx, [job.org_id, job.farm_id, job.collector_id], new Date(capture.observed_at).toISOString(), devices, networksRead, false);
     return;
   }
   const macCounts = new Map<string, number>();
@@ -91,6 +94,7 @@ async function applyCapture(tx: Queryable, job: Job) {
       missing_captures = missing_captures + 1 WHERE org_id = $1 AND farm_id = $2
     AND last_collector_id = $3 AND last_observed_at <> $4 AND external_id IS NOT NULL`, [...prefix, observedAt]);
   await recordObservations(tx, prefix, job.capture_id, observedAt, devices);
+  await applyNetwork(tx, [job.org_id, job.farm_id, job.collector_id], observedAt, devices, networksRead, true);
   await tx.query(`UPDATE collector_health SET last_capture_at = $4, last_sequence = $5
     WHERE org_id = $1 AND farm_id = $2 AND collector_id = $3`, [...prefix, observedAt, newSequence]);
   await tx.query(`UPDATE captures SET applied_at = now() WHERE org_id = $1 AND farm_id = $2 AND collector_id = $3 AND id = $4`, [...prefix, job.capture_id]);
