@@ -14,15 +14,15 @@ locals {
   # Métricas publicadas pelo worker em Embedded Metric Format (apps/web/src/server/operations.ts).
   worker_alarms = {
     "outbox-atrasada" = {
-      metric = "OutboxOldestSeconds", threshold = 300, statistic = "Maximum", missing = "breaching",
+      metric      = "OutboxOldestSeconds", threshold = 300, statistic = "Maximum", missing = "breaching",
       description = "Captura aceita há mais de 5 min sem aplicação, ou worker sem publicar métricas."
     }
     "outbox-falhas" = {
-      metric = "OutboxFailed24h", threshold = 0, statistic = "Maximum", missing = "notBreaching",
+      metric      = "OutboxFailed24h", threshold = 0, statistic = "Maximum", missing = "notBreaching",
       description = "Capturas na fila morta nas últimas 24 h. Investigue e reprocesse com auditoria."
     }
     "email-falhas" = {
-      metric = "NotificationsFailed24h", threshold = 0, statistic = "Maximum", missing = "notBreaching",
+      metric      = "NotificationsFailed24h", threshold = 0, statistic = "Maximum", missing = "notBreaching",
       description = "E-mails de alerta críticos que esgotaram as tentativas."
     }
   }
@@ -93,10 +93,10 @@ resource "aws_cloudwatch_metric_alarm" "alb_latency" {
 
 resource "aws_cloudwatch_metric_alarm" "database" {
   for_each = {
-    "banco-cpu"       = { metric = "CPUUtilization", threshold = 80, operator = "GreaterThanThreshold", description = "CPU do RDS acima de 80%." }
-    "banco-conexoes"  = { metric = "DatabaseConnections", threshold = 150, operator = "GreaterThanThreshold", description = "Conexões abertas no RDS acima do pool esperado." }
-    "banco-espaco"    = { metric = "FreeStorageSpace", threshold = 5368709120, operator = "LessThanThreshold", description = "Menos de 5 GiB livres no RDS." }
-    "banco-memoria"   = { metric = "FreeableMemory", threshold = 268435456, operator = "LessThanThreshold", description = "Menos de 256 MiB de memória livre no RDS." }
+    "banco-cpu"      = { metric = "CPUUtilization", threshold = 80, operator = "GreaterThanThreshold", description = "CPU do RDS acima de 80%." }
+    "banco-conexoes" = { metric = "DatabaseConnections", threshold = 150, operator = "GreaterThanThreshold", description = "Conexões abertas no RDS acima do pool esperado." }
+    "banco-espaco"   = { metric = "FreeStorageSpace", threshold = 5368709120, operator = "LessThanThreshold", description = "Menos de 5 GiB livres no RDS." }
+    "banco-memoria"  = { metric = "FreeableMemory", threshold = 268435456, operator = "LessThanThreshold", description = "Menos de 256 MiB de memória livre no RDS." }
   }
   alarm_name          = "${local.name}-${each.key}"
   alarm_description   = each.value.description
@@ -174,7 +174,7 @@ resource "aws_iam_role_policy" "deploy" {
       {
         Effect = "Allow"
         Action = ["ecr:BatchCheckLayerAvailability", "ecr:BatchGetImage", "ecr:CompleteLayerUpload", "ecr:DescribeImages",
-          "ecr:GetDownloadUrlForLayer", "ecr:InitiateLayerUpload", "ecr:PutImage", "ecr:UploadLayerPart"]
+        "ecr:GetDownloadUrlForLayer", "ecr:InitiateLayerUpload", "ecr:PutImage", "ecr:UploadLayerPart"]
         Resource = [for repository in aws_ecr_repository.app : repository.arn]
       },
       { Effect = "Allow", Action = ["kms:Decrypt", "kms:GenerateDataKey"], Resource = [aws_kms_key.main.arn] },
