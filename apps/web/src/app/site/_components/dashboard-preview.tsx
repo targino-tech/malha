@@ -7,30 +7,30 @@ import dashboardPreview from './painel.webp';
 import styles from '../site.module.css';
 
 const topics = {
+  assets: {
+    label: 'Parque',
+    icon: Boxes,
+    title: 'Veja o parque tecnológico inteiro',
+    description: 'Todos os ativos das fazendas em uma barra só: em contato, offline, indeterminado e sem telemetria. Ao lado, coletores, críticos offline, ocorrências abertas e cobertura UniFi.',
+  },
   units: {
     label: 'Unidades',
     icon: MapPin,
     title: 'Filtre por fazenda',
-    description: 'Selecione uma unidade para consultar os equipamentos e os coletores daquela fazenda. A visão geral reúne todas as unidades do grupo.',
+    description: 'Escolha uma unidade em "Todas as fazendas" para ver só os ativos, coletores e ocorrências dela. Sem filtro, a visão geral soma todas as fazendas do grupo.',
   },
   collectors: {
     label: 'Coletores',
     icon: Radio,
-    title: 'Confira a última comunicação',
-    description: 'Veja quais coletores estão em contato com o Malha. Quando o sinal expira, o painel preserva a data da última coleta recebida.',
-  },
-  assets: {
-    label: 'Ativos',
-    icon: Boxes,
-    title: 'Encontre um equipamento',
-    description: 'Consulte ativos observados via UniFi ou cadastrados por CSV. No inventário, pesquise por nome, etiqueta, IP ou MAC.',
+    title: 'Saiba quem está falando com a matriz',
+    description: 'Quantos coletores estão em contato e quantas fazendas estão sem coletor. Se um coletor fica 3 minutos sem sinal, abre uma ocorrência.',
   },
 } as const;
 
 type Topic = keyof typeof topics;
 
 export function DashboardPreview() {
-  const [selected, setSelected] = useState<Topic>('units');
+  const [selected, setSelected] = useState<Topic>('assets');
   const topic = topics[selected];
 
   return (
@@ -40,7 +40,7 @@ export function DashboardPreview() {
         <span>Dados de demonstração</span>
       </figcaption>
       <div className={styles.previewImageWrap}>
-        <Image className={styles.panelImage} src={dashboardPreview} alt="Painel Malha com a lista de fazendas e o estado de comunicação dos seus coletores" sizes="(max-width: 48rem) 94vw, 76rem" unoptimized />
+        <Image className={styles.panelImage} src={dashboardPreview} alt="Visão geral do painel Malha no tema escuro: parque tecnológico com 8 ativos em 3 fazendas, coletores em contato, críticos offline, ocorrências abertas, cobertura UniFi e a lista de ocorrências abertas" sizes="(max-width: 48rem) 94vw, 76rem" unoptimized />
         <div aria-hidden="true" className={styles.previewHighlight} data-topic={selected} />
       </div>
       <div className={styles.previewExplorer}>

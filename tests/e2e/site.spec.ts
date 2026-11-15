@@ -22,7 +22,7 @@ test('a apresentação do Malha funciona em celular com movimento reduzido', asy
   await collectors.focus();
   await page.keyboard.press('Enter');
   await expect(collectors).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.getByRole('heading', { name: 'Confira a última comunicação' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Saiba quem está falando com a matriz' })).toBeVisible();
 
   await page.getByText('Posso usar o inventário que já tenho em planilha?', { exact: true }).click();
   await expect(page.getByText(/Use um arquivo CSV em UTF-8/)).toBeVisible();
