@@ -12,8 +12,12 @@ import { HttpError } from './http';
  * 4. Converte o identificador estável (objectGUID ou entryUUID) em UUID e abre a sessão se houver associação ativa.
  */
 
+// Limites em 15 minutos. Um usuário só é travado por falhas vindas do mesmo cliente (PER_PAIR); o teto
+// global por usuário (PER_SUBJECT) é bem maior e só contém ataques distribuídos. Assim, errar a senha de
+// alguém a partir de uma máquina não impede essa pessoa de entrar da própria máquina.
 const PER_CLIENT = 10;
-const PER_SUBJECT = 5;
+const PER_PAIR = 5;
+const PER_SUBJECT = 25;
 const WINDOW = '15 minutes';
 const GENERIC = 'Usuário ou senha inválidos.';
 
@@ -91,10 +95,12 @@ export async function authenticateLdap(database: Database, input: unknown, clien
   const subjectHash = createHmac('sha256', secret).update(`login:${domain}:${account.toLowerCase()}`).digest('hex');
 
   await database.query(`DELETE FROM login_attempts WHERE attempted_at < now() - interval '1 day'`);
-  const { rows: [counts] } = await database.query<{ client: number; subject: number }>(`
-    SELECT count(*) FILTER (WHERE client_hash = $1)::int AS client, count(*) FILTER (WHERE subject_hash = $2)::int AS subject
+  const { rows: [counts] } = await database.query<{ client: number; pair: number; subject: number }>(`
+    SELECT count(*) FILTER (WHERE client_hash = $1)::int AS client,
+      count(*) FILTER (WHERE client_hash = $1 AND subject_hash = $2)::int AS pair,
+      count(*) FILTER (WHERE subject_hash = $2)::int AS subject
     FROM login_attempts WHERE attempted_at > now() - interval '${WINDOW}'`, [clientHash, subjectHash]);
-  if (counts.client >= PER_CLIENT || counts.subject >= PER_SUBJECT) {
+  if (counts.client >= PER_CLIENT || counts.pair >= PER_PAIR || counts.subject >= PER_SUBJECT) {
     throw new HttpError(429, 'Muitas tentativas. Aguarde 15 minutos e tente de novo.', { 'Retry-After': '900' });
   }
   await database.query('INSERT INTO login_attempts (client_hash, subject_hash) VALUES ($1, $2)', [clientHash, subjectHash]);
@@ -133,7 +139,8 @@ export async function authenticateLdap(database: Database, input: unknown, clien
     SELECT $3, m.org_id, m.entra_oid, now() + interval '8 hours' FROM memberships m
     WHERE m.org_id = $1 AND m.entra_oid = $2 AND m.active RETURNING org_id`, [directory.org_id, subject, hash(token)]);
   if (!rows.length) throw new HttpError(403, 'Sua conta não está habilitada no Malha.');
-  await database.query('DELETE FROM login_attempts WHERE subject_hash = $1', [subjectHash]);
+  // Sucesso limpa só as falhas deste cliente; as de outros clientes continuam contando para o teto global.
+  await database.query('DELETE FROM login_attempts WHERE subject_hash = $1 AND client_hash = $2', [subjectHash, clientHash]);
   await database.transaction(async (tx) => {
     await setOrg(tx, directory.org_id);
     await tx.query('INSERT INTO audit_log (id, org_id, actor, action, scope) VALUES ($1, $2, $3, $4, $5::jsonb)',

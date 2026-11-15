@@ -79,11 +79,19 @@ test('login por LDAP abre sessão só para membro ativo com senha válida', asyn
   assert.ok(calls.some((call) => call.includes('sAMAccountName=ninguem\\2a\\29\\28cn=\\2a')));
   await assert.rejects(authenticateLdap(db, { domain: 'outro.local', username: 'maria', password: 'correta' }, '10.0.0.3', SECRET, directory), status(401));
 
-  // Limite: 5 tentativas por usuário em 15 minutos.
+  // Quem erra a senha de alguém a partir de uma máquina fica bloqueado nela...
   for (let attempt = 0; attempt < 5; attempt += 1) {
-    await authenticateLdap(db, { domain: 'grupo.local', username: 'ze', password: 'x' }, `10.1.0.${attempt}`, SECRET, directory).catch(() => undefined);
+    await assert.rejects(authenticateLdap(db, { domain: 'grupo.local', username: 'maria', password: 'chute' }, '10.9.9.9', SECRET, directory), status(401));
   }
-  await assert.rejects(authenticateLdap(db, { domain: 'grupo.local', username: 'ze', password: 'x' }, '10.1.0.99', SECRET, directory), status(429));
+  await assert.rejects(authenticateLdap(db, { domain: 'grupo.local', username: 'maria', password: 'correta' }, '10.9.9.9', SECRET, directory), status(429));
+  // ...mas a pessoa continua entrando da própria máquina.
+  const legit = await authenticateLdap(db, { domain: 'grupo.local', username: 'maria', password: 'correta' }, '10.0.0.50', SECRET, directory);
+  assert.ok(legit.token);
+  // Ataque distribuído: o teto global por usuário fecha depois de 25 falhas de clientes diferentes.
+  for (let attempt = 0; attempt < 25; attempt += 1) {
+    await authenticateLdap(db, { domain: 'grupo.local', username: 'ze', password: 'x' }, `10.1.${attempt}.1`, SECRET, directory).catch(() => undefined);
+  }
+  await assert.rejects(authenticateLdap(db, { domain: 'grupo.local', username: 'ze', password: 'x' }, '10.1.99.1', SECRET, directory), status(429));
 });
 
 test('diretório sem TLS é recusado pelo banco', async () => {
